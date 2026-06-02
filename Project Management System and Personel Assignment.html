@@ -1,0 +1,1288 @@
+<!DOCTYPE html>
+<html lang="id">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard ConsulTech - Live</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- React & ReactDOM -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <!-- Babel -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            background-color: #f8fafc;
+        }
+
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 4px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        .fade-in {
+            animation: fadeIn 0.2s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: scale(0.95);
+            }
+
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <div id="root"></div>
+
+    <script type="text/babel">
+        const { useState, useEffect, useMemo } = React;
+        const { createRoot } = ReactDOM;
+
+        // --- SISTEM ICON INTERNAL ---
+        const Icon = ({ name, size = 20, className = "" }) => {
+            const paths = {
+                "layout-dashboard": '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
+                "briefcase": '<rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
+                "users": '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+                "calendar-clock": '<path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h5"/><path d="M17.5 17.5 16 16.25V14"/><circle cx="16" cy="16" r="6"/>',
+                "search": '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
+                "database": '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>',
+                "refresh-ccw": '<path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 21v-5h5"/>',
+                "trending-up": '<polyline points="22 7 13.5 15.5 8.5 10.5 2 17"/><polyline points="16 7 22 7 22 13"/>',
+                "trending-down": '<polyline points="22 17 13.5 8.5 8.5 13.5 2 7"/><polyline points="16 17 22 17 22 11"/>',
+                "alert-triangle": '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+                "file-text": '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>',
+                "check-circle-2": '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+                "clock": '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+                "folder-open": '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
+                "plus": '<path d="M5 12h14"/><path d="M12 5v14"/>',
+                "edit": '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>',
+                "trash": '<path d="M3 6h18"/><path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"/><path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"/>',
+                "x": '<path d="M18 6 6 18"/><path d="M6 6l12 12"/>',
+                "save": '<path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/><polyline points="17 21 17 13 7 13 7 21"/><polyline points="7 3 7 8 15 8"/>',
+                "check": '<polyline points="20 6 9 17 4 12"/>',
+                "target": '<circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/>',
+                "arrow-left": '<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>'
+            };
+            return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} dangerouslySetInnerHTML={{ __html: paths[name] }} />;
+        };
+
+        // --- HELPER FUNCTION: FORMAT TANGGAL & HITUNG STATUS ---
+        const formatDateIndo = (dateString) => {
+            if (!dateString) return "-";
+            try {
+                const date = new Date(dateString);
+                if (isNaN(date.getTime())) return dateString;
+
+                const months = ["Januari", "Februari", "Maret", "April", "Mei", "Juni", "Juli", "Agustus", "September", "Oktober", "November", "Desember"];
+                const day = date.getDate();
+                const month = months[date.getMonth()];
+                const year = date.getFullYear();
+                return `${day} ${month} ${year}`;
+            } catch (e) {
+                return dateString;
+            }
+        };
+
+        const calculateComputedStatus = (project) => {
+            const baseStatus = project.status === "On Track" ? "On Progress" : (project.status || "On Progress");
+            if (baseStatus === "Done" || project.progress >= 100) return "Done";
+            if (!project.deadline) return baseStatus;
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const deadlineDate = new Date(project.deadline);
+            deadlineDate.setHours(0, 0, 0, 0);
+
+            if (isNaN(deadlineDate.getTime())) return baseStatus;
+
+            const diffTime = deadlineDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) {
+                return "Terlambat";
+            } else if (diffDays <= 14) {
+                return "Beresiko";
+            }
+            return baseStatus;
+        };
+
+        const getMicroStatus = (progress, deadlineStr) => {
+            if (progress >= 100) return "Done";
+            if (!deadlineStr) return "Belum Diatur";
+
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const dDate = new Date(deadlineStr);
+            dDate.setHours(0, 0, 0, 0);
+
+            if (isNaN(dDate.getTime())) return "Belum Diatur";
+
+            const diffTime = dDate.getTime() - today.getTime();
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) return "Terlambat";
+            if (diffDays <= 3) return "Beresiko"; // Risiko Mikro H-3
+            return "On Progress";
+        };
+
+        const getCategoryFromRole = (roleStr) => {
+            if (!roleStr) return 'Lainnya';
+            const roleLower = roleStr.toLowerCase();
+            if (roleLower.includes('arsitek')) return 'Arsitek';
+            if (roleLower === 'qs' || roleLower.includes('quantity')) return 'QS';
+            if (roleLower.includes('struktur')) return 'Struktur';
+            if (roleLower.includes('mep')) return 'MEP';
+            if (roleLower.includes('tata ruang') || roleLower.includes('planologi')) return 'Tata Ruang';
+            return 'Lainnya';
+        };
+
+        // --- KOMPONEN CHECKBOX DIPISAH AGAR SCROLL TIDAK RESET ---
+        function TeamCheckboxGroup({ title, roleFilter, isOptional, filteredResources, formData, setFormData }) {
+            const groupResources = filteredResources.filter(roleFilter);
+            if (groupResources.length === 0) return null;
+
+            return (
+                <div className="mb-3">
+                    <h4 className="text-[11px] font-bold text-slate-700 bg-slate-200 px-2 py-1 rounded mb-1.5 flex justify-between items-center">
+                        <span>{title}</span>
+                        {isOptional && <span className="font-normal italic text-slate-500">Opsional</span>}
+                    </h4>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-1">
+                        {groupResources.map(res => (
+                            <label key={res.id} className="flex items-start space-x-2 text-sm cursor-pointer p-1 hover:bg-slate-100 rounded transition-colors">
+                                <input
+                                    type="checkbox"
+                                    className="mt-0.5 rounded border-slate-300 w-4 h-4 text-blue-600 focus:ring-blue-500"
+                                    checked={(formData.team || []).includes(res.name)}
+                                    onChange={(e) => {
+                                        const newTeam = e.target.checked
+                                            ? [...(formData.team || []), res.name]
+                                            : (formData.team || []).filter(n => n !== res.name);
+                                        setFormData({ ...formData, team: newTeam });
+                                    }}
+                                />
+                                <div className="flex flex-col">
+                                    <span className="text-[12px] font-medium leading-tight">{res.name}</span>
+                                </div>
+                            </label>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function App() {
+            const [activeTab, setActiveTab] = useState('dashboard');
+            const [projects, setProjects] = useState([]);
+            const [resources, setResources] = useState([]);
+            const [loading, setLoading] = useState(false);
+            const [isLive, setIsLive] = useState(false);
+            const [errorMsg, setErrorMsg] = useState("");
+            const [modalConfig, setModalConfig] = useState({ isOpen: false, type: null, mode: 'add', data: null });
+
+            // State pencarian
+            const [searchTeamTab, setSearchTeamTab] = useState("");
+            const [searchProjectTab, setSearchProjectTab] = useState("");
+            const [projectPage, setProjectPage] = useState(1);
+            const projectsPerPage = 5;
+
+            // State untuk melihat detail pegawai
+            const [viewingEmployee, setViewingEmployee] = useState(null);
+
+            // =========================================================================
+            // MASUKKAN URL GOOGLE SCRIPT ANDA DI SINI
+            // =========================================================================
+            const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyEt5puRB26FO6mGfnxVvofBJaDwLtH3O0yd-Ugsugn2D2KezKpi_ynGz7hw24kpLIpRQ/exec";
+
+            // =========================================================================
+            // KECERDASAN SISTEM
+            // =========================================================================
+            const computedProjects = useMemo(() => {
+                return projects.map(p => ({
+                    ...p,
+                    computedStatus: calculateComputedStatus(p)
+                }));
+            }, [projects]);
+
+            const calculatedResources = useMemo(() => {
+                const mapped = resources.map(res => {
+                    const assignedProjects = computedProjects.filter(p =>
+                        p.team &&
+                        p.team.includes(res.name) &&
+                        p.computedStatus !== 'Done'
+                    );
+                    const numProjects = assignedProjects.length;
+                    const workload = numProjects * 25; // 25% per project
+                    return { ...res, projects: numProjects, workload };
+                });
+
+                return mapped.sort((a, b) => b.workload - a.workload);
+            }, [computedProjects, resources]);
+
+            const problematicProjectsCount = computedProjects.filter(p => p.computedStatus === 'Terlambat' || p.computedStatus === 'Beresiko').length;
+            const completedProjectsCount = computedProjects.filter(p => p.computedStatus === 'Done').length;
+
+
+            // FETCH DATA
+            const fetchFromGoogleSheets = async () => {
+                if (!GOOGLE_SCRIPT_URL) return;
+                setLoading(true);
+                setErrorMsg("");
+                try {
+                    const response = await fetch(GOOGLE_SCRIPT_URL);
+                    const contentType = response.headers.get("content-type");
+
+                    if (contentType && contentType.includes("text/html")) {
+                        throw new Error("Tolak Akses (CORS/HTML Block). Pastikan Deploy di Apps Script diatur 'Jalankan sebagai: Saya (Me)' dan 'Akses: Siapa saja (Anyone)'.");
+                    }
+
+                    const data = await response.json();
+
+                    if (data.error) {
+                        setErrorMsg(data.error);
+                        setIsLive(false);
+                    } else {
+                        // DEKODE TRIK JSON UNTUK DETAIL TIM
+                        const processedProjects = (data.projects || []).map(p => {
+                            let parsedTeam = [];
+                            let catDetails = {};
+                            const rawString = p.team ? p.team.join(';') : '';
+
+                            if (rawString.startsWith('{')) {
+                                try {
+                                    const parsed = JSON.parse(rawString);
+                                    parsedTeam = parsed.members || [];
+                                    catDetails = parsed.details || {};
+                                } catch (e) { parsedTeam = p.team || []; }
+                            } else {
+                                parsedTeam = p.team || [];
+                            }
+                            return { ...p, team: parsedTeam, categoryDetails: catDetails };
+                        });
+
+                        setProjects(processedProjects);
+                        setResources(data.resources || []);
+                        setIsLive(true);
+                    }
+                } catch (error) {
+                    console.error("Error Fetch:", error);
+                    setErrorMsg(error.message || "Gagal memuat data dari Google Sheets. Periksa koneksi internet atau URL API Anda.");
+                    setIsLive(false);
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            useEffect(() => { fetchFromGoogleSheets(); }, []);
+
+            // Mengganti Tab dan me-reset view
+            const handleTabChange = (tab) => {
+                setActiveTab(tab);
+                setViewingEmployee(null); // Keluar dari mode detail jika pindah tab
+            };
+
+            // CRUD ACTION
+            const handleCrudAction = async (action, type, payload) => {
+                setLoading(true);
+                setErrorMsg("");
+                try {
+                    const url = `${GOOGLE_SCRIPT_URL}?action=${action}&type=${type}&payload=${encodeURIComponent(JSON.stringify(payload))}`;
+                    const response = await fetch(url);
+                    const contentType = response.headers.get("content-type");
+
+                    if (contentType && contentType.includes("text/html")) {
+                        throw new Error("Gagal menyimpan! Google menolak akses jaringan. Periksa kembali konfigurasi Deploy Anda.");
+                    }
+
+                    const result = await response.json();
+
+                    if (result.success) {
+                        closeModal();
+                        await fetchFromGoogleSheets();
+                    } else {
+                        setErrorMsg(`Gagal menyimpan data: ${result.error}`);
+                    }
+                } catch (error) {
+                    console.error("Error Action:", error);
+                    setErrorMsg(error.message || "Terjadi kesalahan jaringan saat menyimpan data ke database.");
+                } finally {
+                    setLoading(false);
+                }
+            };
+
+            const openModal = (type, mode, data = null) => {
+                let parsedData = data;
+                if (type === 'project' && data) {
+                    let normalizedStatus = data.status === "On Track" ? "On Progress" : data.status;
+
+                    if (data.deadline) {
+                        try {
+                            const d = new Date(data.deadline);
+                            if (!isNaN(d.getTime())) {
+                                const yyyy = d.getFullYear();
+                                const mm = String(d.getMonth() + 1).padStart(2, '0');
+                                const dd = String(d.getDate()).padStart(2, '0');
+                                parsedData = { ...data, deadline: `${yyyy}-${mm}-${dd}`, status: normalizedStatus };
+                            } else {
+                                parsedData = { ...data, status: normalizedStatus };
+                            }
+                        } catch (e) { parsedData = { ...data, status: normalizedStatus }; }
+                    } else {
+                        parsedData = { ...data, status: normalizedStatus };
+                    }
+                }
+                setModalConfig({ isOpen: true, type, mode, data: parsedData });
+            };
+
+            const closeModal = () => setModalConfig({ isOpen: false, type: null, mode: 'add', data: null });
+
+            const handleDelete = (type, id) => {
+                if (window.confirm(`Apakah Anda yakin ingin menghapus data ini secara permanen?`)) {
+                    handleCrudAction('delete', type, { id });
+                }
+            };
+
+            const ErrorBanner = () => {
+                if (!errorMsg) return null;
+                return (
+                    <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-xl flex items-start gap-3 mb-6 shadow-sm fade-in">
+                        <Icon name="alert-triangle" className="shrink-0 mt-0.5 text-red-500" />
+                        <div>
+                            <h4 className="font-bold text-sm">Masalah Koneksi Database</h4>
+                            <p className="text-sm mt-1">{errorMsg}</p>
+                            <p className="text-xs mt-2 text-red-600 font-medium">Solusi: Pastikan Anda telah menimpa seluruh kode backend (Code.gs) dengan yang terbaru dan melakukan Deploy "Versi Baru".</p>
+                        </div>
+                    </div>
+                );
+            };
+
+            // --- KOMPONEN TAB: DASHBOARD ---
+            const renderDashboard = () => {
+                // Menambahkan logika pengurutan (sorting) yang sama persis seperti pada tab Proyek
+                const statusPriority = { "Terlambat": 1, "Beresiko": 2, "On Progress": 3, "Done": 4 };
+                const sortedProjectsForDashboard = [...computedProjects].sort((a, b) =>
+                    statusPriority[a.computedStatus] - statusPriority[b.computedStatus]
+                );
+
+                return (
+                    <div className="space-y-8 fade-in">
+                        <ErrorBanner />
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+                            <MetricCard title="Total Proyek" value={computedProjects.length} trend="Aktif/Selesai" trendUp={true} icon={<div className="text-blue-600"><Icon name="briefcase" size={24} /></div>} color="bg-blue-50" />
+                            <MetricCard title="Risiko / Terlambat" value={problematicProjectsCount} trend="Perlu pantauan" trendUp={false} icon={<div className="text-amber-600"><Icon name="alert-triangle" size={24} /></div>} color="bg-amber-50" />
+                            <MetricCard title="Total Personil" value={resources.length} trend="Tersedia" trendUp={true} icon={<div className="text-emerald-600"><Icon name="users" size={24} /></div>} color="bg-emerald-50" />
+                            <MetricCard title="Proyek Selesai" value={completedProjectsCount} trend="Status: Done" trendUp={true} icon={<div className="text-emerald-600"><Icon name="check-circle-2" size={24} /></div>} color="bg-emerald-50" />
+                        </div>
+
+                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                            <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                                <div className="p-6 border-b border-slate-100 flex justify-between items-center">
+                                    <h3 className="text-lg font-bold text-slate-800">Status Proyek Berjalan</h3>
+                                    <button onClick={() => setActiveTab('proyek')} className="text-sm font-medium text-blue-600 hover:text-blue-800">Lihat Semua</button>
+                                </div>
+                                <div className="p-0 overflow-x-auto min-h-[200px]">
+                                    {sortedProjectsForDashboard.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center h-48 text-slate-400">
+                                            <Icon name="folder-open" size={32} className="mb-2 opacity-50" />
+                                            <p className="text-sm">Belum ada data proyek di Google Sheets.</p>
+                                        </div>
+                                    ) : (
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                                    <th className="p-4 font-semibold">Nama Proyek</th>
+                                                    <th className="p-4 font-semibold">Progress</th>
+                                                    <th className="p-4 font-semibold">Status Makro</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-slate-100 text-sm">
+                                                {/* Menggunakan sortedProjectsForDashboard untuk di-*slice* dan dirender */}
+                                                {sortedProjectsForDashboard.slice(0, 5).map((project) => (
+                                                    <tr key={project.id} className="hover:bg-slate-50 transition-colors">
+                                                        <td className="p-4">
+                                                            <p className="font-semibold text-slate-800">{project.name}</p>
+                                                            <p className="text-xs text-slate-500">{project.client}</p>
+                                                        </td>
+                                                        <td className="p-4 w-48">
+                                                            <div className="flex justify-between text-xs mb-1">
+                                                                <span className="font-medium">{project.progress}%</span>
+                                                            </div>
+                                                            <div className="w-full bg-slate-200 rounded-full h-2">
+                                                                <div className={`h-2 rounded-full ${project.computedStatus === 'Terlambat' ? 'bg-red-500' : project.computedStatus === 'Done' ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${project.progress}%` }}></div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-4"><StatusBadge status={project.computedStatus} /></td>
+                                                    </tr>
+                                                ))}
+                                            </tbody>
+                                        </table>
+                                    )}
+                                </div>
+                            </div>
+
+                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col">
+                                <div className="flex justify-between items-center mb-2">
+                                    <h3 className="text-lg font-bold text-slate-800">Beban Kerja Tim</h3>
+                                    <button onClick={() => setActiveTab('tim')} className="text-sm font-medium text-blue-600 hover:text-blue-800">Lihat Full</button>
+                                </div>
+                                <p className="text-xs text-slate-500 mb-4 pb-4 border-b border-slate-100">Beban dihitung otomatis dari penugasan.</p>
+                                <div className="space-y-5 flex-1 min-h-[150px]">
+                                    {calculatedResources.length === 0 ? (
+                                        <div className="flex flex-col items-center justify-center h-full text-slate-400">
+                                            <Icon name="users" size={32} className="mb-2 opacity-50" />
+                                            <p className="text-sm">Belum ada data tim.</p>
+                                        </div>
+                                    ) : (
+                                        calculatedResources.slice(0, 5).map((res) => {
+                                            const isOverloaded = res.workload > 100;
+                                            const isOptimal = res.workload >= 70 && res.workload <= 100;
+                                            return (
+                                                <div key={res.id}>
+                                                    <div className="flex justify-between items-end mb-1">
+                                                        <div>
+                                                            <p className="text-sm font-semibold text-slate-800">{res.name}</p>
+                                                            <p className="text-xs text-slate-500">{res.projects} Proyek Berjalan</p>
+                                                        </div>
+                                                        <span className={`text-xs font-bold ${isOverloaded ? 'text-red-600' : isOptimal ? 'text-emerald-600' : 'text-blue-600'}`}>{res.workload}%</span>
+                                                    </div>
+                                                    <div className="w-full bg-slate-100 rounded-full h-2.5 flex overflow-hidden">
+                                                        <div className={`h-full ${isOverloaded ? 'bg-red-500' : isOptimal ? 'bg-emerald-500' : 'bg-blue-500'}`} style={{ width: `${Math.min(res.workload, 100)}%` }}></div>
+                                                        {isOverloaded && (<div className="h-full bg-red-800" style={{ width: `${res.workload - 100}%` }}></div>)}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // --- KOMPONEN TAB: PROYEK ---
+            const renderProyek = () => {
+                const statusPriority = { "Terlambat": 1, "Beresiko": 2, "On Progress": 3, "Done": 4 };
+
+                const filteredAndSortedProjects = computedProjects
+                    .filter(p =>
+                        p.name.toLowerCase().includes(searchProjectTab.toLowerCase()) ||
+                        p.client.toLowerCase().includes(searchProjectTab.toLowerCase()) ||
+                        p.id.toLowerCase().includes(searchProjectTab.toLowerCase())
+                    )
+                    .sort((a, b) => statusPriority[a.computedStatus] - statusPriority[b.computedStatus]);
+
+                const totalPages = Math.ceil(filteredAndSortedProjects.length / projectsPerPage);
+                const currentProjects = filteredAndSortedProjects.slice(
+                    (projectPage - 1) * projectsPerPage,
+                    projectPage * projectsPerPage
+                );
+
+                return (
+                    <div className="space-y-6 fade-in">
+                        <ErrorBanner />
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                            <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-800">Daftar List Proyek</h3>
+                                    <p className="text-sm text-slate-500">Kelola proyek dan tentukan penugasan timnya di sini.</p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative">
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                            <Icon name="search" size={16} />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder="Cari proyek/klien..."
+                                            className="w-full md:w-64 pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                                            value={searchProjectTab}
+                                            onChange={(e) => {
+                                                setSearchProjectTab(e.target.value);
+                                                setProjectPage(1);
+                                            }}
+                                        />
+                                    </div>
+                                    <button onClick={() => openModal('project', 'add')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap">
+                                        <Icon name="plus" size={16} /> Tambah
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="p-0 overflow-x-auto min-h-[400px]">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                            <th className="p-4 font-semibold">ID</th>
+                                            <th className="p-4 font-semibold min-w-[200px]">Nama Proyek & Klien</th>
+                                            <th className="p-4 font-semibold min-w-[120px]">Target Makro</th>
+                                            <th className="p-4 font-semibold min-w-[300px]">Rincian & Target Sub-Tim</th>
+                                            <th className="p-4 font-semibold text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 text-sm">
+                                        {filteredAndSortedProjects.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="5" className="p-8 text-center text-slate-400">
+                                                    <Icon name="folder-open" size={32} className="mx-auto mb-2 opacity-50" />
+                                                    <p>Pencarian tidak ditemukan atau data kosong.</p>
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            currentProjects.map((p) => {
+                                                const teamGroups = {
+                                                    Arsitek: [], QS: [], Struktur: [], MEP: [], 'Tata Ruang': [], Lainnya: []
+                                                };
+
+                                                if (p.team && p.team.length > 0) {
+                                                    p.team.forEach(teamMemberName => {
+                                                        const resInfo = resources.find(r => r.name === teamMemberName);
+                                                        if (resInfo) {
+                                                            const cat = getCategoryFromRole(resInfo.role);
+                                                            if (teamGroups[cat]) teamGroups[cat].push(resInfo.name);
+                                                        } else {
+                                                            teamGroups.Lainnya.push(teamMemberName);
+                                                        }
+                                                    });
+                                                }
+
+                                                const renderSubTeamProgress = (title, members) => {
+                                                    if (members.length === 0) return null;
+
+                                                    const details = p.categoryDetails?.[title] || {};
+                                                    const progress = details.progress || 0;
+                                                    const deadline = formatDateIndo(details.deadline);
+
+                                                    const teamWarning = getMicroStatus(progress, details.deadline);
+
+                                                    return (
+                                                        <div className="mb-3 last:mb-0 bg-white border border-slate-200 p-2.5 rounded-lg shadow-sm">
+                                                            <div className="flex justify-between items-center text-[11px] mb-1.5 border-b border-slate-100 pb-1.5">
+                                                                <div className="flex items-center gap-2">
+                                                                    <span className="font-bold text-slate-800">{title}</span>
+                                                                    {teamWarning && teamWarning !== 'On Progress' && teamWarning !== 'Done' && teamWarning !== 'Belum Diatur' && (
+                                                                        <span title="Berdasarkan Deadline Sub-Tim" className={`px-1.5 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${teamWarning === 'Terlambat' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
+                                                                            <Icon name={teamWarning === 'Terlambat' ? 'alert-triangle' : 'clock'} size={10} />
+                                                                            {teamWarning}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                                <span className="text-slate-500 font-medium flex items-center gap-1">
+                                                                    <Icon name="calendar-clock" size={10} />
+                                                                    {details.deadline ? deadline : 'Belum diatur'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex flex-wrap gap-1 mb-2">
+                                                                {members.map((name, idx) => (
+                                                                    <span key={idx} className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-semibold border border-slate-200">
+                                                                        {name}
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                            <div className="flex items-center gap-2">
+                                                                <div className="w-full bg-slate-100 rounded-full h-1.5 flex overflow-hidden">
+                                                                    <div className={`${progress >= 100 ? 'bg-emerald-500' : teamWarning === 'Terlambat' ? 'bg-red-500' : 'bg-blue-500'} h-1.5 rounded-full`} style={{ width: `${progress}%` }}></div>
+                                                                </div>
+                                                                <span className={`text-[10px] font-bold w-8 text-right ${progress >= 100 ? 'text-emerald-700' : teamWarning === 'Terlambat' ? 'text-red-600' : 'text-blue-700'}`}>{progress}%</span>
+                                                            </div>
+                                                        </div>
+                                                    );
+                                                };
+
+                                                return (
+                                                    <tr key={p.id} className="hover:bg-slate-50 transition-colors group align-top">
+                                                        <td className="p-4 font-mono text-xs text-slate-400 pt-5">{p.id}</td>
+                                                        <td className="p-4 pt-5">
+                                                            <p className="font-bold text-slate-800 text-base">{p.name}</p>
+                                                            <p className="text-xs text-slate-500 mb-2">{p.client}</p>
+                                                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium ${p.type?.toLowerCase().includes('perencana') ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-teal-50 text-teal-700 border border-teal-100'}`}>{p.type}</span>
+                                                        </td>
+                                                        <td className="p-4 pt-5">
+                                                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                                                                <div className="mb-3">
+                                                                    <p className="text-[10px] text-slate-500 font-semibold mb-0.5 uppercase tracking-wider">Tenggat Waktu</p>
+                                                                    <p className="text-sm font-bold text-slate-800">{formatDateIndo(p.deadline)}</p>
+                                                                </div>
+                                                                <div className="mb-3">
+                                                                    <div className="flex justify-between text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">
+                                                                        <span>Total Progress</span>
+                                                                        <span>{p.progress}%</span>
+                                                                    </div>
+                                                                    <div className="w-full bg-slate-200 rounded-full h-2">
+                                                                        <div className={`h-2 rounded-full ${p.computedStatus === 'Terlambat' ? 'bg-red-500' : p.computedStatus === 'Done' ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${p.progress}%` }}></div>
+                                                                    </div>
+                                                                </div>
+                                                                <StatusBadge status={p.computedStatus} />
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-4">
+                                                            {(!p.team || p.team.length === 0) ? (
+                                                                <div className="flex flex-col items-center justify-center h-24 text-slate-400 border border-dashed border-slate-200 rounded-lg bg-slate-50">
+                                                                    <p className="text-xs italic">Belum ada tim dialokasikan</p>
+                                                                </div>
+                                                            ) : (
+                                                                <div className="flex flex-col gap-0 text-xs bg-slate-50 border border-slate-200 p-2 rounded-xl">
+                                                                    {renderSubTeamProgress("Arsitek", teamGroups.Arsitek)}
+                                                                    {renderSubTeamProgress("QS", teamGroups.QS)}
+                                                                    {renderSubTeamProgress("Struktur", teamGroups.Struktur)}
+                                                                    {renderSubTeamProgress("MEP", teamGroups.MEP)}
+                                                                    {renderSubTeamProgress("Tata Ruang", teamGroups['Tata Ruang'])}
+                                                                    {renderSubTeamProgress("Lainnya", teamGroups.Lainnya)}
+                                                                </div>
+                                                            )}
+                                                        </td>
+                                                        <td className="p-4 text-right opacity-0 group-hover:opacity-100 transition-opacity pt-5">
+                                                            <div className="flex justify-end gap-2 flex-col items-end">
+                                                                <button onClick={() => openModal('project', 'edit', p)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg border border-blue-200"><Icon name="edit" size={14} /> Edit Data</button>
+                                                                <button onClick={() => handleDelete('project', p.id)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 rounded-lg border border-red-200"><Icon name="trash" size={14} /> Hapus</button>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            {totalPages > 1 && (
+                                <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50 sm:px-6">
+                                    <div className="flex justify-between flex-1 sm:hidden">
+                                        <button onClick={() => setProjectPage(Math.max(1, projectPage - 1))} disabled={projectPage === 1} className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50">Sebelumnya</button>
+                                        <button onClick={() => setProjectPage(Math.min(totalPages, projectPage + 1))} disabled={projectPage === totalPages} className="relative inline-flex items-center px-4 py-2 ml-3 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50">Selanjutnya</button>
+                                    </div>
+                                    <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                                        <div>
+                                            <p className="text-xs text-slate-600">
+                                                Menampilkan <span className="font-semibold text-slate-800">{(projectPage - 1) * projectsPerPage + 1}</span> hingga <span className="font-semibold text-slate-800">{Math.min(projectPage * projectsPerPage, filteredAndSortedProjects.length)}</span> dari <span className="font-semibold text-slate-800">{filteredAndSortedProjects.length}</span> proyek
+                                            </p>
+                                        </div>
+                                        <div>
+                                            <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
+                                                <button onClick={() => setProjectPage(Math.max(1, projectPage - 1))} disabled={projectPage === 1} className="relative inline-flex items-center px-2 py-1.5 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50">
+                                                    <span className="sr-only">Previous</span>
+                                                    &larr;
+                                                </button>
+                                                {Array.from({ length: totalPages }, (_, i) => i + 1).map(num => (
+                                                    <button key={num} onClick={() => setProjectPage(num)} className={`relative inline-flex items-center px-3 py-1.5 border text-xs font-semibold ${projectPage === num ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-slate-300 text-slate-500 hover:bg-slate-50'}`}>
+                                                        {num}
+                                                    </button>
+                                                ))}
+                                                <button onClick={() => setProjectPage(Math.min(totalPages, projectPage + 1))} disabled={projectPage === totalPages} className="relative inline-flex items-center px-2 py-1.5 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50">
+                                                    <span className="sr-only">Next</span>
+                                                    &rarr;
+                                                </button>
+                                            </nav>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                        </div>
+                    </div>
+                );
+            };
+
+            // --- KOMPONEN TAB: TIM & DETAIL PEGAWAI ---
+            const renderEmployeeDetail = () => {
+                const empCategory = getCategoryFromRole(viewingEmployee.role);
+                const assignedProjects = computedProjects.filter(p =>
+                    p.team &&
+                    p.team.includes(viewingEmployee.name) &&
+                    p.computedStatus !== 'Done'
+                );
+
+                return (
+                    <div className="space-y-6 fade-in">
+                        <div className="flex items-center gap-4">
+                            <button onClick={() => setViewingEmployee(null)} className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
+                                <Icon name="arrow-left" size={20} className="text-slate-600" />
+                            </button>
+                            <div>
+                                <h2 className="text-2xl font-bold text-slate-800">Rincian Penugasan: {viewingEmployee.name}</h2>
+                                <p className="text-sm text-slate-500">{viewingEmployee.role} • Kapasitas Terpakai: <strong className={viewingEmployee.workload > 100 ? 'text-red-600' : 'text-blue-600'}>{viewingEmployee.workload}%</strong></p>
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                            <div className="p-6 border-b border-slate-100">
+                                <h3 className="text-lg font-bold text-slate-800">Daftar Proyek Aktif</h3>
+                                <p className="text-sm text-slate-500">Menampilkan target progres dan deadline spesifik untuk Sub-Tim <strong>{empCategory}</strong> pada masing-masing proyek.</p>
+                            </div>
+                            <div className="p-0 overflow-x-auto min-h-[300px]">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                            <th className="p-4 font-semibold">Nama Proyek</th>
+                                            <th className="p-4 font-semibold">Status Proyek (Makro)</th>
+                                            <th className="p-4 font-semibold">Tugas Sub-Tim ({empCategory})</th>
+                                            <th className="p-4 font-semibold">Deadline Sub-Tim</th>
+                                            <th className="p-4 font-semibold">Status Sub-Tim</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 text-sm">
+                                        {assignedProjects.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="5" className="p-8 text-center text-slate-400">
+                                                    <Icon name="briefcase" size={32} className="mx-auto mb-2 opacity-50" />
+                                                    <p>Belum ada proyek yang ditugaskan kepada personil ini.</p>
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            assignedProjects.map(p => {
+                                                const microDetails = p.categoryDetails?.[empCategory] || {};
+                                                const mProg = microDetails.progress || 0;
+                                                const mDead = microDetails.deadline;
+                                                const mStatus = getMicroStatus(mProg, mDead);
+
+                                                return (
+                                                    <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                                                        <td className="p-4">
+                                                            <p className="font-semibold text-slate-800">{p.name}</p>
+                                                            <p className="text-xs text-slate-500">{p.client}</p>
+                                                        </td>
+                                                        <td className="p-4">
+                                                            <StatusBadge status={p.computedStatus} />
+                                                        </td>
+                                                        <td className="p-4 w-48">
+                                                            <div className="flex justify-between text-xs mb-1">
+                                                                <span className="font-medium text-slate-700">{mProg}% Selesai</span>
+                                                            </div>
+                                                            <div className="w-full bg-slate-200 rounded-full h-2">
+                                                                <div className={`h-2 rounded-full ${mStatus === 'Terlambat' ? 'bg-red-500' : mStatus === 'Done' ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${mProg}%` }}></div>
+                                                            </div>
+                                                        </td>
+                                                        <td className="p-4 font-medium text-slate-700">
+                                                            {mDead ? formatDateIndo(mDead) : <span className="text-slate-400 italic text-xs">Belum diatur</span>}
+                                                        </td>
+                                                        <td className="p-4">
+                                                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1 w-max ${mStatus === 'Done' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
+                                                                mStatus === 'Terlambat' ? 'bg-red-50 text-red-700 border-red-200' :
+                                                                    mStatus === 'Beresiko' ? 'bg-amber-50 text-amber-700 border-amber-200' :
+                                                                        mStatus === 'Belum Diatur' ? 'bg-slate-50 text-slate-500 border-slate-200' :
+                                                                            'bg-blue-50 text-blue-700 border-blue-200'
+                                                                }`}>
+                                                                {mStatus === 'Done' && <Icon name="check-circle-2" size={12} />}
+                                                                {mStatus === 'Terlambat' && <Icon name="alert-triangle" size={12} />}
+                                                                {mStatus === 'Beresiko' && <Icon name="clock" size={12} />}
+                                                                {mStatus === 'On Progress' && <Icon name="clock" size={12} />}
+                                                                {mStatus}
+                                                            </span>
+                                                        </td>
+                                                    </tr>
+                                                )
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderTim = () => {
+                if (viewingEmployee) return renderEmployeeDetail();
+
+                const filteredResourcesTab = calculatedResources.filter(res =>
+                    res.name.toLowerCase().includes(searchTeamTab.toLowerCase()) ||
+                    res.role.toLowerCase().includes(searchTeamTab.toLowerCase())
+                );
+
+                return (
+                    <div className="space-y-6 fade-in">
+                        <ErrorBanner />
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                            <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                                <div>
+                                    <h3 className="text-lg font-bold text-slate-800">Alokasi & Beban Kerja Tim</h3>
+                                    <p className="text-sm text-slate-500">Otomatis dihitung dari jumlah proyek yang mereka pegang (1 Proyek = 25% Beban).</p>
+                                </div>
+                                <div className="flex items-center gap-3">
+                                    <div className="relative">
+                                        <div className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
+                                            <Icon name="search" size={16} />
+                                        </div>
+                                        <input
+                                            type="text"
+                                            placeholder="Cari nama/peran..."
+                                            className="w-full md:w-64 pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                                            value={searchTeamTab}
+                                            onChange={(e) => setSearchTeamTab(e.target.value)}
+                                        />
+                                    </div>
+                                    <button onClick={() => openModal('team', 'add')} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap">
+                                        <Icon name="plus" size={16} /> Tambah
+                                    </button>
+                                </div>
+                            </div>
+                            <div className="p-0 overflow-x-auto min-h-[400px]">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                            <th className="p-4 font-semibold">Nama & Peran</th>
+                                            <th className="p-4 font-semibold">Total Proyek</th>
+                                            <th className="p-4 font-semibold">Indikator Beban Kerja</th>
+                                            <th className="p-4 font-semibold text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 text-sm">
+                                        {filteredResourcesTab.length === 0 ? (
+                                            <tr>
+                                                <td colSpan="4" className="p-8 text-center text-slate-400">
+                                                    <Icon name="users" size={32} className="mx-auto mb-2 opacity-50" />
+                                                    <p>Pencarian tidak ditemukan.</p>
+                                                </td>
+                                            </tr>
+                                        ) : (
+                                            filteredResourcesTab.map((res) => {
+                                                const isOverloaded = res.workload > 100;
+                                                return (
+                                                    <tr key={res.id} className="hover:bg-slate-50 transition-colors group">
+                                                        <td className="p-4">
+                                                            <p className="font-semibold text-slate-800">{res.name}</p>
+                                                            <p className="text-xs text-slate-500">{res.role}</p>
+                                                        </td>
+                                                        <td className="p-4"><span className="px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold">{res.projects} Proyek Aktif</span></td>
+                                                        <td className="p-4 w-64">
+                                                            <div className="flex justify-between items-end mb-1">
+                                                                <span className={`text-xs font-bold ${isOverloaded ? 'text-red-600' : 'text-blue-600'}`}>{res.workload}% Kapasitas Terpakai</span>
+                                                            </div>
+                                                            <div className="w-full bg-slate-100 rounded-full h-2.5 flex overflow-hidden">
+                                                                <div className={`h-full ${isOverloaded ? 'bg-red-500' : 'bg-blue-500'}`} style={{ width: `${Math.min(res.workload, 100)}%` }}></div>
+                                                                {isOverloaded && (<div className="h-full bg-red-800" style={{ width: `${res.workload - 100}%` }}></div>)}
+                                                            </div>
+                                                            {isOverloaded && <p className="text-[10px] text-red-500 mt-1 font-medium">Beban melampaui batas wajar</p>}
+                                                        </td>
+                                                        <td className="p-4 text-right">
+                                                            <div className="flex justify-end gap-2 items-center">
+                                                                {/* TOMBOL DETAIL BARU */}
+                                                                <button onClick={() => setViewingEmployee(res)} className="px-2 py-1.5 text-xs font-semibold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg flex items-center gap-1.5 border border-indigo-200 transition-colors">
+                                                                    <Icon name="folder-open" size={14} /> Rincian
+                                                                </button>
+                                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-2">
+                                                                    <button onClick={() => openModal('team', 'edit', res)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Icon name="edit" size={16} /></button>
+                                                                    <button onClick={() => handleDelete('team', res.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Icon name="trash" size={16} /></button>
+                                                                </div>
+                                                            </div>
+                                                        </td>
+                                                    </tr>
+                                                );
+                                            })
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // --- KOMPONEN TAB: TIMESHEET ---
+            const renderTimesheet = () => (
+                <div className="flex flex-col items-center justify-center h-[60vh] text-center fade-in">
+                    <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-4">
+                        <Icon name="calendar-clock" size={40} />
+                    </div>
+                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Modul Timesheet</h2>
+                    <p className="text-slate-500 max-w-md">Modul pengisian log harian karyawan sedang dalam tahap pengembangan dan akan segera dirilis pada pembaruan sistem berikutnya.</p>
+                </div>
+            );
+
+            // --- MODAL FORMULAR ---
+            const ModalForm = () => {
+                if (!modalConfig.isOpen) return null;
+
+                const isProject = modalConfig.type === 'project';
+
+                const [formData, setFormData] = useState(
+                    modalConfig.data || (isProject
+                        // Dihapus planProgress dari state awal
+                        ? { name: '', client: '', type: 'Perencana', status: 'On Progress', progress: 0, deadline: '', team: [], categoryDetails: {} }
+                        : { name: '', role: 'Arsitek' }
+                    )
+                );
+
+                const [searchTeam, setSearchTeam] = useState("");
+
+                const handleChange = (e) => {
+                    const { name, value } = e.target;
+                    setFormData({ ...formData, [name]: value });
+                };
+
+                // Handler khusus untuk detail kategori
+                const handleCategoryDetailChange = (category, field, value) => {
+                    setFormData(prev => ({
+                        ...prev,
+                        categoryDetails: {
+                            ...prev.categoryDetails,
+                            [category]: {
+                                ...(prev.categoryDetails?.[category] || {}),
+                                [field]: value
+                            }
+                        }
+                    }));
+                };
+
+                // Dapatkan Kategori Aktif untuk menampilkan form progres spesifik tim & menghitung rata-rata
+                const activeCategories = Array.from(new Set((formData.team || []).map(memberName => {
+                    const res = resources.find(r => r.name === memberName);
+                    return res ? getCategoryFromRole(res.role) : 'Lainnya';
+                })));
+
+                // HITUNG PROGRESS TOTAL OTOMATIS BERDASARKAN RATA-RATA SUB-TIM
+                const computedTotalProgress = useMemo(() => {
+                    if (!isProject || activeCategories.length === 0) return 0;
+                    let total = 0;
+                    activeCategories.forEach(cat => {
+                        total += parseInt(formData.categoryDetails?.[cat]?.progress) || 0;
+                    });
+                    return Math.round(total / activeCategories.length);
+                }, [formData.categoryDetails, activeCategories, isProject]);
+
+
+                const handleSubmit = (e) => {
+                    e.preventDefault();
+                    let finalPayload = { ...formData };
+                    if (isProject) {
+                        // OTOMATISASI PROGRESS PROJECT (TIDAK LAGI MANUAL)
+                        finalPayload.progress = computedTotalProgress;
+
+                        // Bersihkan kategori detail jika member dari kategori tersebut sudah dihapus
+                        const activeCats = new Set((finalPayload.team || []).map(memberName => {
+                            const res = resources.find(r => r.name === memberName);
+                            return res ? getCategoryFromRole(res.role) : 'Lainnya';
+                        }));
+
+                        const cleanDetails = {};
+                        activeCats.forEach(cat => {
+                            if (finalPayload.categoryDetails && finalPayload.categoryDetails[cat]) {
+                                cleanDetails[cat] = finalPayload.categoryDetails[cat];
+                            }
+                        });
+
+                        const teamDataObj = {
+                            members: finalPayload.team || [],
+                            details: cleanDetails
+                        };
+
+                        // Enkripsi ke string agar aman masuk backend lama
+                        finalPayload.team = JSON.stringify(teamDataObj).replace(/;/g, ',');
+                    }
+                    handleCrudAction(modalConfig.mode, modalConfig.type, finalPayload);
+                };
+
+                const filteredResources = resources.filter(res =>
+                    res.name.toLowerCase().includes(searchTeam.toLowerCase()) ||
+                    res.role.toLowerCase().includes(searchTeam.toLowerCase())
+                );
+
+                return (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4 fade-in">
+                        <div className="bg-white rounded-2xl shadow-xl w-full max-w-2xl overflow-hidden flex flex-col max-h-[95vh]">
+                            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+                                <h3 className="font-bold text-lg text-slate-800">
+                                    {modalConfig.mode === 'add' ? 'Tambah ' : 'Edit '}
+                                    {isProject ? 'Data Proyek Terpadu' : 'Data Personil'}
+                                </h3>
+                                <button onClick={closeModal} className="text-slate-400 hover:text-red-500 transition-colors"><Icon name="x" size={20} /></button>
+                            </div>
+
+                            <div className="p-6 overflow-y-auto">
+                                <form id="crudForm" onSubmit={handleSubmit} className="space-y-5">
+                                    {isProject ? (
+                                        <>
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div className="col-span-2 md:col-span-1">
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Proyek</label>
+                                                    <input required name="name" value={formData.name} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors" placeholder="Cth: Perencanaan RSUD" />
+                                                </div>
+                                                <div className="col-span-2 md:col-span-1">
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Klien / Owner</label>
+                                                    <input required name="client" value={formData.client} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors" placeholder="Cth: Dinas PUPR" />
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Tipe Proyek</label>
+                                                    <select name="type" value={formData.type} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-slate-50 focus:bg-white">
+                                                        <option value="Perencanaan">Perencanaan</option><option value="Pengawasan">Pengawasan</option><option value="Manajemen Konstruksi">Manajemen Konstruksi</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Status Proyek (Makro)</label>
+                                                    <select name="status" value={formData.status} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-slate-50 focus:bg-white">
+                                                        <option value="On Progress">On Progress</option>
+                                                        <option value="Done">Done</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+
+                                            <div className="grid grid-cols-2 gap-4 bg-slate-100 p-3 rounded-lg border border-slate-200">
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Progress Keseluruhan Proyek (%)</label>
+                                                    <input
+                                                        type="number"
+                                                        readOnly
+                                                        value={computedTotalProgress}
+                                                        className="w-full p-2 border border-slate-200 bg-slate-200 text-slate-600 font-bold rounded text-sm outline-none cursor-not-allowed"
+                                                        title="Nilai ini dihitung otomatis"
+                                                    />
+                                                    <p className="text-[9px] text-slate-500 mt-1">Dihitung otomatis dari rata-rata progress sub-tim.</p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Tenggat Waktu Kontrak Akhir</label>
+                                                    <input type="date" name="deadline" value={formData.deadline} onChange={handleChange} className="w-full p-2 border border-slate-300 rounded text-sm outline-none focus:border-blue-500" />
+                                                </div>
+                                            </div>
+
+                                            {/* BAGIAN PENUGASAN TIM */}
+                                            <div className="pt-2 border-t border-slate-200">
+                                                <label className="block text-sm font-bold text-slate-800 mb-2">Penugasan Personil</label>
+
+                                                <div className="relative mb-3">
+                                                    <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
+                                                        <Icon name="search" size={14} />
+                                                    </div>
+                                                    <input
+                                                        type="text"
+                                                        placeholder="Cari nama personil untuk ditugaskan..."
+                                                        className="w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-md text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all shadow-sm"
+                                                        value={searchTeam}
+                                                        onChange={(e) => setSearchTeam(e.target.value)}
+                                                    />
+                                                </div>
+
+                                                <div className="border border-slate-200 rounded-lg bg-slate-50 p-3 max-h-48 overflow-y-auto">
+                                                    {resources.length === 0 ? (
+                                                        <p className="text-xs text-slate-400 italic">Belum ada data tim. Tambahkan di menu Alokasi Tim.</p>
+                                                    ) : filteredResources.length === 0 ? (
+                                                        <p className="text-xs text-slate-400 italic">Pencarian tidak ditemukan.</p>
+                                                    ) : (
+                                                        <>
+                                                            <TeamCheckboxGroup title="Tim Arsitek" roleFilter={r => r.role.toLowerCase().includes('arsitek')} isOptional={false} filteredResources={filteredResources} formData={formData} setFormData={setFormData} />
+                                                            <TeamCheckboxGroup title="Tim Quantity Surveyor (QS)" roleFilter={r => r.role.toLowerCase() === 'qs' || r.role.toLowerCase().includes('quantity')} isOptional={false} filteredResources={filteredResources} formData={formData} setFormData={setFormData} />
+                                                            <TeamCheckboxGroup title="Tim Struktur" roleFilter={r => r.role.toLowerCase().includes('struktur')} isOptional={true} filteredResources={filteredResources} formData={formData} setFormData={setFormData} />
+                                                            <TeamCheckboxGroup title="Tim MEP" roleFilter={r => r.role.toLowerCase().includes('mep')} isOptional={true} filteredResources={filteredResources} formData={formData} setFormData={setFormData} />
+                                                            <TeamCheckboxGroup title="Tim Tata Ruang" roleFilter={r => r.role.toLowerCase().includes('tata ruang') || r.role.toLowerCase().includes('planologi')} isOptional={true} filteredResources={filteredResources} formData={formData} setFormData={setFormData} />
+                                                            <TeamCheckboxGroup title="Lainnya" roleFilter={r => !r.role.toLowerCase().includes('arsitek') && !(r.role.toLowerCase() === 'qs' || r.role.toLowerCase().includes('quantity')) && !r.role.toLowerCase().includes('struktur') && !r.role.toLowerCase().includes('mep') && !(r.role.toLowerCase().includes('tata ruang') || r.role.toLowerCase().includes('planologi'))} isOptional={true} filteredResources={filteredResources} formData={formData} setFormData={setFormData} />
+                                                        </>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* BAGIAN TARGET MICRO PER SUB-TIM */}
+                                            {activeCategories.length > 0 && (
+                                                <div className="pt-4 border-t border-slate-100">
+                                                    <label className="flex items-center gap-1.5 text-sm font-bold text-slate-800 mb-3"><Icon name="target" size={16} className="text-blue-600" /> Target Khusus Per Sub-Tim</label>
+                                                    <div className="space-y-2 border border-slate-200 rounded-lg p-3 bg-blue-50/30">
+                                                        {['Arsitek', 'QS', 'Struktur', 'MEP', 'Tata Ruang', 'Lainnya'].map(cat => {
+                                                            if (!activeCategories.includes(cat)) return null;
+
+                                                            const details = formData.categoryDetails?.[cat] || { progress: 0, deadline: '' };
+
+                                                            return (
+                                                                <div key={cat} className="bg-white border border-slate-200 p-2.5 rounded-lg flex items-center gap-4 shadow-sm">
+                                                                    <div className="w-1/3 border-r border-slate-100 pr-2">
+                                                                        <h4 className="text-xs font-bold text-slate-700">{cat}</h4>
+                                                                        <p className="text-[9px] text-slate-500 truncate mt-0.5" title={formData.team.filter(m => { const r = resources.find(x => x.name === m); return r && getCategoryFromRole(r.role) === cat; }).join(', ')}>
+                                                                            {formData.team.filter(m => {
+                                                                                const r = resources.find(x => x.name === m);
+                                                                                return r && getCategoryFromRole(r.role) === cat;
+                                                                            }).join(', ')}
+                                                                        </p>
+                                                                    </div>
+                                                                    <div className="w-1/3">
+                                                                        <label className="block text-[9px] font-bold text-slate-500 mb-1 uppercase">Progress Tim (%)</label>
+                                                                        <input type="number" min="0" max="100" className="w-full p-1.5 border border-slate-200 rounded text-xs outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors"
+                                                                            value={details.progress || 0}
+                                                                            onChange={(e) => handleCategoryDetailChange(cat, 'progress', e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                    <div className="w-1/3">
+                                                                        <label className="block text-[9px] font-bold text-slate-500 mb-1 uppercase">Deadline Tim</label>
+                                                                        <input type="date" className="w-full p-1.5 border border-slate-200 rounded text-xs outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors"
+                                                                            value={details.deadline || ''}
+                                                                            onChange={(e) => handleCategoryDetailChange(cat, 'deadline', e.target.value)}
+                                                                        />
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                </div>
+                                            )}
+                                        </>
+                                    ) : (
+                                        <>
+                                            <div><label className="block text-xs font-semibold text-slate-600 mb-1">Nama Personil</label><input required name="name" value={formData.name} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500" placeholder="Cth: Ir. Budi Santoso" /></div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Peran / Jabatan</label>
+                                                <select name="role" value={formData.role} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500">
+                                                    <option value="Arsitek">Arsitek</option>
+                                                    <option value="QS">Quantity Surveyor (QS)</option>
+                                                    <option value="Struktur">Struktur</option>
+                                                    <option value="MEP">MEP</option>
+                                                    <option value="Tata Ruang">Tata Ruang / Planologi</option>
+                                                    <option value="Lainnya">Lainnya</option>
+                                                </select>
+                                            </div>
+                                            <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg mt-4">
+                                                <p className="text-xs text-blue-800 font-medium leading-relaxed">
+                                                    💡 <strong className="font-bold">Info Cerdas:</strong> Jumlah proyek dan Persentase Beban Kerja orang ini tidak perlu diinput manual. Sistem akan otomatis menghitungnya berdasarkan seberapa banyak proyek yang ia tangani di menu List Proyek.
+                                                </p>
+                                            </div>
+                                        </>
+                                    )}
+                                </form>
+                            </div>
+
+                            <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-slate-50">
+                                <button onClick={closeModal} type="button" className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Batal</button>
+                                <button form="crudForm" type="submit" disabled={loading} className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm disabled:opacity-70">
+                                    {loading ? <Icon name="refresh-ccw" className="animate-spin" size={16} /> : <Icon name="save" size={16} />}
+                                    Simpan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            return (
+                <div className="flex h-screen text-slate-800">
+                    <aside className="w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0">
+                        <div className="p-6">
+                            <div className="flex items-center gap-3 text-white mb-2">
+                                <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-lg shadow-lg shadow-blue-600/30">YT</div>
+                                <h1 className="text-xl font-bold tracking-wide">YTTA</h1>
+                            </div>
+                            <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Yang Teknis - Teknis Aja</p>
+                        </div>
+                        <nav className="flex-1 px-4 space-y-2 mt-4">
+                            <SidebarItem icon={<Icon name="layout-dashboard" size={20} />} label="Dashboard" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
+                            <SidebarItem icon={<Icon name="briefcase" size={20} />} label="List Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
+                            <SidebarItem icon={<Icon name="users" size={20} />} label="Alokasi Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
+                            <SidebarItem icon={<Icon name="calendar-clock" size={20} />} label="Timesheet" isActive={activeTab === 'timesheet'} onClick={() => handleTabChange('timesheet')} />
+                        </nav>
+                    </aside>
+
+                    <main className="flex-1 flex flex-col overflow-hidden bg-slate-50 relative">
+                        <header className="h-20 bg-white border-b border-slate-200 flex items-center justify-between px-8 z-10 shrink-0">
+                            <div>
+                                <h2 className="text-xl font-bold text-slate-800">
+                                    {activeTab === 'dashboard' && 'Ringkasan Informasi Proyek Dan Personil'}
+                                    {activeTab === 'proyek' && 'List Proyek'}
+                                    {activeTab === 'tim' && 'Alokasi Tim'}
+                                    {activeTab === 'timesheet' && 'Timesheet'}
+                                </h2>
+                                <p className="text-xs text-slate-500 mt-0.5">Sistem Yang Teknis Teknis Aja</p>
+                            </div>
+                            <div className="flex items-center gap-4">
+                                <div className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm ${isLive ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-amber-100 text-amber-700 border border-amber-200'}`}>
+                                    <Icon name="database" size={14} /> {isLive ? 'Live (Google Sheets)' : 'Mode Offline / Error'}
+                                </div>
+                                <button onClick={fetchFromGoogleSheets} disabled={loading || !GOOGLE_SCRIPT_URL} className={`p-2 rounded-full transition-all ${loading ? 'animate-spin text-blue-500' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`} title="Refresh Database">
+                                    <Icon name="refresh-ccw" size={20} />
+                                </button>
+                            </div>
+                        </header>
+
+                        <div className="flex-1 overflow-auto p-8 relative">
+                            {loading && (
+                                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-40 flex flex-col items-center justify-center rounded-xl">
+                                    <div className="animate-spin text-blue-600 mb-4"><Icon name="refresh-ccw" size={32} /></div>
+                                    <p className="font-semibold text-slate-700">Sinkronisasi Database...</p>
+                                </div>
+                            )}
+
+                            <div className="max-w-7xl mx-auto">
+                                {activeTab === 'dashboard' && renderDashboard()}
+                                {activeTab === 'proyek' && renderProyek()}
+                                {activeTab === 'tim' && renderTim()}
+                                {activeTab === 'timesheet' && renderTimesheet()}
+                            </div>
+                        </div>
+                    </main>
+
+                    <ModalForm />
+                </div>
+            );
+        }
+
+        // --- SUB-COMPONENTS ---
+        function SidebarItem({ icon, label, isActive, onClick }) {
+            return (
+                <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}>
+                    {icon} <span className="font-medium text-sm">{label}</span>
+                </button>
+            );
+        }
+
+        function MetricCard({ title, value, trend, trendUp, icon, color }) {
+            return (
+                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                    <div className="flex justify-between items-start mb-4">
+                        <div className={`p-3 rounded-xl ${color}`}>{icon}</div>
+                        {trendUp !== null && (
+                            <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                                <Icon name={trendUp ? 'trending-up' : 'trending-down'} size={12} /> {trend}
+                            </div>
+                        )}
+                    </div>
+                    <div>
+                        <h4 className="text-slate-500 text-sm font-medium mb-1">{title}</h4>
+                        <p className="text-3xl font-bold text-slate-800">{value}</p>
+                    </div>
+                </div>
+            );
+        }
+
+        function StatusBadge({ status }) {
+            let style = 'bg-slate-50 text-slate-700 border-slate-200';
+            if (status === 'Done') style = 'bg-emerald-50 text-emerald-700 border-emerald-200';
+            else if (status === 'On Progress') style = 'bg-blue-50 text-blue-700 border-blue-200';
+            else if (status === 'Terlambat') style = 'bg-red-50 text-red-700 border-red-200';
+            else if (status === 'Beresiko') style = 'bg-amber-50 text-amber-700 border-amber-200';
+
+            return (
+                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${style} flex items-center gap-1.5 w-max`}>
+                    {status === 'Done' && <Icon name="check-circle-2" size={12} />}
+                    {status === 'On Progress' && <Icon name="clock" size={12} />}
+                    {status === 'Terlambat' && <Icon name="alert-triangle" size={12} />}
+                    {status === 'Beresiko' && <Icon name="clock" size={12} />}
+                    {status}
+                </span>
+            );
+        }
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<App />);
+    </script>
+</body>
+
+</html>
