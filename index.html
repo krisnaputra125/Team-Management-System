@@ -97,14 +97,14 @@
             try {
                 const date = new Date(dateString);
                 if (isNaN(date.getTime())) return dateString;
-                
+
                 const months = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agt', 'Sep', 'Okt', 'Nov', 'Des'];
                 const d = date.getDate();
                 const m = months[date.getMonth()];
                 const y = date.getFullYear();
                 const h = String(date.getHours()).padStart(2, '0');
                 const min = String(date.getMinutes()).padStart(2, '0');
-                
+
                 return `${d} ${m} ${y}, ${h}:${min}`;
             } catch (e) {
                 return dateString;
@@ -646,7 +646,7 @@
                                                             </span>
                                                             {p.description ? (
                                                                 <div className="bg-blue-50/50 rounded border border-blue-100 overflow-hidden">
-                                                                    <p className="text-[11px] text-slate-600 line-clamp-2 px-2 pt-1.5 leading-relaxed"><span className="text-blue-400 mr-1">📝</span>{p.description}</p>
+                                                                    <p className="text-[11px] text-slate-600 px-2 py-1.5 leading-relaxed whitespace-pre-wrap"><span className="text-blue-400 mr-1">📝</span>{p.description}</p>
                                                                     <p className="text-[9px] text-slate-400 px-2 pb-1.5 pt-1 mt-1 border-t border-blue-50 bg-blue-50/30 font-medium">Terakhir diupdate: {p.descriptionUpdatedAt ? formatDateTimeIndo(p.descriptionUpdatedAt) : '-'}</p>
                                                                 </div>
                                                             ) : <p className="text-[11px] text-slate-400 italic">Belum ada deskripsi update</p>}
@@ -1226,8 +1226,8 @@
                         <div className="p-4 lg:p-6">
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-3 text-white">
-                                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-lg shadow-lg shadow-blue-600/30">YT</div>
-                                    <h1 className="text-xl font-bold tracking-wide">YTTA</h1>
+                                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-lg shadow-lg shadow-blue-600/30">PT</div>
+                                    <h1 className="text-xl font-bold tracking-wide">Project tracker</h1>
                                 </div>
                                 <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
                                     <Icon name="x" size={20} />
