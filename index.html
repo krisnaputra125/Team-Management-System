@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Project Tracker (YANG TEKNIS - TEKNIS AJA)</title>
+    <title>Team Management System (YANG TEKNIS - TEKNIS AJA)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- React & ReactDOM -->
@@ -196,7 +196,7 @@
 
             const totalProjects = involvedProjects.length;
             const empCat = getCategoryFromRole(employee.role);
-            
+
             if (totalProjects === 0) {
                 return { score: 100, delayed: 0, atRisk: 0, avgProgress: 0, status: "Ideal", isOverloaded: false, totalProjects: 0, rating: employee.rating || 3 };
             }
@@ -234,7 +234,7 @@
             let score = 100;
             score -= (delayedCount * 15);
             score -= (atRiskCount * 5);
-            
+
             if (isOverloaded) {
                 if (delayedCount === 0) {
                     score += ((totalProjects - 4) * 10);
@@ -251,11 +251,11 @@
             if (score < 60) kpiStatus = "Perlu Perhatian";
             else if (score < 80) kpiStatus = "Cukup";
 
-            return { 
-                score: Math.round(score), 
-                delayed: delayedCount, 
-                atRisk: atRiskCount, 
-                avgProgress: Math.round(avgProgress), 
+            return {
+                score: Math.round(score),
+                delayed: delayedCount,
+                atRisk: atRiskCount,
+                avgProgress: Math.round(avgProgress),
                 status: kpiStatus,
                 isOverloaded,
                 totalProjects,
@@ -523,9 +523,9 @@
                         <div className="flex flex-col sm:flex-row gap-4 justify-start items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
                             <div className="relative w-full sm:w-96">
                                 <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-                                <input 
-                                    type="text" 
-                                    placeholder="Cari nama atau peran pegawai..." 
+                                <input
+                                    type="text"
+                                    placeholder="Cari nama atau peran pegawai..."
                                     value={searchKPITab}
                                     onChange={(e) => setSearchKPITab(e.target.value)}
                                     className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
@@ -568,7 +568,7 @@
                                                     <td className="p-4">
                                                         <div className="flex justify-center items-center gap-0.5 text-amber-400">
                                                             {[...Array(5)].map((_, i) => (
-                                                                <svg key={i} xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={i < kpi.rating ? "currentColor" : "none"} stroke={i < kpi.rating ? "currentColor" : "#cbd5e1"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+                                                                <svg key={i} xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={i < kpi.rating ? "currentColor" : "none"} stroke={i < kpi.rating ? "currentColor" : "#cbd5e1"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
                                                             ))}
                                                         </div>
                                                     </td>
@@ -1394,8 +1394,8 @@
                                                 <label className="block text-xs font-semibold text-slate-600 mb-1">Rating Kinerja (1-5)</label>
                                                 <div className="flex gap-2 items-center p-1">
                                                     {[1, 2, 3, 4, 5].map(star => (
-                                                        <button 
-                                                            key={star} 
+                                                        <button
+                                                            key={star}
                                                             type="button"
                                                             onClick={() => setFormData({ ...formData, rating: star })}
                                                             className={`transition-colors focus:outline-none ${star <= (formData.rating || 3) ? 'text-amber-500' : 'text-slate-200'}`}
@@ -1435,8 +1435,8 @@
                         <div className="p-4 lg:p-6">
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-3 text-white">
-                                    <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-lg shadow-lg shadow-blue-600/30">PT</div>
-                                    <h1 className="text-xl font-bold tracking-wide">Project Tracker</h1>
+                                    <div className="w-8 h-8 shrink-0 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-lg shadow-lg shadow-blue-600/30">TM</div>
+                                    <h1 className="text-base font-bold tracking-wide leading-tight">Team Management System</h1>
                                 </div>
                                 <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
                                     <Icon name="x" size={20} />
