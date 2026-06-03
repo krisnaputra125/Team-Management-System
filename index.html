@@ -185,13 +185,8 @@
         const calculateEmployeeKPI = (employee, allProjects) => {
             const activeProjects = allProjects.filter(p => p.status !== "Done" && p.computedStatus !== "Done");
             const involvedProjects = activeProjects.filter(p => {
-                try {
-                    const teamData = JSON.parse(p.team || "{}");
-                    const members = Array.isArray(teamData.members) ? teamData.members : (Array.isArray(p.team) ? p.team : []);
-                    return members.includes(employee.name);
-                } catch {
-                    return (Array.isArray(p.team) ? p.team : []).includes(employee.name);
-                }
+                const members = Array.isArray(p.team) ? p.team : [];
+                return members.includes(employee.name);
             });
 
             const totalProjects = involvedProjects.length;
@@ -208,17 +203,12 @@
             involvedProjects.forEach(p => {
                 let pProgress = 0;
                 let pStatus = "On Progress";
-                try {
-                    const teamData = JSON.parse(p.team || "{}");
-                    if (teamData.details && teamData.details[empCat]) {
-                        const micro = teamData.details[empCat];
-                        pProgress = Number(micro.progress || 0);
-                        pStatus = getMicroStatus(pProgress, micro.deadline);
-                    } else {
-                        pProgress = Number(p.progress || 0);
-                        pStatus = p.computedStatus;
-                    }
-                } catch {
+
+                if (p.categoryDetails && p.categoryDetails[empCat]) {
+                    const micro = p.categoryDetails[empCat];
+                    pProgress = Number(micro.progress || 0);
+                    pStatus = getMicroStatus(pProgress, micro.deadline);
+                } else {
                     pProgress = Number(p.progress || 0);
                     pStatus = p.computedStatus;
                 }
@@ -233,7 +223,7 @@
 
             let score = 100;
             score -= (delayedCount * 15);
-            score -= (atRiskCount * 5);
+            // Penalti beresiko (H-3) dihapus karena karyawan masih memiliki waktu untuk menyelesaikannya.
 
             if (isOverloaded) {
                 if (delayedCount === 0) {
@@ -489,7 +479,7 @@
             // --- KOMPONEN TAB: KPI & EVALUASI ---
             const renderKPI = () => {
                 const allKpiData = resources.map(res => {
-                    const kpi = calculateEmployeeKPI(res, projects);
+                    const kpi = calculateEmployeeKPI(res, computedProjects);
                     return { ...res, ...kpi };
                 });
 
@@ -503,9 +493,17 @@
 
                 return (
                     <div className="space-y-6 fade-in">
+                        <div className="bg-indigo-50 border border-indigo-200 text-indigo-800 p-4 rounded-xl flex items-start gap-3 shadow-sm">
+                            <Icon name="alert-triangle" className="shrink-0 mt-0.5 text-indigo-600" />
+                            <div>
+                                <h4 className="font-bold text-sm">Tahap Pengembangan (BETA)</h4>
+                                <p className="text-sm mt-1">Menu Evaluasi dan KPI ini belum resmi digunakan dan masih dalam tahap uji coba (pengembangan logika). Data di bawah ini belum menjadi hasil penilaian akhir.</p>
+                            </div>
+                        </div>
+
                         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-800">Evaluasi & KPI Personil</h3>
+                                <h3 className="text-xl font-bold text-slate-800">Evaluasi & KPI Personil (BETA)</h3>
                                 <p className="text-sm text-slate-500 mt-1">Mengukur kinerja berdasarkan ketepatan waktu, manajemen beban, dan rating.</p>
                             </div>
                             <div className="flex gap-2">
@@ -1448,8 +1446,7 @@
                             <SidebarItem icon={<Icon name="layout-dashboard" size={20} />} label="Dashboard" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
                             <SidebarItem icon={<Icon name="briefcase" size={20} />} label="List Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
                             <SidebarItem icon={<Icon name="users" size={20} />} label="Alokasi Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
-                            <SidebarItem icon={<Icon name="calendar-clock" size={20} />} label="Timesheet" isActive={activeTab === 'timesheet'} onClick={() => handleTabChange('timesheet')} />
-                            <SidebarItem icon={<Icon name="bar-chart" size={20} />} label="Evaluasi & KPI" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
+                            <SidebarItem icon={<Icon name="bar-chart" size={20} />} label="Evaluasi & KPI (BETA)" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
                         </nav>
                     </aside>
 
@@ -1464,7 +1461,6 @@
                                         {activeTab === 'dashboard' && 'Ringkasan Proyek & Personil'}
                                         {activeTab === 'proyek' && 'List Proyek'}
                                         {activeTab === 'tim' && 'Alokasi Tim'}
-                                        {activeTab === 'timesheet' && 'Timesheet'}
                                         {activeTab === 'kpi' && 'Evaluasi & KPI Tim'}
                                     </h2>
                                     <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 hidden sm:block">Sistem Yang Teknis Teknis Aja</p>
