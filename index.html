@@ -182,6 +182,64 @@
             return 'Lainnya';
         };
 
+        const calculateLeaderKPI = (employee, allProjects) => {
+            const involvedProjects = allProjects.filter(p => p.teamLeader === employee.name);
+            const activeProjects = involvedProjects.filter(p => p.status !== "Done" && p.computedStatus !== "Done");
+
+            const totalActive = activeProjects.length;
+            let score = 100;
+            let delayedCount = 0;
+            let atRiskCount = 0;
+            let totalProgress = 0;
+            let doneOnTimeBonus = 0;
+
+            involvedProjects.forEach(p => {
+                if (p.computedStatus === "Terlambat" && p.status !== "Done") {
+                    delayedCount++;
+                    score -= 20;
+                } else if (p.computedStatus === "Beresiko" && p.status !== "Done") {
+                    atRiskCount++;
+                }
+                
+                if (p.status === "Done" && p.computedStatus !== "Terlambat") {
+                    doneOnTimeBonus++;
+                    score += 10;
+                }
+
+                if (p.status !== "Done" && p.computedStatus !== "Done") {
+                    totalProgress += Number(p.progress || 0);
+                }
+            });
+
+            const avgProgress = totalActive > 0 ? totalProgress / totalActive : 0;
+            const isOverloaded = (totalActive * 25) > 100;
+
+            if (isOverloaded) {
+                if (delayedCount === 0) score += ((totalActive - 4) * 10);
+                else score -= 10;
+            }
+            score += (avgProgress * 0.1);
+
+            if (score > 100) score = 100;
+            if (score < 0) score = 0;
+
+            let kpiStatus = "Sangat Baik";
+            if (score < 60) kpiStatus = "Perlu Perhatian";
+            else if (score < 80) kpiStatus = "Cukup";
+
+            return {
+                score: totalActive === 0 && doneOnTimeBonus === 0 ? 100 : Math.round(score),
+                delayed: delayedCount,
+                atRisk: atRiskCount,
+                avgProgress: Math.round(avgProgress),
+                status: kpiStatus,
+                isOverloaded,
+                totalProjects: totalActive,
+                rating: employee.rating || 3,
+                bonusDone: doneOnTimeBonus
+            };
+        };
+
         const calculateEmployeeKPI = (employee, allProjects) => {
             const activeProjects = allProjects.filter(p => p.status !== "Done" && p.computedStatus !== "Done");
             const involvedProjects = activeProjects.filter(p => {
@@ -365,6 +423,7 @@
                         const processedProjects = (data.projects || []).map(p => {
                             let parsedTeam = [];
                             let catDetails = {};
+                            let leader = "";
                             const rawString = p.team ? p.team.join(';') : '';
 
                             if (rawString.startsWith('{')) {
@@ -372,15 +431,27 @@
                                     const parsed = JSON.parse(rawString);
                                     parsedTeam = parsed.members || [];
                                     catDetails = parsed.details || {};
+                                    leader = parsed.leader || "";
                                 } catch (e) { parsedTeam = p.team || []; }
                             } else {
                                 parsedTeam = p.team || [];
                             }
-                            return { ...p, team: parsedTeam, categoryDetails: catDetails };
+                            return { ...p, team: parsedTeam, categoryDetails: catDetails, teamLeader: leader };
+                        });
+
+                        const processedResources = (data.resources || []).map(r => {
+                            let role = r.role || "";
+                            let level = "Staff";
+                            if (role.includes("|")) {
+                                const parts = role.split("|");
+                                role = parts[0];
+                                level = parts[1];
+                            }
+                            return { ...r, role, level };
                         });
 
                         setProjects(processedProjects);
-                        setResources(data.resources || []);
+                        setResources(processedResources);
                         setIsLive(true);
                     }
                 } catch (error) {
@@ -478,18 +549,77 @@
 
             // --- KOMPONEN TAB: KPI & EVALUASI ---
             const renderKPI = () => {
-                const allKpiData = resources.map(res => {
+                const leaders = resources.filter(r => r.level === 'Team Leader');
+                const staffs = resources.filter(r => r.level !== 'Team Leader');
+
+                const allKpiDataLeaders = leaders.map(res => {
+                    const kpi = calculateLeaderKPI(res, computedProjects);
+                    return { ...res, ...kpi };
+                });
+
+                const allKpiDataStaffs = staffs.map(res => {
                     const kpi = calculateEmployeeKPI(res, computedProjects);
                     return { ...res, ...kpi };
                 });
 
-                const kpiData = allKpiData
+                const kpiDataLeaders = allKpiDataLeaders
                     .filter(res => res.name.toLowerCase().includes(searchKPITab.toLowerCase()) || res.role.toLowerCase().includes(searchKPITab.toLowerCase()))
                     .sort((a, b) => b.score - a.score);
 
-                const topPerformers = allKpiData.filter(k => k.score >= 80);
-                const needsAttention = allKpiData.filter(k => k.score < 60 || (k.isOverloaded && k.delayed > 0));
-                const healthyCount = allKpiData.length - needsAttention.length;
+                const kpiDataStaffs = allKpiDataStaffs
+                    .filter(res => res.name.toLowerCase().includes(searchKPITab.toLowerCase()) || res.role.toLowerCase().includes(searchKPITab.toLowerCase()))
+                    .sort((a, b) => b.score - a.score);
+
+                const allKpiCombined = [...allKpiDataLeaders, ...allKpiDataStaffs];
+                const needsAttention = allKpiCombined.filter(k => k.score < 60 || (k.isOverloaded && k.delayed > 0));
+                const healthyCount = allKpiCombined.length - needsAttention.length;
+
+                const renderTableRows = (data, isLeaderTable) => {
+                    if (data.length === 0) {
+                        return <tr><td colSpan="5" className="p-8 text-center text-slate-400">Belum ada data personil.</td></tr>;
+                    }
+                    return data.map((kpi, idx) => (
+                        <tr key={kpi.id} className="hover:bg-slate-50 transition-colors">
+                            <td className="p-4 flex items-center gap-3">
+                                <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white shrink-0 ${idx === 0 ? 'bg-amber-400 shadow-lg shadow-amber-400/30' : idx === 1 ? 'bg-slate-300' : idx === 2 ? 'bg-amber-600' : 'bg-slate-800'}`}>
+                                    {idx + 1}
+                                </div>
+                                <div>
+                                    <div className="flex items-center gap-2">
+                                        <p className="font-bold text-slate-800">{kpi.name}</p>
+                                        {isLeaderTable && <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded flex items-center gap-1"><Icon name="star" size={10} className="fill-amber-500" /> Leader</span>}
+                                    </div>
+                                    <p className="text-xs text-slate-500">{kpi.role}</p>
+                                </div>
+                            </td>
+                            <td className="p-4 text-center">
+                                <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${kpi.score >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : kpi.score >= 60 ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
+                                    {kpi.score}
+                                </span>
+                            </td>
+                            <td className="p-4">
+                                <div className="flex justify-center items-center gap-0.5 text-amber-400">
+                                    {[...Array(5)].map((_, i) => (
+                                        <svg key={i} xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={i < kpi.rating ? "currentColor" : "none"} stroke={i < kpi.rating ? "currentColor" : "#cbd5e1"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
+                                    ))}
+                                </div>
+                            </td>
+                            <td className="p-4 text-center">
+                                <span className="font-semibold text-slate-700">{kpi.avgProgress}%</span>
+                            </td>
+                            <td className="p-4">
+                                <div className="flex flex-col gap-1 items-start">
+                                    {isLeaderTable && kpi.bonusDone > 0 && <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">+{kpi.bonusDone * 10} Bonus Tepat Waktu</span>}
+                                    {kpi.isOverloaded && kpi.delayed > 0 && <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">Overload & Terlambat</span>}
+                                    {kpi.isOverloaded && kpi.delayed === 0 && <span className="text-[10px] bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">Performa Ekstra (>4 Proyek)</span>}
+                                    {kpi.delayed > 0 && <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">{kpi.delayed} Proyek Terlambat</span>}
+                                    {kpi.atRisk > 0 && <span className="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">{kpi.atRisk} Proyek Beresiko</span>}
+                                    {!kpi.isOverloaded && kpi.delayed === 0 && kpi.atRisk === 0 && <span className="text-xs text-slate-400 italic">Bersih & Aman</span>}
+                                </div>
+                            </td>
+                        </tr>
+                    ));
+                };
 
                 return (
                     <div className="space-y-6 fade-in">
@@ -523,7 +653,7 @@
                                 <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                 <input
                                     type="text"
-                                    placeholder="Cari nama atau peran pegawai..."
+                                    placeholder="Cari nama atau Tim..."
                                     value={searchKPITab}
                                     onChange={(e) => setSearchKPITab(e.target.value)}
                                     className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
@@ -531,64 +661,54 @@
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                            <div className="p-0 overflow-x-auto min-h-[400px]">
+                        {/* TABEL TEAM LEADER */}
+                        <div className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden flex flex-col mt-6">
+                            <div className="p-4 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
+                                <Icon name="star" size={20} className="fill-amber-500 text-amber-600" />
+                                <h3 className="font-bold text-amber-900">Leaderboard: Team Leader</h3>
+                            </div>
+                            <div className="p-0 overflow-x-auto min-h-[150px]">
                                 <table className="w-full text-left border-collapse min-w-[700px]">
                                     <thead>
                                         <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
                                             <th className="p-4 font-semibold whitespace-nowrap">Peringkat & Personil</th>
                                             <th className="p-4 font-semibold text-center whitespace-nowrap">Skor KPI</th>
                                             <th className="p-4 font-semibold text-center whitespace-nowrap">Rating Manual</th>
-                                            <th className="p-4 font-semibold text-center whitespace-nowrap">Progress Rata-rata</th>
+                                            <th className="p-4 font-semibold text-center whitespace-nowrap">Progress Makro Rata-rata</th>
                                             <th className="p-4 font-semibold whitespace-nowrap">Rincian Masalah</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 text-sm">
-                                        {kpiData.length === 0 ? (
-                                            <tr><td colSpan="5" className="p-8 text-center text-slate-400">Belum ada data personil.</td></tr>
-                                        ) : (
-                                            kpiData.map((kpi, idx) => (
-                                                <tr key={kpi.id} className="hover:bg-slate-50 transition-colors">
-                                                    <td className="p-4 flex items-center gap-3">
-                                                        <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white shrink-0 ${idx === 0 ? 'bg-amber-400 shadow-lg shadow-amber-400/30' : idx === 1 ? 'bg-slate-300' : idx === 2 ? 'bg-amber-600' : 'bg-slate-800'}`}>
-                                                            {idx + 1}
-                                                        </div>
-                                                        <div>
-                                                            <p className="font-bold text-slate-800">{kpi.name}</p>
-                                                            <p className="text-xs text-slate-500">{kpi.role}</p>
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-4 text-center">
-                                                        <span className={`inline-block px-3 py-1 rounded-full text-xs font-bold border ${kpi.score >= 80 ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : kpi.score >= 60 ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-red-50 text-red-700 border-red-200'}`}>
-                                                            {kpi.score}
-                                                        </span>
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <div className="flex justify-center items-center gap-0.5 text-amber-400">
-                                                            {[...Array(5)].map((_, i) => (
-                                                                <svg key={i} xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill={i < kpi.rating ? "currentColor" : "none"} stroke={i < kpi.rating ? "currentColor" : "#cbd5e1"} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" /></svg>
-                                                            ))}
-                                                        </div>
-                                                    </td>
-                                                    <td className="p-4 text-center">
-                                                        <span className="font-semibold text-slate-700">{kpi.avgProgress}%</span>
-                                                    </td>
-                                                    <td className="p-4">
-                                                        <div className="flex flex-col gap-1 items-start">
-                                                            {kpi.isOverloaded && kpi.delayed > 0 && <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">Overload & Terlambat</span>}
-                                                            {kpi.isOverloaded && kpi.delayed === 0 && <span className="text-[10px] bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">Performa Ekstra (>4 Proyek)</span>}
-                                                            {kpi.delayed > 0 && <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">{kpi.delayed} Proyek Terlambat</span>}
-                                                            {kpi.atRisk > 0 && <span className="text-[10px] bg-slate-100 text-slate-600 border border-slate-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">{kpi.atRisk} Proyek Beresiko</span>}
-                                                            {!kpi.isOverloaded && kpi.delayed === 0 && kpi.atRisk === 0 && <span className="text-xs text-slate-400 italic">Bersih & Aman</span>}
-                                                        </div>
-                                                    </td>
-                                                </tr>
-                                            ))
-                                        )}
+                                        {renderTableRows(kpiDataLeaders, true)}
                                     </tbody>
                                 </table>
                             </div>
                         </div>
+
+                        {/* TABEL STAFF */}
+                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col mt-6">
+                            <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
+                                <Icon name="users" size={20} className="text-slate-600" />
+                                <h3 className="font-bold text-slate-800">Leaderboard: Staff & Anggota Tim</h3>
+                            </div>
+                            <div className="p-0 overflow-x-auto min-h-[300px]">
+                                <table className="w-full text-left border-collapse min-w-[700px]">
+                                    <thead>
+                                        <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                            <th className="p-4 font-semibold whitespace-nowrap">Peringkat & Personil</th>
+                                            <th className="p-4 font-semibold text-center whitespace-nowrap">Skor KPI</th>
+                                            <th className="p-4 font-semibold text-center whitespace-nowrap">Rating Manual</th>
+                                            <th className="p-4 font-semibold text-center whitespace-nowrap">Progress Sub-Tim Rata-rata</th>
+                                            <th className="p-4 font-semibold whitespace-nowrap">Rincian Masalah</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 text-sm">
+                                        {renderTableRows(kpiDataStaffs, false)}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
                     </div>
                 );
             };
@@ -835,6 +955,14 @@
                                                             <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium mb-2 ${p.type?.toLowerCase().includes('perencana') ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-teal-50 text-teal-700 border border-teal-100'}`}>
                                                                 {p.type?.toLowerCase().includes('perencana') ? 'Perencanaan' : p.type?.toLowerCase().includes('pengawas') ? 'Pengawasan' : p.type}
                                                             </span>
+                                                            {p.teamLeader && (
+                                                                <div className="mb-2">
+                                                                    <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded text-xs font-semibold">
+                                                                        <Icon name="star" size={12} className="fill-amber-500" />
+                                                                        Team Leader: {p.teamLeader}
+                                                                    </span>
+                                                                </div>
+                                                            )}
                                                             {p.description ? (
                                                                 <div className="bg-blue-50/50 rounded border border-blue-100 overflow-hidden">
                                                                     <p className="text-[11px] text-slate-600 px-2 py-1.5 leading-relaxed whitespace-pre-wrap"><span className="text-blue-400 mr-1">📝</span>{p.description}</p>
@@ -937,6 +1065,11 @@
                     p.computedStatus !== 'Done'
                 );
 
+                const ledProjects = computedProjects.filter(p => 
+                    p.teamLeader === viewingEmployee.name && 
+                    p.computedStatus !== 'Done'
+                );
+
                 return (
                     <div className="space-y-6 fade-in">
                         <div className="flex items-center gap-4">
@@ -950,8 +1083,65 @@
                         </div>
 
                         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                            {viewingEmployee.level === 'Team Leader' && (
+                                <div className="mb-6 border-b border-slate-200">
+                                    <div className="p-6 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
+                                        <Icon name="star" size={20} className="fill-amber-500 text-amber-600" />
+                                        <div>
+                                            <h3 className="text-lg font-bold text-amber-900">Daftar Proyek yang Di-Lead</h3>
+                                            <p className="text-sm text-amber-700">Tanggung jawab pengawasan keseluruhan proyek secara Makro.</p>
+                                        </div>
+                                    </div>
+                                    <div className="p-0 overflow-x-auto min-h-[150px]">
+                                        <table className="w-full text-left border-collapse">
+                                            <thead>
+                                                <tr className="bg-amber-50/50 text-amber-800 text-xs uppercase tracking-wider border-b border-amber-100">
+                                                    <th className="p-4 font-semibold">Nama Proyek & Klien</th>
+                                                    <th className="p-4 font-semibold text-center">Tenggat Waktu Kontrak</th>
+                                                    <th className="p-4 font-semibold">Total Progress</th>
+                                                    <th className="p-4 font-semibold">Status Makro</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-amber-100 text-sm bg-white">
+                                                {ledProjects.length === 0 ? (
+                                                    <tr>
+                                                        <td colSpan="4" className="p-8 text-center text-slate-400">
+                                                            <Icon name="briefcase" size={32} className="mx-auto mb-2 opacity-50" />
+                                                            <p>Belum ada proyek yang dipimpin.</p>
+                                                        </td>
+                                                    </tr>
+                                                ) : (
+                                                    ledProjects.map(p => (
+                                                        <tr key={`led-${p.id}`} className="hover:bg-amber-50/30 transition-colors">
+                                                            <td className="p-4">
+                                                                <p className="font-semibold text-slate-800">{p.name}</p>
+                                                                <p className="text-xs text-slate-500">{p.client}</p>
+                                                            </td>
+                                                            <td className="p-4 text-center font-medium text-slate-700">
+                                                                {p.deadline ? formatDateIndo(p.deadline) : <span className="text-slate-400 italic text-xs">Belum diatur</span>}
+                                                            </td>
+                                                            <td className="p-4 w-48">
+                                                                <div className="flex justify-between text-xs mb-1">
+                                                                    <span className="font-medium text-slate-700">{p.progress}% Selesai</span>
+                                                                </div>
+                                                                <div className="w-full bg-slate-200 rounded-full h-2">
+                                                                    <div className={`h-2 rounded-full ${p.computedStatus === 'Terlambat' ? 'bg-red-500' : p.computedStatus === 'Done' ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${p.progress}%` }}></div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-4">
+                                                                <StatusBadge status={p.computedStatus} />
+                                                            </td>
+                                                        </tr>
+                                                    ))
+                                                )}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="p-6 border-b border-slate-100">
-                                <h3 className="text-lg font-bold text-slate-800">Daftar Proyek Aktif</h3>
+                                <h3 className="text-lg font-bold text-slate-800">Daftar Penugasan Sub-Tim Aktif</h3>
                                 <p className="text-sm text-slate-500">Menampilkan target progres dan deadline spesifik untuk Sub-Tim <strong>{empCategory}</strong> pada masing-masing proyek.</p>
                             </div>
                             <div className="p-0 overflow-x-auto min-h-[300px]">
@@ -1050,7 +1240,7 @@
                                         </div>
                                         <input
                                             type="text"
-                                            placeholder="Cari nama/peran..."
+                                            placeholder="Cari nama/Tim..."
                                             className="w-full md:w-64 pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
                                             value={searchTeamTab}
                                             onChange={(e) => setSearchTeamTab(e.target.value)}
@@ -1065,7 +1255,7 @@
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
-                                            <th className="p-4 font-semibold whitespace-nowrap">Nama & Peran</th>
+                                            <th className="p-4 font-semibold whitespace-nowrap">Nama & Tim</th>
                                             <th className="p-4 font-semibold whitespace-nowrap text-center">Total Proyek</th>
                                             <th className="p-4 font-semibold whitespace-nowrap">Indikator Beban Kerja</th>
                                             <th className="p-4 font-semibold whitespace-nowrap text-right">Aksi</th>
@@ -1087,6 +1277,9 @@
                                                         <td className="p-4">
                                                             <p className="font-semibold text-slate-800">{res.name}</p>
                                                             <p className="text-xs text-slate-500">{res.role}</p>
+                                                            {res.level === 'Team Leader' && (
+                                                                <p className="text-[10px] font-bold text-amber-600 mt-1 flex items-center gap-1"><Icon name="star" size={10} className="fill-amber-500" /> Team Leader</p>
+                                                            )}
                                                         </td>
                                                         <td className="p-4 text-center"><span className="inline-block px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold whitespace-nowrap">{res.projects} Proyek Aktif</span></td>
                                                         <td className="p-4 w-64">
@@ -1143,8 +1336,8 @@
                 const [formData, setFormData] = useState(
                     modalConfig.data || (isProject
                         // Dihapus planProgress dari state awal
-                        ? { name: '', client: '', type: 'Perencanaan', status: 'On Progress', progress: 0, deadline: '', description: '', descriptionUpdatedAt: '', team: [], categoryDetails: {} }
-                        : { name: '', role: 'Arsitek', rating: 3 }
+                        ? { name: '', client: '', type: 'Perencanaan', status: 'On Progress', progress: 0, deadline: '', description: '', descriptionUpdatedAt: '', team: [], categoryDetails: {}, teamLeader: '' }
+                        : { name: '', role: 'Arsitek', level: 'Staff', rating: 3 }
                     )
                 );
 
@@ -1218,11 +1411,15 @@
 
                         const teamDataObj = {
                             members: finalPayload.team || [],
-                            details: cleanDetails
+                            details: cleanDetails,
+                            leader: finalPayload.teamLeader || ""
                         };
 
                         // Enkripsi ke string agar aman masuk backend lama
                         finalPayload.team = JSON.stringify(teamDataObj).replace(/;/g, ',');
+                    } else {
+                        // Gabungkan role dan level untuk personil
+                        finalPayload.role = `${finalPayload.role}|${finalPayload.level}`;
                     }
                     handleCrudAction(modalConfig.mode, modalConfig.type, finalPayload);
                 };
@@ -1301,6 +1498,19 @@
                                             <div className="pt-2 border-t border-slate-200">
                                                 <label className="block text-sm font-bold text-slate-800 mb-2">Penugasan Personil</label>
 
+                                                <div className="mb-4 bg-amber-50 p-3 rounded-lg border border-amber-200 shadow-sm">
+                                                    <label className="block text-xs font-bold text-amber-800 mb-1 flex items-center gap-1.5"><Icon name="star" size={14} className="text-amber-500" /> Pilih Team Leader Proyek</label>
+                                                    <select name="teamLeader" value={formData.teamLeader || ""} onChange={handleChange} className="w-full p-2.5 border border-amber-200 rounded-lg text-sm outline-none focus:border-amber-500 bg-white shadow-sm font-semibold text-slate-700">
+                                                        <option value="">-- Tidak Ada Team Leader --</option>
+                                                        {resources.filter(r => r.level === 'Team Leader').map(r => (
+                                                            <option key={r.id} value={r.name}>{r.name} ({r.role})</option>
+                                                        ))}
+                                                    </select>
+                                                    <p className="text-[10px] text-amber-700 mt-1.5 font-medium">Hanya menampilkan personil dengan Jabatan 'Team Leader'. Pilihan ini langsung mengaktifkan KPI Team Leader.</p>
+                                                </div>
+
+                                                <label className="block text-xs font-bold text-slate-700 mb-1">Anggota Sub-Tim</label>
+
                                                 <div className="relative mb-3">
                                                     <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
                                                         <Icon name="search" size={14} />
@@ -1378,7 +1588,7 @@
                                         <>
                                             <div><label className="block text-xs font-semibold text-slate-600 mb-1">Nama Personil</label><input required name="name" value={formData.name} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500" placeholder="Cth: Ir. Budi Santoso" /></div>
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Peran / Jabatan</label>
+                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Tim</label>
                                                 <select name="role" value={formData.role} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500">
                                                     <option value="Arsitek">Arsitek</option>
                                                     <option value="QS">Quantity Surveyor (QS)</option>
@@ -1386,6 +1596,13 @@
                                                     <option value="MEP">MEP</option>
                                                     <option value="Tata Ruang">Tata Ruang / Planologi</option>
                                                     <option value="Lainnya">Lainnya</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Tingkat Jabatan</label>
+                                                <select name="level" value={formData.level} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-white">
+                                                    <option value="Staff">Staff</option>
+                                                    <option value="Team Leader">Team Leader</option>
                                                 </select>
                                             </div>
                                             <div>
