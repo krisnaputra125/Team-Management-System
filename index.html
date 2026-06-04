@@ -219,6 +219,7 @@
                 else score -= 10;
             }
             score += (avgProgress * 0.1);
+            score += (employee.manualPoints || 0);
 
             if (score > 100) score = 100;
             if (score < 0) score = 0;
@@ -228,7 +229,7 @@
             else if (score < 80) kpiStatus = "Cukup";
 
             return {
-                score: totalActive === 0 && doneOnTimeBonus === 0 ? 100 : Math.round(score),
+                score: (totalActive === 0 && doneOnTimeBonus === 0 && !(employee.manualPoints)) ? 100 : Math.round(score),
                 delayed: delayedCount,
                 atRisk: atRiskCount,
                 avgProgress: Math.round(avgProgress),
@@ -291,6 +292,7 @@
                 }
             }
             score += (avgProgress * 0.1);
+            score += (employee.manualPoints || 0);
 
             if (score > 100) score = 100;
             if (score < 0) score = 0;
@@ -300,7 +302,7 @@
             else if (score < 80) kpiStatus = "Cukup";
 
             return {
-                score: Math.round(score),
+                score: (totalProjects === 0 && !(employee.manualPoints)) ? 100 : Math.round(score),
                 delayed: delayedCount,
                 atRisk: atRiskCount,
                 avgProgress: Math.round(avgProgress),
@@ -443,12 +445,14 @@
                         const processedResources = (data.resources || []).map(r => {
                             let role = r.role || "";
                             let level = "Staff";
+                            let manualPoints = 0;
                             if (role.includes("|")) {
                                 const parts = role.split("|");
                                 role = parts[0];
-                                level = parts[1];
+                                level = parts[1] || "Staff";
+                                manualPoints = parseInt(parts[2]) || 0;
                             }
-                            return { ...r, role, level };
+                            return { ...r, role, level, manualPoints };
                         });
 
                         setProjects(processedProjects);
@@ -1336,11 +1340,12 @@
                 const isProject = modalConfig.type === 'project';
 
                 const [formData, setFormData] = useState(
-                    modalConfig.data || (isProject
-                        // Dihapus planProgress dari state awal
-                        ? { name: '', client: '', type: 'Perencanaan', status: 'On Progress', progress: 0, deadline: '', description: '', descriptionUpdatedAt: '', team: [], categoryDetails: {}, teamLeader: '' }
-                        : { name: '', role: 'Arsitek', level: 'Staff', rating: 3 }
-                    )
+                    modalConfig.data 
+                        ? { ...modalConfig.data, adjustmentInput: 0 } 
+                        : (isProject
+                            ? { name: '', client: '', type: 'Perencanaan', status: 'On Progress', progress: 0, deadline: '', description: '', descriptionUpdatedAt: '', team: [], categoryDetails: {}, teamLeader: '' }
+                            : { name: '', role: 'Arsitek', level: 'Staff', rating: 3, manualPoints: 0, adjustmentInput: 0 }
+                        )
                 );
 
                 const [searchTeam, setSearchTeam] = useState("");
@@ -1379,6 +1384,23 @@
                     });
                     return Math.round(total / activeCategories.length);
                 }, [formData.categoryDetails, activeCategories, isProject]);
+
+                const handleResetTo100 = () => {
+                    const dummyEmp = { ...formData };
+                    let calculated = null;
+                    if (formData.level === 'Team Leader') {
+                        calculated = calculateLeaderKPI(dummyEmp, computedProjects);
+                    } else {
+                        calculated = calculateEmployeeKPI(dummyEmp, computedProjects);
+                    }
+                    const gap = 100 - calculated.score;
+                    setFormData(prev => ({ ...prev, adjustmentInput: gap }));
+                };
+
+                const handleResetToAuto = () => {
+                    const gap = -(formData.manualPoints || 0);
+                    setFormData(prev => ({ ...prev, adjustmentInput: gap }));
+                };
 
 
                 const handleSubmit = (e) => {
@@ -1420,8 +1442,9 @@
                         // Enkripsi ke string agar aman masuk backend lama
                         finalPayload.team = JSON.stringify(teamDataObj).replace(/;/g, ',');
                     } else {
-                        // Gabungkan role dan level untuk personil
-                        finalPayload.role = `${finalPayload.role}|${finalPayload.level}`;
+                        // Gabungkan role, level, dan manualPoints untuk personil
+                        const newManualPoints = (finalPayload.manualPoints || 0) + (finalPayload.adjustmentInput || 0);
+                        finalPayload.role = `${finalPayload.role}|${finalPayload.level}|${newManualPoints}`;
                     }
                     handleCrudAction(modalConfig.mode, modalConfig.type, finalPayload);
                 };
@@ -1620,6 +1643,39 @@
                                                         </button>
                                                     ))}
                                                     <span className="text-xs text-slate-500 ml-2 font-medium">Bintang {formData.rating || 3}</span>
+                                                </div>
+                                            </div>
+                                            
+                                            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+                                                <div>
+                                                    <label className="block text-xs font-bold text-slate-700 mb-1">Tambah / Kurang Skor KPI (+/-)</label>
+                                                    <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Nilai ini akan langsung ditambahkan secara relatif ke skor terakhir. Contoh: Jika skor 60 dan Anda isi 40, skor menjadi 100.</p>
+                                                    <div className="flex flex-wrap gap-3 items-center mt-2">
+                                                        <input 
+                                                            type="number" 
+                                                            name="adjustmentInput" 
+                                                            value={formData.adjustmentInput === '' || isNaN(formData.adjustmentInput) ? '' : (formData.adjustmentInput !== undefined ? formData.adjustmentInput : 0)} 
+                                                            onChange={(e) => setFormData({ ...formData, adjustmentInput: e.target.value === '' ? '' : parseInt(e.target.value) })} 
+                                                            className="w-24 p-2 border border-slate-300 rounded-lg text-sm text-center outline-none focus:border-blue-500 bg-white" 
+                                                        />
+                                                        <button 
+                                                            type="button"
+                                                            onClick={handleResetTo100}
+                                                            className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-200 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                                                        >
+                                                            <Icon name="target" size={12} />
+                                                            Reset ke 100
+                                                        </button>
+                                                        <button 
+                                                            type="button"
+                                                            onClick={handleResetToAuto}
+                                                            className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                                                            title="Hapus semua penyesuaian manual dan kembalikan ke perhitungan murni otomatis proyek."
+                                                        >
+                                                            <Icon name="refresh-ccw" size={12} />
+                                                            Hapus Manual
+                                                        </button>
+                                                    </div>
                                                 </div>
                                             </div>
                                             <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg mt-4">
