@@ -383,12 +383,13 @@
 
             const calculatedResources = useMemo(() => {
                 const mapped = resources.map(res => {
-                    const assignedProjects = computedProjects.filter(p =>
-                        p.team &&
-                        p.team.includes(res.name) &&
-                        p.computedStatus !== 'Done'
-                    );
-                    const numProjects = assignedProjects.length;
+                    let numProjects = 0;
+                    computedProjects.forEach(p => {
+                        if (p.computedStatus !== 'Done') {
+                            if (p.team && p.team.includes(res.name)) numProjects++;
+                            if (p.teamLeader === res.name) numProjects++;
+                        }
+                    });
                     const workload = numProjects * 25; // 25% per project
                     return { ...res, projects: numProjects, workload };
                 });
@@ -1088,7 +1089,7 @@
                                     <div className="p-6 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
                                         <Icon name="star" size={20} className="fill-amber-500 text-amber-600" />
                                         <div>
-                                            <h3 className="text-lg font-bold text-amber-900">Daftar Proyek yang Di-Lead (Kapten)</h3>
+                                            <h3 className="text-lg font-bold text-amber-900">Daftar Proyek yang Di-Lead</h3>
                                             <p className="text-sm text-amber-700">Tanggung jawab pengawasan keseluruhan proyek secara Makro.</p>
                                         </div>
                                     </div>
@@ -1221,7 +1222,8 @@
 
                 const filteredResourcesTab = calculatedResources.filter(res =>
                     res.name.toLowerCase().includes(searchTeamTab.toLowerCase()) ||
-                    res.role.toLowerCase().includes(searchTeamTab.toLowerCase())
+                    res.role.toLowerCase().includes(searchTeamTab.toLowerCase()) ||
+                    (res.level && res.level.toLowerCase().includes(searchTeamTab.toLowerCase()))
                 );
 
                 return (
@@ -1601,7 +1603,7 @@
                                                 <label className="block text-xs font-semibold text-slate-600 mb-1">Tingkat Jabatan</label>
                                                 <select name="level" value={formData.level} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-white">
                                                     <option value="Staff">Staff (Anggota)</option>
-                                                    <option value="Team Leader">Team Leader (Kapten)</option>
+                                                    <option value="Team Leader">Team Leader</option>
                                                 </select>
                                             </div>
                                             <div>
