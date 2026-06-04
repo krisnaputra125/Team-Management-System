@@ -183,14 +183,23 @@
         };
 
         const calculateLeaderKPI = (employee, allProjects) => {
-            const involvedProjects = allProjects.filter(p => p.teamLeader === employee.name);
+            const ledProjects = allProjects.filter(p => p.teamLeader === employee.name);
+            const subProjects = allProjects.filter(p => p.team && p.team.includes(employee.name));
+            
+            // Gabungkan proyek dan hapus duplikat
+            const involvedProjectsMap = new Map();
+            ledProjects.forEach(p => involvedProjectsMap.set(p.id, p));
+            subProjects.forEach(p => involvedProjectsMap.set(p.id, p));
+            const involvedProjects = Array.from(involvedProjectsMap.values());
+            
             const activeProjects = involvedProjects.filter(p => p.status !== "Done" && p.computedStatus !== "Done");
-
             const totalActive = activeProjects.length;
+
             let score = 100;
             let delayedCount = 0;
             let atRiskCount = 0;
             let totalProgress = 0;
+            let doneOnTimeBonus = 0;
             const empCat = getCategoryFromRole(employee.role);
             let staffDoneBonus = 0;
 
