@@ -196,14 +196,14 @@
             involvedProjects.forEach(p => {
                 if (p.computedStatus === "Terlambat" && p.status !== "Done") {
                     delayedCount++;
-                    score -= 20;
+                    score -= 10;
                 } else if (p.computedStatus === "Beresiko" && p.status !== "Done") {
                     atRiskCount++;
                 }
 
                 if (p.status === "Done" && p.computedStatus !== "Terlambat") {
                     doneOnTimeBonus++;
-                    score += 10;
+                    score += 20;
                 }
 
                 if (p.status !== "Done" && p.computedStatus !== "Done") {
@@ -218,7 +218,6 @@
                 if (delayedCount === 0) score += ((totalActive - 4) * 10);
                 else score -= 10;
             }
-            score += (avgProgress * 0.1);
             score += (employee.manualPoints || 0);
 
             if (score > 100) score = 100;
@@ -242,22 +241,20 @@
         };
 
         const calculateEmployeeKPI = (employee, allProjects) => {
-            const activeProjects = allProjects.filter(p => p.status !== "Done" && p.computedStatus !== "Done");
-            const involvedProjects = activeProjects.filter(p => {
+            const involvedProjects = allProjects.filter(p => {
                 const members = Array.isArray(p.team) ? p.team : [];
                 return members.includes(employee.name);
             });
+            const activeProjects = involvedProjects.filter(p => p.status !== "Done" && p.computedStatus !== "Done");
 
-            const totalProjects = involvedProjects.length;
+            const totalProjects = activeProjects.length;
             const empCat = getCategoryFromRole(employee.role);
-
-            if (totalProjects === 0) {
-                return { score: 100, delayed: 0, atRisk: 0, avgProgress: 0, status: "Ideal", isOverloaded: false, totalProjects: 0, rating: employee.rating || 3 };
-            }
 
             let delayedCount = 0;
             let atRiskCount = 0;
             let totalProgress = 0;
+            let doneOnTimeBonus = 0;
+            let score = 100;
 
             involvedProjects.forEach(p => {
                 let pProgress = 0;
@@ -272,17 +269,23 @@
                     pStatus = p.computedStatus;
                 }
 
-                totalProgress += pProgress;
-                if (pStatus === "Terlambat") delayedCount++;
-                else if (pStatus === "Beresiko") atRiskCount++;
+                if (p.status === "Done" && p.computedStatus !== "Terlambat") {
+                    doneOnTimeBonus++;
+                    score += 15;
+                }
+
+                if (p.status !== "Done" && p.computedStatus !== "Done") {
+                    totalProgress += pProgress;
+                }
+                
+                if (pStatus === "Terlambat" && p.status !== "Done") delayedCount++;
+                else if (pStatus === "Beresiko" && p.status !== "Done") atRiskCount++;
             });
 
-            const avgProgress = totalProgress / totalProjects;
+            const avgProgress = totalProjects > 0 ? (totalProgress / totalProjects) : 0;
             const isOverloaded = (totalProjects * 25) > 100;
 
-            let score = 100;
-            score -= (delayedCount * 15);
-            // Penalti beresiko (H-3) dihapus karena karyawan masih memiliki waktu untuk menyelesaikannya.
+            score -= (delayedCount * 5);
 
             if (isOverloaded) {
                 if (delayedCount === 0) {
@@ -291,7 +294,6 @@
                     score -= 10;
                 }
             }
-            score += (avgProgress * 0.1);
             score += (employee.manualPoints || 0);
 
             if (score > 100) score = 100;
@@ -302,14 +304,15 @@
             else if (score < 80) kpiStatus = "Cukup";
 
             return {
-                score: (totalProjects === 0 && !(employee.manualPoints)) ? 100 : Math.round(score),
+                score: (totalProjects === 0 && doneOnTimeBonus === 0 && !(employee.manualPoints)) ? 100 : Math.round(score),
                 delayed: delayedCount,
                 atRisk: atRiskCount,
                 avgProgress: Math.round(avgProgress),
                 status: kpiStatus,
                 isOverloaded,
                 totalProjects,
-                rating: employee.rating || 3
+                rating: employee.rating || 3,
+                bonusDone: doneOnTimeBonus
             };
         };
 
