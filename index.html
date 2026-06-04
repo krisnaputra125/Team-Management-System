@@ -191,23 +191,57 @@
             let delayedCount = 0;
             let atRiskCount = 0;
             let totalProgress = 0;
-            let doneOnTimeBonus = 0;
+            const empCat = getCategoryFromRole(employee.role);
+            let staffDoneBonus = 0;
 
             involvedProjects.forEach(p => {
-                if (p.computedStatus === "Terlambat" && p.status !== "Done") {
-                    delayedCount++;
-                    score -= 10;
-                } else if (p.computedStatus === "Beresiko" && p.status !== "Done") {
-                    atRiskCount++;
-                }
+                const isLeader = p.teamLeader === employee.name;
 
-                if (p.status === "Done" && p.computedStatus !== "Terlambat") {
-                    doneOnTimeBonus++;
-                    score += 20;
-                }
+                if (isLeader) {
+                    if (p.computedStatus === "Terlambat" && p.status !== "Done") {
+                        delayedCount++;
+                        score -= 10;
+                    } else if (p.computedStatus === "Beresiko" && p.status !== "Done") {
+                        atRiskCount++;
+                    }
 
-                if (p.status !== "Done" && p.computedStatus !== "Done") {
-                    totalProgress += Number(p.progress || 0);
+                    if (p.status === "Done" && p.computedStatus !== "Terlambat") {
+                        doneOnTimeBonus++;
+                        score += 20;
+                    }
+
+                    if (p.status !== "Done" && p.computedStatus !== "Done") {
+                        totalProgress += Number(p.progress || 0);
+                    }
+                } else {
+                    // STAFF LOGIC (MICRO)
+                    let pProgress = 0;
+                    let pStatus = "On Progress";
+
+                    if (p.categoryDetails && p.categoryDetails[empCat]) {
+                        const micro = p.categoryDetails[empCat];
+                        pProgress = Number(micro.progress || 0);
+                        pStatus = getMicroStatus(pProgress, micro.deadline);
+                    } else {
+                        pProgress = Number(p.progress || 0);
+                        pStatus = p.computedStatus;
+                    }
+
+                    if (pStatus === "Terlambat" && p.status !== "Done") {
+                        delayedCount++;
+                        score -= 5;
+                    } else if (pStatus === "Beresiko" && p.status !== "Done") {
+                        atRiskCount++;
+                    }
+
+                    if (p.status === "Done" && p.computedStatus !== "Terlambat") {
+                        staffDoneBonus++;
+                        score += 15;
+                    }
+
+                    if (p.status !== "Done" && p.computedStatus !== "Done") {
+                        totalProgress += pProgress;
+                    }
                 }
             });
 
@@ -228,7 +262,7 @@
             else if (score < 80) kpiStatus = "Cukup";
 
             return {
-                score: (totalActive === 0 && doneOnTimeBonus === 0 && !(employee.manualPoints)) ? 100 : Math.round(score),
+                score: (totalActive === 0 && doneOnTimeBonus === 0 && staffDoneBonus === 0 && !(employee.manualPoints)) ? 100 : Math.round(score),
                 delayed: delayedCount,
                 atRisk: atRiskCount,
                 avgProgress: Math.round(avgProgress),
@@ -236,7 +270,9 @@
                 isOverloaded,
                 totalProjects: totalActive,
                 rating: employee.rating || 3,
-                bonusDone: doneOnTimeBonus
+                bonusDone: doneOnTimeBonus,
+                bonusDoneLeader: doneOnTimeBonus,
+                bonusDoneStaff: staffDoneBonus
             };
         };
 
@@ -617,7 +653,9 @@
                             </td>
                             <td className="p-4">
                                 <div className="flex flex-col gap-1 items-start">
-                                    {isLeaderTable && kpi.bonusDone > 0 && <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">+{kpi.bonusDone * 10} Bonus Tepat Waktu</span>}
+                                    {isLeaderTable && kpi.bonusDoneLeader > 0 && <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">+{kpi.bonusDoneLeader * 20} Bonus Leader (Tepat Waktu)</span>}
+                                    {isLeaderTable && kpi.bonusDoneStaff > 0 && <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">+{kpi.bonusDoneStaff * 15} Bonus Staff (Tepat Waktu)</span>}
+                                    {!isLeaderTable && kpi.bonusDone > 0 && <span className="text-[10px] bg-emerald-50 text-emerald-700 border border-emerald-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">+{kpi.bonusDone * 15} Bonus Selesai Tepat Waktu</span>}
                                     {kpi.isOverloaded && kpi.delayed > 0 && <span className="text-[10px] bg-red-50 text-red-600 border border-red-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">Overload & Terlambat</span>}
                                     {kpi.isOverloaded && kpi.delayed === 0 && <span className="text-[10px] bg-purple-50 text-purple-700 border border-purple-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">Performa Ekstra (>4 Proyek)</span>}
                                     {kpi.delayed > 0 && <span className="text-[10px] bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded font-medium inline-block whitespace-nowrap">{kpi.delayed} Proyek Terlambat</span>}
