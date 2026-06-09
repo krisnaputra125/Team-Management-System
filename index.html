@@ -51,6 +51,32 @@
                 transform: scale(1);
             }
         }
+
+        @keyframes shimmer {
+            0% {
+                background-position: -1000px 0;
+            }
+
+            100% {
+                background-position: 1000px 0;
+            }
+        }
+
+        .scale-in-center {
+            animation: scale-in-center 0.3s cubic-bezier(0.175, 0.885, 0.320, 1.275) both;
+        }
+
+        @keyframes scale-in-center {
+            0% {
+                transform: scale(0.9);
+                opacity: 0;
+            }
+
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
     </style>
 </head>
 
@@ -88,7 +114,9 @@
                 "arrow-left": '<line x1="19" y1="12" x2="5" y2="12"/><polyline points="12 19 5 12 12 5"/>',
                 "menu": '<line x1="4" y1="12" x2="20" y2="12"/><line x1="4" y1="6" x2="20" y2="6"/><line x1="4" y1="18" x2="20" y2="18"/>',
                 "star": '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
-                "bar-chart": '<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>'
+                "bar-chart": '<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
+                "help-circle": '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
+                "zap": '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>'
             };
             return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} dangerouslySetInnerHTML={{ __html: paths[name] }} />;
         };
@@ -185,13 +213,13 @@
         const calculateLeaderKPI = (employee, allProjects) => {
             const ledProjects = allProjects.filter(p => p.teamLeader === employee.name);
             const subProjects = allProjects.filter(p => p.team && p.team.includes(employee.name));
-            
+
             // Gabungkan proyek dan hapus duplikat
             const involvedProjectsMap = new Map();
             ledProjects.forEach(p => involvedProjectsMap.set(p.id, p));
             subProjects.forEach(p => involvedProjectsMap.set(p.id, p));
             const involvedProjects = Array.from(involvedProjectsMap.values());
-            
+
             const activeProjects = involvedProjects.filter(p => p.status !== "Done" && p.computedStatus !== "Done");
             const totalActive = activeProjects.length;
 
@@ -226,10 +254,15 @@
                     // STAFF LOGIC (MICRO)
                     let pProgress = 0;
                     let pStatus = "On Progress";
+                    const microProgress = p.categoryDetails?.[empCat]?.progress ? Number(p.categoryDetails[empCat].progress) : 0;
+                    const individualDone = (p.individualStatus && p.individualStatus[employee.name] === true) || microProgress === 100;
 
-                    if (p.categoryDetails && p.categoryDetails[empCat]) {
+                    if (individualDone) {
+                        pProgress = 100;
+                        pStatus = "Done";
+                    } else if (p.categoryDetails && p.categoryDetails[empCat]) {
                         const micro = p.categoryDetails[empCat];
-                        pProgress = Number(micro.progress || 0);
+                        pProgress = microProgress;
                         pStatus = getMicroStatus(pProgress, micro.deadline);
                     } else {
                         pProgress = Number(p.progress || 0);
@@ -304,10 +337,15 @@
             involvedProjects.forEach(p => {
                 let pProgress = 0;
                 let pStatus = "On Progress";
+                const microProgress = p.categoryDetails?.[empCat]?.progress ? Number(p.categoryDetails[empCat].progress) : 0;
+                const individualDone = (p.individualStatus && p.individualStatus[employee.name] === true) || microProgress === 100;
 
-                if (p.categoryDetails && p.categoryDetails[empCat]) {
+                if (individualDone) {
+                    pProgress = 100;
+                    pStatus = "Done";
+                } else if (p.categoryDetails && p.categoryDetails[empCat]) {
                     const micro = p.categoryDetails[empCat];
-                    pProgress = Number(micro.progress || 0);
+                    pProgress = microProgress;
                     pStatus = getMicroStatus(pProgress, micro.deadline);
                 } else {
                     pProgress = Number(p.progress || 0);
@@ -322,7 +360,7 @@
                 if (p.status !== "Done" && p.computedStatus !== "Done") {
                     totalProgress += pProgress;
                 }
-                
+
                 if (pStatus === "Terlambat" && p.status !== "Done") delayedCount++;
                 else if (pStatus === "Beresiko" && p.status !== "Done") atRiskCount++;
             });
@@ -404,6 +442,7 @@
             const [isLive, setIsLive] = useState(false);
             const [errorMsg, setErrorMsg] = useState("");
             const [modalConfig, setModalConfig] = useState({ isOpen: false, type: null, mode: 'add', data: null });
+            const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', type: 'info', onConfirm: null });
             const [sidebarOpen, setSidebarOpen] = useState(false);
 
             // State pencarian
@@ -425,19 +464,72 @@
             // KECERDASAN SISTEM
             // =========================================================================
             const computedProjects = useMemo(() => {
-                return projects.map(p => ({
-                    ...p,
-                    computedStatus: calculateComputedStatus(p)
-                }));
-            }, [projects]);
+                return projects.map(p => {
+                    let effectiveCatDetails = { ...p.categoryDetails };
+                    const individualStatus = p.individualStatus || {};
+                    let activeCategories = [];
+
+                    if (p.team && p.team.length > 0) {
+                        const catMembers = {};
+                        p.team.forEach(m => {
+                            const res = resources.find(r => r.name === m);
+                            const cat = res ? getCategoryFromRole(res.role) : 'Lainnya';
+                            if (!catMembers[cat]) catMembers[cat] = [];
+                            catMembers[cat].push(m);
+                        });
+
+                        activeCategories = Object.keys(catMembers);
+                        activeCategories.forEach(cat => {
+                            const members = catMembers[cat];
+                            const total = members.length;
+                            const completedCount = members.filter(m => individualStatus[m]).length;
+                            const notCompletedCount = total - completedCount;
+
+                            const manualProgress = effectiveCatDetails[cat] ? Number(effectiveCatDetails[cat].progress || 0) : 0;
+
+                            if (total > 0 && completedCount > 0) {
+                                const effectiveProg = Math.round(((completedCount * 100) + (notCompletedCount * manualProgress)) / total);
+                                if (!effectiveCatDetails[cat]) effectiveCatDetails[cat] = {};
+                                effectiveCatDetails[cat] = { ...effectiveCatDetails[cat], progress: effectiveProg };
+                            }
+                        });
+                    }
+
+                    let effectiveTotalProgress = Number(p.progress || 0);
+                    if (activeCategories.length > 0) {
+                        let sum = 0;
+                        activeCategories.forEach(cat => {
+                            sum += Number(effectiveCatDetails[cat]?.progress || 0);
+                        });
+                        effectiveTotalProgress = Math.round(sum / activeCategories.length);
+                    }
+
+                    const newP = {
+                        ...p,
+                        categoryDetails: effectiveCatDetails,
+                        progress: effectiveTotalProgress
+                    };
+                    newP.computedStatus = calculateComputedStatus(newP);
+                    return newP;
+                });
+            }, [projects, resources]);
 
             const calculatedResources = useMemo(() => {
                 const mapped = resources.map(res => {
                     let numProjects = 0;
+                    const empCat = getCategoryFromRole(res.role);
+
                     computedProjects.forEach(p => {
                         if (p.computedStatus !== 'Done') {
-                            if (p.team && p.team.includes(res.name)) numProjects++;
-                            if (p.teamLeader === res.name) numProjects++;
+                            if (p.teamLeader === res.name) {
+                                numProjects++;
+                            } else if (p.team && p.team.includes(res.name)) {
+                                const microProgress = p.categoryDetails?.[empCat]?.progress ? Number(p.categoryDetails[empCat].progress) : 0;
+                                const isIndividuallyDone = p.individualStatus?.[res.name] === true;
+                                if (microProgress < 100 && !isIndividuallyDone) {
+                                    numProjects++;
+                                }
+                            }
                         }
                     });
                     const workload = numProjects * 25; // 25% per project
@@ -475,6 +567,7 @@
                             let parsedTeam = [];
                             let catDetails = {};
                             let leader = "";
+                            let individualStatus = {};
                             const rawString = p.team ? p.team.join(';') : '';
 
                             if (rawString.startsWith('{')) {
@@ -483,11 +576,12 @@
                                     parsedTeam = parsed.members || [];
                                     catDetails = parsed.details || {};
                                     leader = parsed.leader || "";
+                                    individualStatus = parsed.individualStatus || {};
                                 } catch (e) { parsedTeam = p.team || []; }
                             } else {
                                 parsedTeam = p.team || [];
                             }
-                            return { ...p, team: parsedTeam, categoryDetails: catDetails, teamLeader: leader };
+                            return { ...p, team: parsedTeam, categoryDetails: catDetails, teamLeader: leader, individualStatus };
                         });
 
                         const processedResources = (data.resources || []).map(r => {
@@ -554,6 +648,44 @@
                 }
             };
 
+            const handleToggleIndividualStatus = (projectId, employeeName, newStatus) => {
+                setConfirmDialog({
+                    isOpen: true,
+                    type: newStatus ? 'info' : 'danger',
+                    title: newStatus ? 'Konfirmasi Selesai' : 'Batalkan Status Selesai',
+                    message: newStatus
+                        ? `Tandai tugas khusus untuk ${employeeName} sebagai Selesai di proyek ini?`
+                        : `Batalkan status Selesai untuk ${employeeName}?`,
+                    onConfirm: async () => {
+                        const project = projects.find(p => p.id === projectId);
+                        if (!project) return;
+
+                        const newIndividualStatus = { ...(project.individualStatus || {}) };
+                        if (newStatus) {
+                            newIndividualStatus[employeeName] = true;
+                        } else {
+                            delete newIndividualStatus[employeeName];
+                        }
+
+                        const teamDataObj = {
+                            members: project.team || [],
+                            details: project.categoryDetails || {},
+                            leader: project.teamLeader || "",
+                            individualStatus: newIndividualStatus
+                        };
+
+                        const updatedPayload = { ...project, team: JSON.stringify(teamDataObj) };
+
+                        delete updatedPayload.categoryDetails;
+                        delete updatedPayload.individualStatus;
+                        delete updatedPayload.teamLeader;
+                        delete updatedPayload.computedStatus;
+
+                        await handleCrudAction('edit', 'project', updatedPayload);
+                    }
+                });
+            };
+
             const openModal = (type, mode, data = null) => {
                 let parsedData = data;
                 if (type === 'project' && data) {
@@ -581,9 +713,15 @@
             const closeModal = () => setModalConfig({ isOpen: false, type: null, mode: 'add', data: null });
 
             const handleDelete = (type, id) => {
-                if (window.confirm(`Apakah Anda yakin ingin menghapus data ini secara permanen?`)) {
-                    handleCrudAction('delete', type, { id });
-                }
+                setConfirmDialog({
+                    isOpen: true,
+                    type: 'danger',
+                    title: 'Hapus Data Permanen',
+                    message: 'Apakah Anda yakin ingin menghapus data ini secara permanen? Tindakan ini tidak dapat dibatalkan.',
+                    onConfirm: () => {
+                        handleCrudAction('delete', type, { id });
+                    }
+                });
             };
 
             const ErrorBanner = () => {
@@ -779,11 +917,12 @@
                 return (
                     <div className="space-y-8 fade-in">
                         <ErrorBanner />
-                        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 lg:gap-6">
-                            <MetricCard title="Total Proyek" value={computedProjects.length} trend="Aktif/Selesai" trendUp={true} icon={<div className="text-blue-600"><Icon name="briefcase" size={24} /></div>} color="bg-blue-50" />
-                            <MetricCard title="Risiko / Terlambat" value={problematicProjectsCount} trend="Perlu pantauan" trendUp={false} icon={<div className="text-amber-600"><Icon name="alert-triangle" size={24} /></div>} color="bg-amber-50" />
-                            <MetricCard title="Total Personil" value={resources.length} trend="Tersedia" trendUp={true} icon={<div className="text-emerald-600"><Icon name="users" size={24} /></div>} color="bg-emerald-50" />
+                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+                            <MetricCard title="Total Proyek" value={computedProjects.length} trend="Keseluruhan" trendUp={true} icon={<div className="text-blue-600"><Icon name="briefcase" size={24} /></div>} color="bg-blue-50" />
+                            <MetricCard title="Proyek Aktif" value={computedProjects.length - completedProjectsCount} trend="Sedang berjalan" trendUp={true} icon={<div className="text-indigo-600"><Icon name="target" size={24} /></div>} color="bg-indigo-50" />
+                            <MetricCard title="Risiko/Terlambat" value={problematicProjectsCount} trend="Perlu pantauan" trendUp={false} icon={<div className="text-amber-600"><Icon name="alert-triangle" size={24} /></div>} color="bg-amber-50" />
                             <MetricCard title="Proyek Selesai" value={completedProjectsCount} trend="Status: Done" trendUp={true} icon={<div className="text-emerald-600"><Icon name="check-circle-2" size={24} /></div>} color="bg-emerald-50" />
+                            <MetricCard title="Total Personil" value={resources.length} trend="Tersedia" trendUp={true} icon={<div className="text-teal-600"><Icon name="users" size={24} /></div>} color="bg-teal-50" />
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
@@ -1114,11 +1253,20 @@
             // --- KOMPONEN TAB: TIM & DETAIL PEGAWAI ---
             const renderEmployeeDetail = () => {
                 const empCategory = getCategoryFromRole(viewingEmployee.role);
-                const assignedProjects = computedProjects.filter(p =>
-                    p.team &&
-                    p.team.includes(viewingEmployee.name) &&
-                    p.computedStatus !== 'Done'
-                );
+
+                const activeAssignedProjects = computedProjects.filter(p => {
+                    if (!p.team || !p.team.includes(viewingEmployee.name) || p.computedStatus === 'Done') return false;
+                    const microProgress = p.categoryDetails?.[empCategory]?.progress ? Number(p.categoryDetails[empCategory].progress) : 0;
+                    const isIndividuallyDone = p.individualStatus?.[viewingEmployee.name] === true;
+                    return microProgress < 100 && !isIndividuallyDone;
+                });
+
+                const completedAssignedProjects = computedProjects.filter(p => {
+                    if (!p.team || !p.team.includes(viewingEmployee.name) || p.computedStatus === 'Done') return false;
+                    const microProgress = p.categoryDetails?.[empCategory]?.progress ? Number(p.categoryDetails[empCategory].progress) : 0;
+                    const isIndividuallyDone = p.individualStatus?.[viewingEmployee.name] === true;
+                    return microProgress >= 100 || isIndividuallyDone;
+                });
 
                 const ledProjects = computedProjects.filter(p =>
                     p.teamLeader === viewingEmployee.name &&
@@ -1207,11 +1355,11 @@
                                             <th className="p-4 font-semibold">Status Proyek (Makro)</th>
                                             <th className="p-4 font-semibold">Tugas Sub-Tim ({empCategory})</th>
                                             <th className="p-4 font-semibold">Deadline Sub-Tim</th>
-                                            <th className="p-4 font-semibold">Status Sub-Tim</th>
+                                            <th className="p-4 font-semibold text-center">Status Individu</th>
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 text-sm">
-                                        {assignedProjects.length === 0 ? (
+                                        {activeAssignedProjects.length === 0 ? (
                                             <tr>
                                                 <td colSpan="5" className="p-8 text-center text-slate-400">
                                                     <Icon name="briefcase" size={32} className="mx-auto mb-2 opacity-50" />
@@ -1219,11 +1367,12 @@
                                                 </td>
                                             </tr>
                                         ) : (
-                                            assignedProjects.map(p => {
+                                            activeAssignedProjects.map(p => {
                                                 const microDetails = p.categoryDetails?.[empCategory] || {};
                                                 const mProg = microDetails.progress || 0;
                                                 const mDead = microDetails.deadline;
-                                                const mStatus = getMicroStatus(mProg, mDead);
+                                                const isIndividuallyDone = p.individualStatus && p.individualStatus[viewingEmployee.name] === true;
+                                                const mStatus = isIndividuallyDone || mProg === 100 ? 'Done' : getMicroStatus(mProg, mDead);
 
                                                 return (
                                                     <tr key={p.id} className="hover:bg-slate-50 transition-colors">
@@ -1236,7 +1385,7 @@
                                                         </td>
                                                         <td className="p-4 w-48">
                                                             <div className="flex justify-between text-xs mb-1">
-                                                                <span className="font-medium text-slate-700">{mProg}% Selesai</span>
+                                                                <span className="font-medium text-slate-700">{mProg}% Selesai {isIndividuallyDone && <span className="text-emerald-600 font-bold ml-1">(Bebas)</span>}</span>
                                                             </div>
                                                             <div className="w-full bg-slate-200 rounded-full h-2">
                                                                 <div className={`h-2 rounded-full ${mStatus === 'Terlambat' ? 'bg-red-500' : mStatus === 'Done' ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${mProg}%` }}></div>
@@ -1245,19 +1394,14 @@
                                                         <td className="p-4 font-medium text-slate-700">
                                                             {mDead ? formatDateIndo(mDead) : <span className="text-slate-400 italic text-xs">Belum diatur</span>}
                                                         </td>
-                                                        <td className="p-4">
-                                                            <span className={`px-2.5 py-1 rounded-full text-xs font-bold border flex items-center gap-1 w-max ${mStatus === 'Done' ? 'bg-emerald-50 text-emerald-700 border-emerald-200' :
-                                                                mStatus === 'Terlambat' ? 'bg-red-50 text-red-700 border-red-200' :
-                                                                    mStatus === 'Beresiko' ? 'bg-amber-50 text-amber-700 border-amber-200' :
-                                                                        mStatus === 'Belum Diatur' ? 'bg-slate-50 text-slate-500 border-slate-200' :
-                                                                            'bg-blue-50 text-blue-700 border-blue-200'
-                                                                }`}>
-                                                                {mStatus === 'Done' && <Icon name="check-circle-2" size={12} />}
-                                                                {mStatus === 'Terlambat' && <Icon name="alert-triangle" size={12} />}
-                                                                {mStatus === 'Beresiko' && <Icon name="clock" size={12} />}
-                                                                {mStatus === 'On Progress' && <Icon name="clock" size={12} />}
-                                                                {mStatus}
-                                                            </span>
+                                                        <td className="p-4 text-center">
+                                                            <button
+                                                                onClick={() => handleToggleIndividualStatus(p.id, viewingEmployee.name, !isIndividuallyDone)}
+                                                                className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center justify-center gap-1.5 w-full hover:scale-[1.03] active:scale-95 shadow-md ${isIndividuallyDone ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 text-emerald-700 border-emerald-200 hover:shadow-emerald-200 shadow-sm' : 'bg-gradient-to-r from-white to-slate-50 text-slate-700 border-slate-200 hover:shadow-blue-100 hover:border-blue-300'}`}
+                                                            >
+                                                                <Icon name={isIndividuallyDone ? "check-circle" : "zap"} size={14} className={isIndividuallyDone ? "text-emerald-500" : "text-blue-500"} />
+                                                                {isIndividuallyDone ? 'Telah Selesai' : 'Tandai Selesai'}
+                                                            </button>
                                                         </td>
                                                     </tr>
                                                 )
@@ -1266,6 +1410,76 @@
                                     </tbody>
                                 </table>
                             </div>
+
+                            {completedAssignedProjects.length > 0 && (
+                                <>
+                                    <div className="p-6 border-b border-slate-100 mt-4">
+                                        <h3 className="text-lg font-bold text-slate-800">Riwayat Penugasan Selesai</h3>
+                                        <p className="text-sm text-slate-500">Menampilkan proyek di mana tugas Sub-Tim <strong>{empCategory}</strong> telah mencapai 100% atau ditandai selesai secara individu. Proyek ini tidak lagi membebani kapasitas kerja personil.</p>
+                                    </div>
+                                    <div className="p-0 overflow-x-auto min-h-[150px]">
+                                        <table className="w-full text-left border-collapse opacity-80">
+                                            <thead>
+                                                <tr className="bg-emerald-50/50 text-emerald-800 text-xs uppercase tracking-wider">
+                                                    <th className="p-4 font-semibold">Nama Proyek</th>
+                                                    <th className="p-4 font-semibold">Status Proyek (Makro)</th>
+                                                    <th className="p-4 font-semibold">Tugas Sub-Tim ({empCategory})</th>
+                                                    <th className="p-4 font-semibold">Deadline Sub-Tim</th>
+                                                    <th className="p-4 font-semibold text-center">Status Individu</th>
+                                                </tr>
+                                            </thead>
+                                            <tbody className="divide-y divide-emerald-50 text-sm">
+                                                {completedAssignedProjects.map(p => {
+                                                    const microDetails = p.categoryDetails?.[empCategory] || {};
+                                                    const mProg = microDetails.progress || 0;
+                                                    const mDead = microDetails.deadline;
+                                                    const isIndividuallyDone = p.individualStatus && p.individualStatus[viewingEmployee.name] === true;
+                                                    const mStatus = 'Done';
+
+                                                    return (
+                                                        <tr key={p.id} className="hover:bg-emerald-50/30 transition-colors">
+                                                            <td className="p-4">
+                                                                <p className="font-semibold text-slate-800">{p.name}</p>
+                                                                <p className="text-xs text-slate-500">{p.client}</p>
+                                                            </td>
+                                                            <td className="p-4">
+                                                                <StatusBadge status={p.computedStatus} />
+                                                            </td>
+                                                            <td className="p-4 w-48">
+                                                                <div className="flex justify-between text-xs mb-1">
+                                                                    <span className="font-medium text-slate-700">{mProg}% Selesai {isIndividuallyDone && <span className="text-emerald-600 font-bold ml-1">(Bebas)</span>}</span>
+                                                                </div>
+                                                                <div className="w-full bg-slate-200 rounded-full h-2">
+                                                                    <div className={`h-2 rounded-full bg-emerald-500`} style={{ width: `${mProg}%` }}></div>
+                                                                </div>
+                                                            </td>
+                                                            <td className="p-4 font-medium text-slate-700">
+                                                                {mDead ? formatDateIndo(mDead) : <span className="text-slate-400 italic text-xs">Belum diatur</span>}
+                                                            </td>
+                                                            <td className="p-4 text-center">
+                                                                {mProg >= 100 && !isIndividuallyDone ? (
+                                                                    <div className="px-3 py-2 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 w-full bg-slate-50/50 text-slate-500 border-slate-200 cursor-default shadow-inner" title="Telah diselesaikan secara keseluruhan oleh sub-tim">
+                                                                        <Icon name="check-circle" size={14} className="text-emerald-500/70" />
+                                                                        Selesai (Otomatis)
+                                                                    </div>
+                                                                ) : (
+                                                                    <button
+                                                                        onClick={() => handleToggleIndividualStatus(p.id, viewingEmployee.name, !isIndividuallyDone)}
+                                                                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center justify-center gap-1.5 w-full hover:scale-[1.03] active:scale-95 shadow-md ${isIndividuallyDone ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 text-emerald-700 border-emerald-200 hover:shadow-emerald-200' : 'bg-gradient-to-r from-white to-slate-50 text-slate-700 border-slate-200 hover:shadow-blue-100 hover:border-blue-300'}`}
+                                                                    >
+                                                                        <Icon name={isIndividuallyDone ? "check-circle" : "zap"} size={14} className={isIndividuallyDone ? "text-emerald-500" : "text-blue-500"} />
+                                                                        {isIndividuallyDone ? 'Telah Selesai' : 'Tandai Selesai'}
+                                                                    </button>
+                                                                )}
+                                                            </td>
+                                                        </tr>
+                                                    )
+                                                })}
+                                            </tbody>
+                                        </table>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 );
@@ -1390,8 +1604,8 @@
                 const isProject = modalConfig.type === 'project';
 
                 const [formData, setFormData] = useState(
-                    modalConfig.data 
-                        ? { ...modalConfig.data, adjustmentInput: 0 } 
+                    modalConfig.data
+                        ? { ...modalConfig.data, adjustmentInput: 0 }
                         : (isProject
                             ? { name: '', client: '', type: 'Perencanaan', status: 'On Progress', progress: 0, deadline: '', description: '', descriptionUpdatedAt: '', team: [], categoryDetails: {}, teamLeader: '' }
                             : { name: '', role: 'Arsitek', level: 'Staff', rating: 3, manualPoints: 0, adjustmentInput: 0 }
@@ -1486,7 +1700,8 @@
                         const teamDataObj = {
                             members: finalPayload.team || [],
                             details: cleanDetails,
-                            leader: finalPayload.teamLeader || ""
+                            leader: finalPayload.teamLeader || "",
+                            individualStatus: finalPayload.individualStatus || {}
                         };
 
                         // Enkripsi ke string agar aman masuk backend lama
@@ -1565,7 +1780,16 @@
                                                 </div>
                                                 <div>
                                                     <label className="block text-[11px] font-bold text-slate-700 mb-1">Tenggat Waktu Kontrak Akhir</label>
-                                                    <input type="date" name="deadline" value={formData.deadline} onChange={handleChange} className="block w-full p-2.5 border border-slate-200 bg-white rounded-lg text-sm outline-none focus:border-blue-500 appearance-none m-0 min-h-[42px]" />
+                                                    <div className="relative w-full">
+                                                        <div className="flex items-center justify-between w-full p-2.5 border border-slate-200 rounded-lg text-sm bg-white min-h-[42px] text-slate-700">
+                                                            <span>{formData.deadline ? formatDateIndo(formData.deadline) : 'Pilih tanggal...'}</span>
+                                                            <Icon name="calendar-clock" size={16} className="text-slate-400" />
+                                                        </div>
+                                                        <input type="date" name="deadline" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
+                                                            value={formData.deadline || ''} 
+                                                            onChange={handleChange} 
+                                                        />
+                                                    </div>
                                                 </div>
                                             </div>
 
@@ -1646,10 +1870,16 @@
                                                                     </div>
                                                                     <div className="w-full sm:w-1/3">
                                                                         <label className="block text-[9px] font-bold text-slate-500 mb-1 uppercase">Deadline Tim</label>
-                                                                        <input type="date" className="block w-full p-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors appearance-none m-0 min-h-[34px]"
-                                                                            value={details.deadline || ''}
-                                                                            onChange={(e) => handleCategoryDetailChange(cat, 'deadline', e.target.value)}
-                                                                        />
+                                                                        <div className="relative w-full">
+                                                                            <div className="flex items-center justify-between w-full p-2 border border-slate-200 rounded-md text-xs bg-slate-50 focus-within:border-blue-500 focus-within:bg-white transition-colors min-h-[34px] text-slate-700">
+                                                                                <span>{details.deadline ? formatDateIndo(details.deadline) : 'Pilih tanggal...'}</span>
+                                                                                <Icon name="calendar-clock" size={14} className="text-slate-400" />
+                                                                            </div>
+                                                                            <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                                                value={details.deadline || ''}
+                                                                                onChange={(e) => handleCategoryDetailChange(cat, 'deadline', e.target.value)}
+                                                                            />
+                                                                        </div>
                                                                     </div>
                                                                 </div>
                                                             )
@@ -1695,20 +1925,20 @@
                                                     <span className="text-xs text-slate-500 ml-2 font-medium">Bintang {formData.rating || 3}</span>
                                                 </div>
                                             </div>
-                                            
+
                                             <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
                                                 <div>
                                                     <label className="block text-xs font-bold text-slate-700 mb-1">Tambah / Kurang Skor KPI (+/-)</label>
                                                     <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Nilai ini akan langsung ditambahkan secara relatif ke skor terakhir. Contoh: Jika skor 60 dan Anda isi 40, skor menjadi 100.</p>
                                                     <div className="flex flex-wrap gap-3 items-center mt-2">
-                                                        <input 
-                                                            type="number" 
-                                                            name="adjustmentInput" 
-                                                            value={formData.adjustmentInput === '' || isNaN(formData.adjustmentInput) ? '' : (formData.adjustmentInput !== undefined ? formData.adjustmentInput : 0)} 
-                                                            onChange={(e) => setFormData({ ...formData, adjustmentInput: e.target.value === '' ? '' : parseInt(e.target.value) })} 
-                                                            className="w-24 p-2 border border-slate-300 rounded-lg text-sm text-center outline-none focus:border-blue-500 bg-white" 
+                                                        <input
+                                                            type="number"
+                                                            name="adjustmentInput"
+                                                            value={formData.adjustmentInput === '' || isNaN(formData.adjustmentInput) ? '' : (formData.adjustmentInput !== undefined ? formData.adjustmentInput : 0)}
+                                                            onChange={(e) => setFormData({ ...formData, adjustmentInput: e.target.value === '' ? '' : parseInt(e.target.value) })}
+                                                            className="w-24 p-2 border border-slate-300 rounded-lg text-sm text-center outline-none focus:border-blue-500 bg-white"
                                                         />
-                                                        <button 
+                                                        <button
                                                             type="button"
                                                             onClick={handleResetTo100}
                                                             className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-200 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
@@ -1716,7 +1946,7 @@
                                                             <Icon name="target" size={12} />
                                                             Reset ke 100
                                                         </button>
-                                                        <button 
+                                                        <button
                                                             type="button"
                                                             onClick={handleResetToAuto}
                                                             className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
@@ -1750,8 +1980,49 @@
                 );
             };
 
+            const FuturisticConfirm = () => {
+                if (!confirmDialog.isOpen) return null;
+
+                return (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}></div>
+                        <div className="relative bg-white/95 backdrop-blur-xl border border-slate-200/50 shadow-2xl rounded-3xl w-full max-w-sm p-8 overflow-hidden scale-in-center">
+                            <div className={`absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl opacity-20 ${confirmDialog.type === 'danger' ? 'bg-red-500' : 'bg-blue-500'}`}></div>
+                            <div className={`absolute -bottom-20 -left-20 w-48 h-48 rounded-full blur-3xl opacity-10 ${confirmDialog.type === 'danger' ? 'bg-rose-500' : 'bg-indigo-500'}`}></div>
+
+                            <div className="flex flex-col items-center text-center relative z-10">
+                                <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-5 shadow-inner backdrop-blur-md ${confirmDialog.type === 'danger' ? 'bg-red-50/80 text-red-500 shadow-red-200 border border-red-100' : 'bg-blue-50/80 text-blue-500 shadow-blue-200 border border-blue-100'}`}>
+                                    <Icon name={confirmDialog.type === 'danger' ? 'alert-triangle' : 'help-circle'} size={36} />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800 mb-2">{confirmDialog.title}</h3>
+                                <p className="text-sm text-slate-500 mb-8 leading-relaxed px-2">{confirmDialog.message}</p>
+
+                                <div className="flex w-full gap-3">
+                                    <button
+                                        onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
+                                        className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-600 bg-slate-100/50 hover:bg-slate-100 hover:text-slate-800 transition-all border border-slate-200/60"
+                                    >
+                                        Batal
+                                    </button>
+                                    <button
+                                        onClick={() => {
+                                            if (confirmDialog.onConfirm) confirmDialog.onConfirm();
+                                            setConfirmDialog({ ...confirmDialog, isOpen: false });
+                                        }}
+                                        className={`flex-1 py-3 rounded-xl text-sm font-bold text-white transition-all hover:scale-[1.03] active:scale-95 shadow-lg ${confirmDialog.type === 'danger' ? 'bg-gradient-to-br from-red-500 to-rose-600 shadow-red-500/30' : 'bg-gradient-to-br from-blue-500 to-indigo-600 shadow-blue-500/30'}`}
+                                    >
+                                        Konfirmasi
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
             return (
                 <div className="flex h-screen text-slate-800">
+                    <FuturisticConfirm />
                     {sidebarOpen && <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
                     <aside className={`fixed lg:relative z-50 lg:z-auto w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 h-full top-0 left-0 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
                         <div className="p-4 lg:p-6">
