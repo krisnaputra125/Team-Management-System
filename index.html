@@ -24,7 +24,9 @@
             overscroll-behavior-y: none;
         }
 
-        input, textarea, select {
+        input,
+        textarea,
+        select {
             user-select: auto;
             -webkit-user-select: auto;
         }
@@ -456,6 +458,12 @@
             const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', type: 'info', onConfirm: null });
             const [sidebarOpen, setSidebarOpen] = useState(false);
 
+            // State Developer Auth (BETA)
+            const [showDevPrompt, setShowDevPrompt] = useState(false);
+            const [devPassword, setDevPassword] = useState("");
+            const [devAuthError, setDevAuthError] = useState("");
+            const [isDeveloper, setIsDeveloper] = useState(false);
+
             // State pencarian
             const [searchTeamTab, setSearchTeamTab] = useState("");
             const [searchProjectTab, setSearchProjectTab] = useState("");
@@ -625,9 +633,26 @@
 
             // Mengganti Tab dan me-reset view
             const handleTabChange = (tab) => {
+                if (tab === 'kpi' && !isDeveloper) {
+                    setShowDevPrompt(true);
+                    setDevPassword("");
+                    setDevAuthError("");
+                    setSidebarOpen(false);
+                    return;
+                }
                 setActiveTab(tab);
                 setViewingEmployee(null);
                 setSidebarOpen(false);
+            };
+
+            const handleDevLogin = () => {
+                if (devPassword === "Batanghari15") {
+                    setIsDeveloper(true);
+                    setShowDevPrompt(false);
+                    setActiveTab('kpi');
+                } else {
+                    setDevAuthError("Password salah! Akses ditolak.");
+                }
             };
 
             // CRUD ACTION
@@ -1796,9 +1821,9 @@
                                                             <span>{formData.deadline ? formatDateIndo(formData.deadline) : 'Pilih tanggal...'}</span>
                                                             <Icon name="calendar-clock" size={16} className="text-slate-400" />
                                                         </div>
-                                                        <input type="date" name="deadline" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" 
-                                                            value={formData.deadline || ''} 
-                                                            onChange={handleChange} 
+                                                        <input type="date" name="deadline" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                            value={formData.deadline || ''}
+                                                            onChange={handleChange}
                                                         />
                                                     </div>
                                                 </div>
@@ -1991,7 +2016,7 @@
                 );
             };
 
-            const FuturisticConfirm = () => {
+            const renderFuturisticConfirm = () => {
                 if (!confirmDialog.isOpen) return null;
 
                 return (
@@ -2031,9 +2056,48 @@
                 );
             };
 
+            const renderDeveloperPromptModal = () => {
+                if (!showDevPrompt) return null;
+
+                return (
+                    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowDevPrompt(false)}></div>
+                        <div className="relative bg-white/95 backdrop-blur-xl border border-slate-200/50 shadow-2xl rounded-3xl w-full max-w-sm p-8 overflow-hidden scale-in-center">
+                            <div className="absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl opacity-20 bg-indigo-500"></div>
+                            <div className="flex flex-col items-center text-center relative z-10">
+                                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-indigo-50 text-indigo-500 shadow-inner">
+                                    <Icon name="alert-triangle" size={32} />
+                                </div>
+                                <h3 className="text-xl font-bold text-slate-800 mb-2">Akses Terbatas (BETA)</h3>
+                                <p className="text-sm text-slate-500 mb-6 leading-relaxed">Menu Evaluasi & KPI masih dalam tahap uji coba (BETA) dan sedang dalam tahap pengembangan sementara hanya dapat diakses oleh Developer (Krisna).</p>
+
+                                <input
+                                    type="password"
+                                    placeholder="Masukkan Password Developer"
+                                    className="w-full p-3 rounded-xl border border-slate-300 bg-slate-50 text-center text-sm font-semibold mb-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                                    value={devPassword}
+                                    onChange={(e) => {
+                                        setDevPassword(e.target.value);
+                                        setDevAuthError("");
+                                    }}
+                                    onKeyDown={(e) => { if (e.key === 'Enter') handleDevLogin(); }}
+                                />
+                                {devAuthError ? <p className="text-xs text-red-500 font-medium mb-4">{devAuthError}</p> : <div className="mb-4"></div>}
+
+                                <div className="flex w-full gap-3">
+                                    <button onClick={() => setShowDevPrompt(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-600 bg-slate-100/50 hover:bg-slate-100 transition-all border border-slate-200/60">Batal</button>
+                                    <button onClick={handleDevLogin} className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/30">Akses</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
             return (
                 <div className="flex h-screen text-slate-800">
-                    <FuturisticConfirm />
+                    {renderFuturisticConfirm()}
+                    {renderDeveloperPromptModal()}
                     <aside className="hidden lg:flex lg:relative z-auto w-64 bg-slate-900 text-slate-300 flex-col shrink-0 h-full top-0 left-0">
                         <div className="p-4 lg:p-6">
                             <div className="flex items-center justify-between mb-2">
