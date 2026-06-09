@@ -3,7 +3,9 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <title>Team Management System (YANG TEKNIS - TEKNIS AJA)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
@@ -16,6 +18,15 @@
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: #f8fafc;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+            overscroll-behavior-y: none;
+        }
+
+        input, textarea, select {
+            user-select: auto;
+            -webkit-user-select: auto;
         }
 
         ::-webkit-scrollbar {
@@ -917,7 +928,7 @@
                 return (
                     <div className="space-y-8 fade-in">
                         <ErrorBanner />
-                        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
+                        <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-3 sm:gap-4 lg:gap-6">
                             <MetricCard title="Total Proyek" value={computedProjects.length} trend="Keseluruhan" trendUp={true} icon={<div className="text-blue-600"><Icon name="briefcase" size={24} /></div>} color="bg-blue-50" />
                             <MetricCard title="Proyek Aktif" value={computedProjects.length - completedProjectsCount} trend="Sedang berjalan" trendUp={true} icon={<div className="text-indigo-600"><Icon name="target" size={24} /></div>} color="bg-indigo-50" />
                             <MetricCard title="Risiko/Terlambat" value={problematicProjectsCount} trend="Perlu pantauan" trendUp={false} icon={<div className="text-amber-600"><Icon name="alert-triangle" size={24} /></div>} color="bg-amber-50" />
@@ -2023,17 +2034,13 @@
             return (
                 <div className="flex h-screen text-slate-800">
                     <FuturisticConfirm />
-                    {sidebarOpen && <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40 lg:hidden" onClick={() => setSidebarOpen(false)} />}
-                    <aside className={`fixed lg:relative z-50 lg:z-auto w-64 bg-slate-900 text-slate-300 flex flex-col shrink-0 h-full top-0 left-0 transition-transform duration-300 ease-in-out ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:translate-x-0`}>
+                    <aside className="hidden lg:flex lg:relative z-auto w-64 bg-slate-900 text-slate-300 flex-col shrink-0 h-full top-0 left-0">
                         <div className="p-4 lg:p-6">
                             <div className="flex items-center justify-between mb-2">
                                 <div className="flex items-center gap-3 text-white">
                                     <div className="w-8 h-8 shrink-0 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-lg shadow-lg shadow-blue-600/30">TM</div>
                                     <h1 className="text-base font-bold tracking-wide leading-tight">Team Management System</h1>
                                 </div>
-                                <button onClick={() => setSidebarOpen(false)} className="lg:hidden text-slate-400 hover:text-white p-1.5 rounded-lg hover:bg-slate-800 transition-colors">
-                                    <Icon name="x" size={20} />
-                                </button>
                             </div>
                             <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Yang Teknis - Teknis Aja</p>
                         </div>
@@ -2046,11 +2053,8 @@
                     </aside>
 
                     <main className="flex-1 flex flex-col overflow-hidden bg-slate-50 relative min-w-0">
-                        <header className="h-14 sm:h-16 lg:h-20 bg-white border-b border-slate-200 flex items-center justify-between px-3 sm:px-5 lg:px-8 z-10 shrink-0 gap-2">
+                        <header className="h-14 sm:h-16 lg:h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 shrink-0 gap-2 shadow-sm">
                             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                                <button onClick={() => setSidebarOpen(true)} className="lg:hidden p-2 -ml-1 rounded-lg text-slate-600 hover:bg-slate-100 shrink-0 transition-colors" aria-label="Buka menu">
-                                    <Icon name="menu" size={22} />
-                                </button>
                                 <div className="min-w-0">
                                     <h2 className="text-sm sm:text-base lg:text-xl font-bold text-slate-800 truncate">
                                         {activeTab === 'dashboard' && 'Ringkasan Proyek & Personil'}
@@ -2072,7 +2076,7 @@
                             </div>
                         </header>
 
-                        <div className="flex-1 overflow-auto p-3 sm:p-5 lg:p-8 relative">
+                        <div className="flex-1 overflow-auto p-3 sm:p-5 lg:p-8 pb-24 lg:pb-8 relative">
                             {loading && (
                                 <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-40 flex flex-col items-center justify-center rounded-xl">
                                     <div className="animate-spin text-blue-600 mb-4"><Icon name="refresh-ccw" size={32} /></div>
@@ -2091,11 +2095,17 @@
                     </main>
 
                     <ModalForm />
+
+                    <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[68px] bg-white border-t border-slate-200 z-50 flex justify-around items-center px-1 pb-safe shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
+                        <BottomNavItem icon={<Icon name="layout-dashboard" size={22} />} label="Beranda" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
+                        <BottomNavItem icon={<Icon name="briefcase" size={22} />} label="Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
+                        <BottomNavItem icon={<Icon name="users" size={22} />} label="Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
+                        <BottomNavItem icon={<Icon name="bar-chart" size={22} />} label="KPI" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
+                    </nav>
                 </div>
             );
         }
 
-        // --- SUB-COMPONENTS ---
         function SidebarItem({ icon, label, isActive, onClick }) {
             return (
                 <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}>
@@ -2104,13 +2114,22 @@
             );
         }
 
+        function BottomNavItem({ icon, label, isActive, onClick }) {
+            return (
+                <button onClick={onClick} className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${isActive ? 'text-blue-600' : 'text-slate-400 hover:text-slate-500'}`}>
+                    <div className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'scale-100'}`}>{icon}</div>
+                    <span className="text-[10px] font-bold">{label}</span>
+                </button>
+            );
+        }
+
         function MetricCard({ title, value, trend, trendUp, icon, color }) {
             return (
                 <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
-                    <div className="flex justify-between items-start mb-4">
-                        <div className={`p-3 rounded-xl ${color}`}>{icon}</div>
+                    <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
+                        <div className={`p-2.5 sm:p-3 rounded-xl ${color}`}>{icon}</div>
                         {trendUp !== null && (
-                            <div className={`flex items-center gap-1 text-xs font-semibold px-2 py-1 rounded-full ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                            <div className={`flex items-center gap-1 text-[10px] sm:text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
                                 <Icon name={trendUp ? 'trending-up' : 'trending-down'} size={12} /> {trend}
                             </div>
                         )}
