@@ -106,6 +106,7 @@
                 "layout-dashboard": '<rect width="7" height="9" x="3" y="3" rx="1"/><rect width="7" height="5" x="14" y="3" rx="1"/><rect width="7" height="9" x="14" y="12" rx="1"/><rect width="7" height="5" x="3" y="16" rx="1"/>',
                 "briefcase": '<rect width="20" height="14" x="2" y="7" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
                 "users": '<path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+                "calendar": '<rect width="18" height="18" x="3" y="4" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
                 "calendar-clock": '<path d="M21 7.5V6a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h3.5"/><path d="M16 2v4"/><path d="M8 2v4"/><path d="M3 10h5"/><path d="M17.5 17.5 16 16.25V14"/><circle cx="16" cy="16" r="6"/>',
                 "search": '<circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/>',
                 "database": '<ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M3 5V19A9 3 0 0 0 21 19V5"/><path d="M3 12A9 3 0 0 0 21 12"/>',
@@ -468,6 +469,7 @@
             const [searchTeamTab, setSearchTeamTab] = useState("");
             const [searchProjectTab, setSearchProjectTab] = useState("");
             const [searchKPITab, setSearchKPITab] = useState("");
+            const [searchGanttTab, setSearchGanttTab] = useState("");
             const [projectPage, setProjectPage] = useState(1);
             const projectsPerPage = 5;
 
@@ -1521,6 +1523,185 @@
                 );
             };
 
+            const renderGantt = () => {
+                const today = new Date();
+                today.setHours(0, 0, 0, 0);
+
+                const ganttData = resources.map(res => {
+                    let latestDeadlineStr = null;
+                    let latestDate = new Date(0);
+                    let latestProjectName = null;
+
+                    computedProjects.forEach(p => {
+                        if (p.computedStatus === 'Done') return; // Hanya yang aktif
+
+                        let projDeadlineStr = null;
+                        
+                        // Khusus untuk Team Leader, abaikan deadline utama proyek. 
+                        // Hanya ambil deadline dari perannya sebagai anggota Sub-Tim.
+                        if (p.team && p.team.includes(res.name)) {
+                            const empCat = getCategoryFromRole(res.role);
+                            const isIndividuallyDone = p.individualStatus?.[res.name] === true;
+                            if (!isIndividuallyDone && p.categoryDetails?.[empCat]?.deadline) {
+                                projDeadlineStr = p.categoryDetails[empCat].deadline;
+                            }
+                        }
+
+                        if (projDeadlineStr) {
+                            const d = new Date(projDeadlineStr);
+                            if (!isNaN(d.getTime()) && d > latestDate) {
+                                latestDate = d;
+                                latestDeadlineStr = projDeadlineStr;
+                                latestProjectName = p.name;
+                            }
+                        }
+                    });
+
+                    let availableNow = false;
+                    let isOverdue = false;
+                    let remainingDays = 0;
+                    
+                    if (!latestDeadlineStr) {
+                        availableNow = true;
+                    } else if (latestDate < today) {
+                        isOverdue = true;
+                        const diffTime = today - latestDate;
+                        remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    } else {
+                        const diffTime = latestDate - today;
+                        remainingDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                    }
+
+                    return {
+                        ...res,
+                        latestDeadlineStr,
+                        latestDate,
+                        latestProjectName,
+                        availableNow,
+                        isOverdue,
+                        remainingDays
+                    };
+                });
+
+                ganttData.sort((a, b) => {
+                    if (a.isOverdue && !b.isOverdue) return -1;
+                    if (!a.isOverdue && b.isOverdue) return 1;
+                    if (a.availableNow !== b.availableNow) return a.availableNow ? 1 : -1;
+                    if (a.isOverdue) return b.remainingDays - a.remainingDays; // Sort highest overdue first
+                    return a.remainingDays - b.remainingDays;
+                });
+
+                const maxDays = Math.max(...ganttData.map(d => d.remainingDays), 30);
+
+                return (
+                    <div className="space-y-6 fade-in">
+                        <ErrorBanner />
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm">
+                            <div>
+                                <h3 className="text-lg font-bold text-slate-800">Ploting & Jadwal Personil</h3>
+                                <p className="text-sm text-slate-500 mt-1 leading-relaxed">Visualisasi sisa waktu beban kerja setiap personil dihitung dari <strong>Hari Ini</strong> hingga target <em>Deadline</em> terjauh dari semua proyek aktif mereka. Sangat berguna untuk memutuskan ploting personil ke proyek baru.</p>
+                            </div>
+                            <div className="w-full sm:w-64 flex-shrink-0 relative">
+                                <Icon name="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Cari pegawai, posisi, tugas..."
+                                    value={searchGanttTab}
+                                    onChange={e => setSearchGanttTab(e.target.value)}
+                                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                />
+                            </div>
+                        </div>
+
+                        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                            <div className="overflow-x-auto custom-scrollbar">
+                                <div className="min-w-[600px] p-4 sm:p-6 space-y-5">
+                                    {(() => {
+                                        let filteredGanttData = ganttData;
+                                        if (searchGanttTab.trim()) {
+                                            const term = searchGanttTab.toLowerCase();
+                                            filteredGanttData = ganttData.filter(d => 
+                                                d.name.toLowerCase().includes(term) ||
+                                                d.role.toLowerCase().includes(term) ||
+                                                (d.latestProjectName && d.latestProjectName.toLowerCase().includes(term))
+                                            );
+                                        }
+
+                                        if (filteredGanttData.length === 0) {
+                                            return (
+                                                <div className="text-center py-8">
+                                                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3">
+                                                        <Icon name="search" size={24} />
+                                                    </div>
+                                                    <h3 className="text-base font-bold text-slate-700">Tidak ada data ditemukan</h3>
+                                                    <p className="text-sm text-slate-500 mt-1">Coba gunakan kata kunci pencarian yang lain.</p>
+                                                </div>
+                                            );
+                                        }
+
+                                        return filteredGanttData.map((data, idx) => {
+                                        let widthPct = 0;
+                                        let barColor = "bg-slate-200";
+                                        let textColor = "text-slate-500";
+                                        let label = "Siap Ditugaskan Saat Ini";
+
+                                        if (data.isOverdue) {
+                                            widthPct = 100;
+                                            label = `Terlambat dari ${formatDateIndo(data.latestDeadlineStr)}`;
+                                            barColor = "bg-rose-600"; 
+                                            textColor = "text-rose-700";
+                                        } else if (!data.availableNow) {
+                                            widthPct = Math.min((data.remainingDays / maxDays) * 100, 100);
+                                            label = `s/d ${formatDateIndo(data.latestDeadlineStr)}`;
+
+                                            if (data.remainingDays <= 14) { barColor = "bg-emerald-400"; textColor = "text-emerald-700"; }
+                                            else if (data.remainingDays <= 60) { barColor = "bg-blue-500"; textColor = "text-blue-700"; }
+                                            else { barColor = "bg-indigo-500"; textColor = "text-indigo-700"; }
+                                        } else {
+                                            barColor = "bg-emerald-500"; textColor = "text-emerald-700";
+                                        }
+
+                                        return (
+                                            <div key={idx} className="flex flex-col gap-1.5 border-b border-slate-50 pb-4 last:border-0 last:pb-0">
+                                                <div className="flex justify-between items-end mb-1">
+                                                    <div className="flex flex-col gap-0.5">
+                                                        <span className="text-sm font-bold text-slate-800 flex flex-wrap items-center gap-2">
+                                                            {data.name} 
+                                                            <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">{data.role}</span>
+                                                        </span>
+                                                        {data.latestProjectName && !data.availableNow && (
+                                                            <span className="text-[10px] font-medium text-slate-400">
+                                                                Tugas Terakhir: {data.latestProjectName}
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                    <span className={`text-[11px] font-bold whitespace-nowrap ml-2 ${textColor}`}>{label}</span>
+                                                </div>
+                                                <div className="w-full bg-slate-100 h-7 rounded-full overflow-hidden relative shadow-inner flex border border-slate-200/50">
+                                                    {data.availableNow ? (
+                                                        <div className={`h-full ${barColor} w-full flex items-center px-4 justify-between bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9zdmc+')]`}>
+                                                            <span className="text-[11px] font-bold text-white drop-shadow-sm flex items-center gap-1.5"><Icon name="check-circle-2" size={14} /> Available Now</span>
+                                                        </div>
+                                                    ) : data.isOverdue ? (
+                                                        <div className={`h-full ${barColor} w-full flex items-center px-4 justify-between bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9zdmc+')]`}>
+                                                            <span className="text-[11px] font-bold text-white drop-shadow-sm flex items-center gap-1.5"><Icon name="alert-triangle" size={14} /> Terlambat {data.remainingDays} Hari!</span>
+                                                        </div>
+                                                    ) : (
+                                                        <div className={`h-full ${barColor} flex items-center px-3 min-w-[5.5rem] justify-end rounded-full bg-gradient-to-r from-transparent to-black/10`} style={{ width: `${Math.max(widthPct, 12)}%` }}>
+                                                            <span className="text-[11px] font-bold text-white drop-shadow-sm whitespace-nowrap">{data.remainingDays} Hari Lagi</span>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        );
+                                    })})()}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
             const renderTim = () => {
                 if (viewingEmployee) return renderEmployeeDetail();
 
@@ -2112,6 +2293,7 @@
                             <SidebarItem icon={<Icon name="layout-dashboard" size={20} />} label="Dashboard" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
                             <SidebarItem icon={<Icon name="briefcase" size={20} />} label="List Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
                             <SidebarItem icon={<Icon name="users" size={20} />} label="Alokasi Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
+                            <SidebarItem icon={<Icon name="calendar" size={20} />} label="Ploting Jadwal" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
                             <SidebarItem icon={<Icon name="bar-chart" size={20} />} label="Evaluasi & KPI (BETA)" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
                         </nav>
                     </aside>
@@ -2124,6 +2306,7 @@
                                         {activeTab === 'dashboard' && 'Ringkasan Proyek & Personil'}
                                         {activeTab === 'proyek' && 'List Proyek'}
                                         {activeTab === 'tim' && 'Alokasi Tim'}
+                                        {activeTab === 'gantt' && 'Ploting & Jadwal Personil'}
                                         {activeTab === 'kpi' && 'Evaluasi & KPI Tim'}
                                     </h2>
                                     <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 hidden sm:block">Sistem Yang Teknis Teknis Aja</p>
@@ -2152,6 +2335,7 @@
                                 {activeTab === 'dashboard' && renderDashboard()}
                                 {activeTab === 'proyek' && renderProyek()}
                                 {activeTab === 'tim' && renderTim()}
+                                {activeTab === 'gantt' && renderGantt()}
                                 {activeTab === 'timesheet' && renderTimesheet()}
                                 {activeTab === 'kpi' && renderKPI()}
                             </div>
@@ -2164,6 +2348,7 @@
                         <BottomNavItem icon={<Icon name="layout-dashboard" size={22} />} label="Beranda" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
                         <BottomNavItem icon={<Icon name="briefcase" size={22} />} label="Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
                         <BottomNavItem icon={<Icon name="users" size={22} />} label="Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
+                        <BottomNavItem icon={<Icon name="calendar" size={22} />} label="Ploting" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
                         <BottomNavItem icon={<Icon name="bar-chart" size={22} />} label="KPI" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
                     </nav>
                 </div>
