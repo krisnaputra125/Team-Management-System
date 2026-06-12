@@ -9,6 +9,26 @@
     <title>Team Management System (YANG TEKNIS - TEKNIS AJA)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    animation: {
+                        blob: "blob 10s infinite",
+                    },
+                    keyframes: {
+                        blob: {
+                            "0%": { transform: "translate(0px, 0px) scale(1)" },
+                            "33%": { transform: "translate(30px, -50px) scale(1.1)" },
+                            "66%": { transform: "translate(-20px, 20px) scale(0.9)" },
+                            "100%": { transform: "translate(0px, 0px) scale(1)" },
+                        }
+                    }
+                }
+            }
+        }
+    </script>
     <!-- React & ReactDOM -->
     <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
@@ -17,7 +37,7 @@
     <style>
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
-            background-color: #f8fafc;
+            background-color: #f0f4f8;
             user-select: none;
             -webkit-user-select: none;
             -webkit-touch-callout: none;
@@ -130,7 +150,10 @@
                 "star": '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
                 "bar-chart": '<line x1="12" y1="20" x2="12" y2="10"/><line x1="18" y1="20" x2="18" y2="4"/><line x1="6" y1="20" x2="6" y2="16"/>',
                 "help-circle": '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
-                "zap": '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>'
+                "zap": '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
+                "sun": '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
+                "moon": '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
+                "hexagon": '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>'
             };
             return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} dangerouslySetInnerHTML={{ __html: paths[name] }} />;
         };
@@ -449,6 +472,24 @@
         }
 
         function App() {
+            const [isDarkMode, setIsDarkMode] = React.useState(() => {
+                if (typeof window !== 'undefined') {
+                    return localStorage.getItem('theme') === 'dark';
+                }
+                return false;
+            });
+
+            React.useEffect(() => {
+                const root = document.documentElement;
+                if (isDarkMode) {
+                    root.classList.add('dark');
+                    localStorage.setItem('theme', 'dark');
+                } else {
+                    root.classList.remove('dark');
+                    localStorage.setItem('theme', 'light');
+                }
+            }, [isDarkMode]);
+
             const [activeTab, setActiveTab] = useState('dashboard');
             const [projects, setProjects] = useState([]);
             const [resources, setResources] = useState([]);
@@ -879,14 +920,14 @@
                         return <tr><td colSpan="5" className="p-8 text-center text-slate-400">Belum ada data personil.</td></tr>;
                     }
                     return data.map((kpi, idx) => (
-                        <tr key={kpi.id} className="hover:bg-slate-50 transition-colors">
+                        <tr key={kpi.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                             <td className="p-4 flex items-center gap-3">
                                 <div className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-white shrink-0 ${idx === 0 ? 'bg-amber-400 shadow-lg shadow-amber-400/30' : idx === 1 ? 'bg-slate-300' : idx === 2 ? 'bg-amber-600' : 'bg-slate-800'}`}>
                                     {idx + 1}
                                 </div>
                                 <div>
                                     <div className="flex items-center gap-2">
-                                        <p className="font-bold text-slate-800">{kpi.name}</p>
+                                        <p className="font-bold text-slate-800 dark:text-slate-200">{kpi.name}</p>
                                         {isLeaderTable && <span className="text-[9px] font-bold text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded flex items-center gap-1"><Icon name="star" size={10} className="fill-amber-500" /> Leader</span>}
                                     </div>
                                     <p className="text-xs text-slate-500">{kpi.role}</p>
@@ -905,7 +946,7 @@
                                 </div>
                             </td>
                             <td className="p-4 text-center">
-                                <span className="font-semibold text-slate-700">{kpi.avgProgress}%</span>
+                                <span className="font-semibold text-slate-700 dark:text-slate-300">{kpi.avgProgress}%</span>
                             </td>
                             <td className="p-4">
                                 <div className="flex flex-col gap-1 items-start">
@@ -933,9 +974,9 @@
                             </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-6 rounded-2xl shadow-sm border border-slate-200">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl p-6 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-white/60 dark:border-slate-700/50">
                             <div>
-                                <h3 className="text-xl font-bold text-slate-800">Evaluasi & KPI Personil (BETA)</h3>
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">Evaluasi & KPI Personil (BETA)</h3>
                                 <p className="text-sm text-slate-500 mt-1">Mengukur kinerja berdasarkan ketepatan waktu, manajemen beban, dan rating.</p>
                             </div>
                             <div className="flex gap-2">
@@ -950,7 +991,7 @@
                             </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-4 justify-start items-center bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+                        <div className="flex flex-col sm:flex-row gap-4 justify-start items-center bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl p-4 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-white/60 dark:border-slate-700/50">
                             <div className="relative w-full sm:w-96">
                                 <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                 <input
@@ -958,21 +999,21 @@
                                     placeholder="Cari nama atau Tim..."
                                     value={searchKPITab}
                                     onChange={(e) => setSearchKPITab(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white transition-colors"
+                                    className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-colors dark:text-slate-200"
                                 />
                             </div>
                         </div>
 
                         {/* TABEL TEAM LEADER */}
-                        <div className="bg-white rounded-2xl border border-amber-200 shadow-sm overflow-hidden flex flex-col mt-6">
-                            <div className="p-4 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
+                        <div className="bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl rounded-2xl border border-white/60 dark:border-amber-900/30 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden flex flex-col mt-6">
+                            <div className="p-4 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-900/30 flex items-center gap-2">
                                 <Icon name="star" size={20} className="fill-amber-500 text-amber-600" />
-                                <h3 className="font-bold text-amber-900">Leaderboard: Team Leader</h3>
+                                <h3 className="font-bold text-amber-900 dark:text-amber-400">Leaderboard: Team Leader</h3>
                             </div>
                             <div className="p-0 overflow-x-auto min-h-[150px]">
                                 <table className="w-full text-left border-collapse min-w-[700px]">
                                     <thead>
-                                        <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                        <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
                                             <th className="p-4 font-semibold whitespace-nowrap">Peringkat & Personil</th>
                                             <th className="p-4 font-semibold text-center whitespace-nowrap">Skor KPI</th>
                                             <th className="p-4 font-semibold text-center whitespace-nowrap">Rating Manual</th>
@@ -980,7 +1021,7 @@
                                             <th className="p-4 font-semibold whitespace-nowrap">Rincian Masalah</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 text-sm">
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm">
                                         {renderTableRows(kpiDataLeaders, true)}
                                     </tbody>
                                 </table>
@@ -988,15 +1029,15 @@
                         </div>
 
                         {/* TABEL STAFF */}
-                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col mt-6">
-                            <div className="p-4 bg-slate-50 border-b border-slate-200 flex items-center gap-2">
-                                <Icon name="users" size={20} className="text-slate-600" />
-                                <h3 className="font-bold text-slate-800">Leaderboard: Staff & Anggota Tim</h3>
+                        <div className="bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl rounded-2xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden flex flex-col mt-6">
+                            <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700/50 flex items-center gap-2">
+                                <Icon name="users" size={20} className="text-slate-600 dark:text-slate-400" />
+                                <h3 className="font-bold text-slate-800 dark:text-slate-100">Leaderboard: Staff & Anggota Tim</h3>
                             </div>
                             <div className="p-0 overflow-x-auto min-h-[300px]">
                                 <table className="w-full text-left border-collapse min-w-[700px]">
                                     <thead>
-                                        <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                        <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
                                             <th className="p-4 font-semibold whitespace-nowrap">Peringkat & Personil</th>
                                             <th className="p-4 font-semibold text-center whitespace-nowrap">Skor KPI</th>
                                             <th className="p-4 font-semibold text-center whitespace-nowrap">Rating Manual</th>
@@ -1004,7 +1045,7 @@
                                             <th className="p-4 font-semibold whitespace-nowrap">Rincian Masalah</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 text-sm">
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm">
                                         {renderTableRows(kpiDataStaffs, false)}
                                     </tbody>
                                 </table>
@@ -1035,9 +1076,9 @@
                         </div>
 
                         <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 lg:gap-8">
-                            <div className="lg:col-span-2 bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                                <div className="p-6 border-b border-slate-100 flex justify-between items-center">
-                                    <h3 className="text-lg font-bold text-slate-800">Status Proyek Berjalan</h3>
+                            <div className="lg:col-span-2 bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl rounded-3xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden flex flex-col">
+                                <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center">
+                                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Status Proyek Berjalan</h3>
                                     <button onClick={() => setActiveTab('proyek')} className="text-sm font-medium text-blue-600 hover:text-blue-800">Lihat Semua</button>
                                 </div>
                                 <div className="p-0 overflow-x-auto min-h-[200px]">
@@ -1049,18 +1090,18 @@
                                     ) : (
                                         <table className="w-full text-left border-collapse">
                                             <thead>
-                                                <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                                <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
                                                     <th className="p-4 font-semibold">Nama Proyek</th>
                                                     <th className="p-4 font-semibold">Progress</th>
                                                     <th className="p-4 font-semibold">Status Makro</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-slate-100 text-sm">
+                                            <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm">
                                                 {/* Menggunakan sortedProjectsForDashboard untuk di-*slice* dan dirender */}
                                                 {sortedProjectsForDashboard.slice(0, 5).map((project) => (
-                                                    <tr key={project.id} className="hover:bg-slate-50 transition-colors">
+                                                    <tr key={project.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors">
                                                         <td className="p-4">
-                                                            <p className="font-semibold text-slate-800">{project.name}</p>
+                                                            <p className="font-semibold text-slate-800 dark:text-slate-200">{project.name}</p>
                                                             <p className="text-xs text-slate-500">{project.client}</p>
                                                             {project.description && <p className="text-[10px] text-slate-400 mt-0.5 line-clamp-1 italic">📝 {project.description}</p>}
                                                         </td>
@@ -1081,12 +1122,12 @@
                                 </div>
                             </div>
 
-                            <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-6 flex flex-col">
+                            <div className="bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl rounded-3xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 p-6 flex flex-col">
                                 <div className="flex justify-between items-center mb-2">
-                                    <h3 className="text-lg font-bold text-slate-800">Beban Kerja Tim</h3>
+                                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Beban Kerja Tim</h3>
                                     <button onClick={() => setActiveTab('tim')} className="text-sm font-medium text-blue-600 hover:text-blue-800">Lihat Full</button>
                                 </div>
-                                <p className="text-xs text-slate-500 mb-4 pb-4 border-b border-slate-100">Beban dihitung otomatis dari penugasan.</p>
+                                <p className="text-xs text-slate-500 mb-4 pb-4 border-b border-slate-100 dark:border-slate-700/50">Beban dihitung otomatis dari penugasan.</p>
                                 <div className="space-y-5 flex-1 min-h-[150px]">
                                     {calculatedResources.length === 0 ? (
                                         <div className="flex flex-col items-center justify-center h-full text-slate-400">
@@ -1101,12 +1142,12 @@
                                                 <div key={res.id}>
                                                     <div className="flex justify-between items-end mb-1">
                                                         <div>
-                                                            <p className="text-sm font-semibold text-slate-800">{res.name}</p>
-                                                            <p className="text-xs text-slate-500">{res.projects} Proyek Berjalan</p>
+                                                            <p className="text-sm font-semibold text-slate-800 dark:text-slate-200">{res.name}</p>
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400">{res.projects} Proyek Berjalan</p>
                                                         </div>
                                                         <span className={`text-xs font-bold ${isOverloaded ? 'text-red-600' : isOptimal ? 'text-emerald-600' : 'text-blue-600'}`}>{res.workload}%</span>
                                                     </div>
-                                                    <div className="w-full bg-slate-100 rounded-full h-2.5 flex overflow-hidden">
+                                                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 rounded-full h-2.5 flex overflow-hidden">
                                                         <div className={`h-full ${isOverloaded ? 'bg-red-500' : isOptimal ? 'bg-emerald-500' : 'bg-blue-500'}`} style={{ width: `${Math.min(res.workload, 100)}%` }}></div>
                                                         {isOverloaded && (<div className="h-full bg-red-800" style={{ width: `${res.workload - 100}%` }}></div>)}
                                                     </div>
@@ -1142,11 +1183,11 @@
                 return (
                     <div className="space-y-6 fade-in">
                         <ErrorBanner />
-                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                            <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl rounded-3xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden flex flex-col">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 flex flex-col md:flex-row md:items-center justify-between gap-4">
                                 <div>
-                                    <h3 className="text-lg font-bold text-slate-800">Daftar List Proyek</h3>
-                                    <p className="text-sm text-slate-500">Kelola proyek dan tentukan penugasan timnya di sini.</p>
+                                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Daftar List Proyek</h3>
+                                    <p className="text-sm text-slate-500 dark:text-slate-400">Kelola proyek dan tentukan penugasan timnya di sini.</p>
                                 </div>
                                 <div className="flex items-center gap-3">
                                     <div className="relative">
@@ -1156,7 +1197,7 @@
                                         <input
                                             type="text"
                                             placeholder="Cari proyek/klien..."
-                                            className="w-full md:w-64 pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                                            className="w-full md:w-64 pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm dark:text-slate-200 outline-none focus:ring-2 focus:ring-blue-500 transition-colors placeholder-slate-400 dark:placeholder-slate-500"
                                             value={searchProjectTab}
                                             onChange={(e) => {
                                                 setSearchProjectTab(e.target.value);
@@ -1172,7 +1213,7 @@
                             <div className="p-0 overflow-x-auto min-h-[400px]">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
-                                        <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                        <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
                                             <th className="p-4 font-semibold">ID</th>
                                             <th className="p-4 font-semibold min-w-[200px]">Nama Proyek & Klien</th>
                                             <th className="p-4 font-semibold min-w-[120px]">Target Makro</th>
@@ -1180,7 +1221,7 @@
                                             <th className="p-4 font-semibold text-right">Aksi</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 text-sm">
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm">
                                         {filteredAndSortedProjects.length === 0 ? (
                                             <tr>
                                                 <td colSpan="5" className="p-8 text-center text-slate-400">
@@ -1216,10 +1257,10 @@
                                                     const teamWarning = getMicroStatus(progress, details.deadline);
 
                                                     return (
-                                                        <div className="mb-3 last:mb-0 bg-white border border-slate-200 p-2.5 rounded-lg shadow-sm">
-                                                            <div className="flex justify-between items-center text-[11px] mb-1.5 border-b border-slate-100 pb-1.5">
+                                                        <div className="mb-3 last:mb-0 bg-white/80 dark:bg-slate-800/80 backdrop-blur-md border border-white/60 dark:border-slate-700/50 p-2.5 rounded-xl shadow-md shadow-slate-200/40 dark:shadow-none hover:-translate-y-0.5 transition-transform duration-300">
+                                                            <div className="flex justify-between items-center text-[11px] mb-1.5 border-b border-slate-100 dark:border-slate-700/50 pb-1.5">
                                                                 <div className="flex items-center gap-2">
-                                                                    <span className="font-bold text-slate-800">{title}</span>
+                                                                    <span className="font-bold text-slate-800 dark:text-slate-200">{title}</span>
                                                                     {teamWarning && teamWarning !== 'On Progress' && teamWarning !== 'Done' && teamWarning !== 'Belum Diatur' && (
                                                                         <span title="Berdasarkan Deadline Sub-Tim" className={`px-1.5 py-0.5 rounded text-[9px] font-bold border flex items-center gap-1 ${teamWarning === 'Terlambat' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-amber-50 text-amber-600 border-amber-200'}`}>
                                                                             <Icon name={teamWarning === 'Terlambat' ? 'alert-triangle' : 'clock'} size={10} />
@@ -1234,13 +1275,13 @@
                                                             </div>
                                                             <div className="flex flex-wrap gap-1 mb-2">
                                                                 {members.map((name, idx) => (
-                                                                    <span key={idx} className="px-1.5 py-0.5 bg-slate-100 text-slate-600 rounded text-[10px] font-semibold border border-slate-200">
+                                                                    <span key={idx} className="px-1.5 py-0.5 bg-slate-100 dark:bg-slate-700/50 text-slate-600 dark:text-slate-300 rounded text-[10px] font-semibold border border-slate-200 dark:border-slate-600">
                                                                         {name}
                                                                     </span>
                                                                 ))}
                                                             </div>
                                                             <div className="flex items-center gap-2">
-                                                                <div className="w-full bg-slate-100 rounded-full h-1.5 flex overflow-hidden">
+                                                                <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-1.5 flex overflow-hidden">
                                                                     <div className={`${progress >= 100 ? 'bg-emerald-500' : teamWarning === 'Terlambat' ? 'bg-red-500' : 'bg-blue-500'} h-1.5 rounded-full`} style={{ width: `${progress}%` }}></div>
                                                                 </div>
                                                                 <span className={`text-[10px] font-bold w-8 text-right ${progress >= 100 ? 'text-emerald-700' : teamWarning === 'Terlambat' ? 'text-red-600' : 'text-blue-700'}`}>{progress}%</span>
@@ -1250,10 +1291,10 @@
                                                 };
 
                                                 return (
-                                                    <tr key={p.id} className="hover:bg-slate-50 transition-colors group align-top">
+                                                    <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group align-top">
                                                         <td className="p-4 font-mono text-xs text-slate-400 pt-5">{p.id}</td>
                                                         <td className="p-4 pt-5">
-                                                            <p className="font-bold text-slate-800 text-base">{p.name}</p>
+                                                            <p className="font-bold text-slate-800 dark:text-slate-200 text-base">{p.name}</p>
                                                             <p className="text-xs text-slate-500 mb-2">{p.client}</p>
                                                             <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium mb-2 ${p.type?.toLowerCase().includes('perencana') ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-teal-50 text-teal-700 border border-teal-100'}`}>
                                                                 {p.type?.toLowerCase().includes('perencana') ? 'Perencanaan' : p.type?.toLowerCase().includes('pengawas') ? 'Pengawasan' : p.type}
@@ -1267,24 +1308,24 @@
                                                                 </div>
                                                             )}
                                                             {p.description ? (
-                                                                <div className="bg-blue-50/50 rounded border border-blue-100 overflow-hidden">
-                                                                    <p className="text-[11px] text-slate-600 px-2 py-1.5 leading-relaxed whitespace-pre-wrap"><span className="text-blue-400 mr-1">📝</span>{p.description}</p>
-                                                                    <p className="text-[9px] text-slate-400 px-2 pb-1.5 pt-1 mt-1 border-t border-blue-50 bg-blue-50/30 font-medium">Terakhir diupdate: {p.descriptionUpdatedAt ? formatDateTimeIndo(p.descriptionUpdatedAt) : '-'}</p>
+                                                                <div className="bg-blue-50/50 dark:bg-blue-900/20 rounded border border-blue-100 dark:border-blue-900/50 overflow-hidden">
+                                                                    <p className="text-[11px] text-slate-600 dark:text-slate-300 px-2 py-1.5 leading-relaxed whitespace-pre-wrap"><span className="text-blue-400 mr-1">📝</span>{p.description}</p>
+                                                                    <p className="text-[9px] text-slate-400 dark:text-slate-500 px-2 pb-1.5 pt-1 mt-1 border-t border-blue-50 dark:border-blue-900/30 bg-blue-50/30 dark:bg-blue-900/10 font-medium">Terakhir diupdate: {p.descriptionUpdatedAt ? formatDateTimeIndo(p.descriptionUpdatedAt) : '-'}</p>
                                                                 </div>
                                                             ) : <p className="text-[11px] text-slate-400 italic">Belum ada deskripsi update</p>}
                                                         </td>
                                                         <td className="p-4 pt-5">
-                                                            <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                                                            <div className="bg-white/60 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700/50 rounded-xl p-3 shadow-sm">
                                                                 <div className="mb-3">
                                                                     <p className="text-[10px] text-slate-500 font-semibold mb-0.5 uppercase tracking-wider">Tenggat Waktu</p>
-                                                                    <p className="text-sm font-bold text-slate-800">{formatDateIndo(p.deadline)}</p>
+                                                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDateIndo(p.deadline)}</p>
                                                                 </div>
                                                                 <div className="mb-3">
                                                                     <div className="flex justify-between text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">
                                                                         <span>Total Progress</span>
                                                                         <span>{p.progress}%</span>
                                                                     </div>
-                                                                    <div className="w-full bg-slate-200 rounded-full h-2">
+                                                                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
                                                                         <div className={`h-2 rounded-full ${p.computedStatus === 'Terlambat' ? 'bg-red-500' : p.computedStatus === 'Done' ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${p.progress}%` }}></div>
                                                                     </div>
                                                                 </div>
@@ -1293,11 +1334,11 @@
                                                         </td>
                                                         <td className="p-4">
                                                             {(!p.team || p.team.length === 0) ? (
-                                                                <div className="flex flex-col items-center justify-center h-24 text-slate-400 border border-dashed border-slate-200 rounded-lg bg-slate-50">
+                                                                <div className="flex flex-col items-center justify-center h-24 text-slate-400 border border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-white/40 dark:bg-slate-900/50">
                                                                     <p className="text-xs italic">Belum ada tim dialokasikan</p>
                                                                 </div>
                                                             ) : (
-                                                                <div className="flex flex-col gap-0 text-xs bg-slate-50 border border-slate-200 p-2 rounded-xl">
+                                                                <div className="flex flex-col gap-0 text-xs bg-white/40 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700/50 p-2 rounded-2xl shadow-inner shadow-slate-100/50 dark:shadow-none">
                                                                     {renderSubTeamProgress("Arsitek", teamGroups.Arsitek)}
                                                                     {renderSubTeamProgress("QS", teamGroups.QS)}
                                                                     {renderSubTeamProgress("Struktur", teamGroups.Struktur)}
@@ -1312,8 +1353,8 @@
                                                                 {p.computedStatus === 'Terlambat' && (
                                                                     <button onClick={() => handleAnalyzeDomino(p)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 text-white hover:from-orange-600 hover:to-rose-600 rounded-lg shadow-md animate-pulse hover:animate-none"><Icon name="alert-triangle" size={14} /> Cek Domino</button>
                                                                 )}
-                                                                <button onClick={() => openModal('project', 'edit', p)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg border border-blue-200"><Icon name="edit" size={14} /> Edit Data</button>
-                                                                <button onClick={() => handleDelete('project', p.id)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 text-red-600 hover:bg-red-100 rounded-lg border border-red-200"><Icon name="trash" size={14} /> Hapus</button>
+                                                                <button onClick={() => openModal('project', 'edit', p)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-800/50"><Icon name="edit" size={14} /> Edit Data</button>
+                                                                <button onClick={() => handleDelete('project', p.id)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-lg border border-red-200 dark:border-red-800/50"><Icon name="trash" size={14} /> Hapus</button>
                                                             </div>
                                                         </td>
                                                     </tr>
@@ -1325,29 +1366,29 @@
                             </div>
 
                             {totalPages > 1 && (
-                                <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 bg-slate-50 sm:px-6">
+                                <div className="flex items-center justify-between px-4 py-3 border-t border-slate-200 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50 sm:px-6">
                                     <div className="flex justify-between flex-1 sm:hidden">
-                                        <button onClick={() => setProjectPage(Math.max(1, projectPage - 1))} disabled={projectPage === 1} className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50">Sebelumnya</button>
-                                        <button onClick={() => setProjectPage(Math.min(totalPages, projectPage + 1))} disabled={projectPage === totalPages} className="relative inline-flex items-center px-4 py-2 ml-3 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 disabled:opacity-50">Selanjutnya</button>
+                                        <button onClick={() => setProjectPage(Math.max(1, projectPage - 1))} disabled={projectPage === 1} className="relative inline-flex items-center px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50">Sebelumnya</button>
+                                        <button onClick={() => setProjectPage(Math.min(totalPages, projectPage + 1))} disabled={projectPage === totalPages} className="relative inline-flex items-center px-4 py-2 ml-3 text-sm font-medium text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50">Selanjutnya</button>
                                     </div>
                                     <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
                                         <div>
-                                            <p className="text-xs text-slate-600">
-                                                Menampilkan <span className="font-semibold text-slate-800">{(projectPage - 1) * projectsPerPage + 1}</span> hingga <span className="font-semibold text-slate-800">{Math.min(projectPage * projectsPerPage, filteredAndSortedProjects.length)}</span> dari <span className="font-semibold text-slate-800">{filteredAndSortedProjects.length}</span> proyek
+                                            <p className="text-xs text-slate-600 dark:text-slate-400">
+                                                Menampilkan <span className="font-semibold text-slate-800 dark:text-slate-200">{(projectPage - 1) * projectsPerPage + 1}</span> hingga <span className="font-semibold text-slate-800 dark:text-slate-200">{Math.min(projectPage * projectsPerPage, filteredAndSortedProjects.length)}</span> dari <span className="font-semibold text-slate-800 dark:text-slate-200">{filteredAndSortedProjects.length}</span> proyek
                                             </p>
                                         </div>
                                         <div>
                                             <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                                <button onClick={() => setProjectPage(Math.max(1, projectPage - 1))} disabled={projectPage === 1} className="relative inline-flex items-center px-2 py-1.5 rounded-l-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50">
+                                                <button onClick={() => setProjectPage(Math.max(1, projectPage - 1))} disabled={projectPage === 1} className="relative inline-flex items-center px-2 py-1.5 rounded-l-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50">
                                                     <span className="sr-only">Previous</span>
                                                     &larr;
                                                 </button>
                                                 {Array.from({ length: totalPages }, (_, i) => i + 1).map(num => (
-                                                    <button key={num} onClick={() => setProjectPage(num)} className={`relative inline-flex items-center px-3 py-1.5 border text-xs font-semibold ${projectPage === num ? 'z-10 bg-blue-50 border-blue-500 text-blue-600' : 'bg-white border-slate-300 text-slate-500 hover:bg-slate-50'}`}>
+                                                    <button key={num} onClick={() => setProjectPage(num)} className={`relative inline-flex items-center px-3 py-1.5 border text-xs font-semibold ${projectPage === num ? 'z-10 bg-blue-50 border-blue-500 text-blue-600 dark:bg-blue-900/30 dark:border-blue-500/50 dark:text-blue-400' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 text-slate-500 dark:text-slate-400 hover:bg-slate-50 dark:hover:bg-slate-700/50'}`}>
                                                         {num}
                                                     </button>
                                                 ))}
-                                                <button onClick={() => setProjectPage(Math.min(totalPages, projectPage + 1))} disabled={projectPage === totalPages} className="relative inline-flex items-center px-2 py-1.5 rounded-r-md border border-slate-300 bg-white text-sm font-medium text-slate-500 hover:bg-slate-50 disabled:opacity-50">
+                                                <button onClick={() => setProjectPage(Math.min(totalPages, projectPage + 1))} disabled={projectPage === totalPages} className="relative inline-flex items-center px-2 py-1.5 rounded-r-md border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-medium text-slate-500 hover:bg-slate-50 dark:hover:bg-slate-700 disabled:opacity-50">
                                                     <span className="sr-only">Next</span>
                                                     &rarr;
                                                 </button>
@@ -1388,36 +1429,36 @@
                 return (
                     <div className="space-y-6 fade-in">
                         <div className="flex items-center gap-4">
-                            <button onClick={() => setViewingEmployee(null)} className="p-2.5 bg-white border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors shadow-sm">
-                                <Icon name="arrow-left" size={20} className="text-slate-600" />
+                            <button onClick={() => setViewingEmployee(null)} className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors shadow-sm">
+                                <Icon name="arrow-left" size={20} className="text-slate-600 dark:text-slate-300" />
                             </button>
                             <div>
-                                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800">Rincian Penugasan: {viewingEmployee.name}</h2>
+                                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800 dark:text-slate-100">Rincian Penugasan: {viewingEmployee.name}</h2>
                                 <p className="text-sm text-slate-500">{viewingEmployee.role} • Kapasitas Terpakai: <strong className={viewingEmployee.workload > 100 ? 'text-red-600' : 'text-blue-600'}>{viewingEmployee.workload}%</strong></p>
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
+                        <div className="bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl rounded-3xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden flex flex-col">
                             {viewingEmployee.level === 'Team Leader' && (
-                                <div className="mb-6 border-b border-slate-200">
-                                    <div className="p-6 bg-amber-50 border-b border-amber-200 flex items-center gap-2">
+                                <div className="mb-6 border-b border-slate-200 dark:border-slate-700/50">
+                                    <div className="p-6 bg-amber-50 dark:bg-amber-900/20 border-b border-amber-200 dark:border-amber-800/50 flex items-center gap-2">
                                         <Icon name="star" size={20} className="fill-amber-500 text-amber-600" />
                                         <div>
-                                            <h3 className="text-lg font-bold text-amber-900">Daftar Proyek yang Di-Lead</h3>
-                                            <p className="text-sm text-amber-700">Tanggung jawab pengawasan keseluruhan proyek secara Makro.</p>
+                                            <h3 className="text-lg font-bold text-amber-900 dark:text-amber-100">Daftar Proyek yang Di-Lead</h3>
+                                            <p className="text-sm text-amber-700 dark:text-amber-300">Tanggung jawab pengawasan keseluruhan proyek secara Makro.</p>
                                         </div>
                                     </div>
                                     <div className="p-0 overflow-x-auto min-h-[150px]">
                                         <table className="w-full text-left border-collapse">
                                             <thead>
-                                                <tr className="bg-amber-50/50 text-amber-800 text-xs uppercase tracking-wider border-b border-amber-100">
+                                                <tr className="bg-amber-50/50 dark:bg-amber-900/10 text-amber-800 dark:text-amber-300 text-xs uppercase tracking-wider border-b border-amber-100 dark:border-amber-800/50">
                                                     <th className="p-4 font-semibold">Nama Proyek & Klien</th>
                                                     <th className="p-4 font-semibold text-center">Tenggat Waktu Kontrak</th>
                                                     <th className="p-4 font-semibold">Total Progress</th>
                                                     <th className="p-4 font-semibold">Status Makro</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-amber-100 text-sm bg-white">
+                                            <tbody className="divide-y divide-amber-100 dark:divide-amber-800/50 text-sm bg-white dark:bg-slate-800">
                                                 {ledProjects.length === 0 ? (
                                                     <tr>
                                                         <td colSpan="4" className="p-8 text-center text-slate-400">
@@ -1427,19 +1468,19 @@
                                                     </tr>
                                                 ) : (
                                                     ledProjects.map(p => (
-                                                        <tr key={`led-${p.id}`} className="hover:bg-amber-50/30 transition-colors">
+                                                        <tr key={`led-${p.id}`} className="hover:bg-amber-50/30 dark:hover:bg-amber-900/10 transition-colors">
                                                             <td className="p-4">
-                                                                <p className="font-semibold text-slate-800">{p.name}</p>
+                                                                <p className="font-semibold text-slate-800 dark:text-slate-200">{p.name}</p>
                                                                 <p className="text-xs text-slate-500">{p.client}</p>
                                                             </td>
-                                                            <td className="p-4 text-center font-medium text-slate-700">
+                                                            <td className="p-4 text-center font-medium text-slate-700 dark:text-slate-300">
                                                                 {p.deadline ? formatDateIndo(p.deadline) : <span className="text-slate-400 italic text-xs">Belum diatur</span>}
                                                             </td>
                                                             <td className="p-4 w-48">
                                                                 <div className="flex justify-between text-xs mb-1">
-                                                                    <span className="font-medium text-slate-700">{p.progress}% Selesai</span>
+                                                                    <span className="font-medium text-slate-700 dark:text-slate-300">{p.progress}% Selesai</span>
                                                                 </div>
-                                                                <div className="w-full bg-slate-200 rounded-full h-2">
+                                                                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
                                                                     <div className={`h-2 rounded-full ${p.computedStatus === 'Terlambat' ? 'bg-red-500' : p.computedStatus === 'Done' ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${p.progress}%` }}></div>
                                                                 </div>
                                                             </td>
@@ -1455,14 +1496,14 @@
                                 </div>
                             )}
 
-                            <div className="p-6 border-b border-slate-100">
-                                <h3 className="text-lg font-bold text-slate-800">Daftar Penugasan Sub-Tim Aktif</h3>
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-700/50">
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Daftar Penugasan Sub-Tim Aktif</h3>
                                 <p className="text-sm text-slate-500">Menampilkan target progres dan deadline spesifik untuk Sub-Tim <strong>{empCategory}</strong> pada masing-masing proyek.</p>
                             </div>
                             <div className="p-0 overflow-x-auto min-h-[300px]">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
-                                        <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                        <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
                                             <th className="p-4 font-semibold">Nama Proyek</th>
                                             <th className="p-4 font-semibold">Status Proyek (Makro)</th>
                                             <th className="p-4 font-semibold">Tugas Sub-Tim ({empCategory})</th>
@@ -1470,7 +1511,7 @@
                                             <th className="p-4 font-semibold text-center">Status Individu</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 text-sm">
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm">
                                         {activeAssignedProjects.length === 0 ? (
                                             <tr>
                                                 <td colSpan="5" className="p-8 text-center text-slate-400">
@@ -1487,9 +1528,9 @@
                                                 const mStatus = isIndividuallyDone || mProg === 100 ? 'Done' : getMicroStatus(mProg, mDead);
 
                                                 return (
-                                                    <tr key={p.id} className="hover:bg-slate-50 transition-colors">
+                                                    <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors">
                                                         <td className="p-4">
-                                                            <p className="font-semibold text-slate-800">{p.name}</p>
+                                                            <p className="font-semibold text-slate-800 dark:text-slate-200">{p.name}</p>
                                                             <p className="text-xs text-slate-500">{p.client}</p>
                                                         </td>
                                                         <td className="p-4">
@@ -1497,19 +1538,19 @@
                                                         </td>
                                                         <td className="p-4 w-48">
                                                             <div className="flex justify-between text-xs mb-1">
-                                                                <span className="font-medium text-slate-700">{mProg}% Selesai {isIndividuallyDone && <span className="text-emerald-600 font-bold ml-1">(Bebas)</span>}</span>
+                                                                <span className="font-medium text-slate-700 dark:text-slate-300">{mProg}% Selesai {isIndividuallyDone && <span className="text-emerald-600 font-bold ml-1">(Bebas)</span>}</span>
                                                             </div>
-                                                            <div className="w-full bg-slate-200 rounded-full h-2">
+                                                            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
                                                                 <div className={`h-2 rounded-full ${mStatus === 'Terlambat' ? 'bg-red-500' : mStatus === 'Done' ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${mProg}%` }}></div>
                                                             </div>
                                                         </td>
-                                                        <td className="p-4 font-medium text-slate-700">
+                                                        <td className="p-4 font-medium text-slate-700 dark:text-slate-300">
                                                             {mDead ? formatDateIndo(mDead) : <span className="text-slate-400 italic text-xs">Belum diatur</span>}
                                                         </td>
                                                         <td className="p-4 text-center">
                                                             <button
                                                                 onClick={() => handleToggleIndividualStatus(p.id, viewingEmployee.name, !isIndividuallyDone)}
-                                                                className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center justify-center gap-1.5 w-full hover:scale-[1.03] active:scale-95 shadow-md ${isIndividuallyDone ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 text-emerald-700 border-emerald-200 hover:shadow-emerald-200 shadow-sm' : 'bg-gradient-to-r from-white to-slate-50 text-slate-700 border-slate-200 hover:shadow-blue-100 hover:border-blue-300'}`}
+                                                                className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center justify-center gap-1.5 w-full hover:scale-[1.03] active:scale-95 shadow-md ${isIndividuallyDone ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-900/30 dark:to-emerald-800/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700/50 hover:shadow-emerald-200 shadow-sm' : 'bg-gradient-to-r from-white to-slate-50 dark:from-slate-800 dark:to-slate-700/50 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:shadow-blue-100 dark:hover:shadow-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700'}`}
                                                             >
                                                                 <Icon name={isIndividuallyDone ? "check-circle" : "zap"} size={14} className={isIndividuallyDone ? "text-emerald-500" : "text-blue-500"} />
                                                                 {isIndividuallyDone ? 'Telah Selesai' : 'Tandai Selesai'}
@@ -1525,14 +1566,14 @@
 
                             {completedAssignedProjects.length > 0 && (
                                 <>
-                                    <div className="p-6 border-b border-slate-100 mt-4">
-                                        <h3 className="text-lg font-bold text-slate-800">Riwayat Penugasan Selesai</h3>
+                                    <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 mt-4">
+                                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Riwayat Penugasan Selesai</h3>
                                         <p className="text-sm text-slate-500">Menampilkan proyek di mana tugas Sub-Tim <strong>{empCategory}</strong> telah mencapai 100% atau ditandai selesai secara individu. Proyek ini tidak lagi membebani kapasitas kerja personil.</p>
                                     </div>
                                     <div className="p-0 overflow-x-auto min-h-[150px]">
                                         <table className="w-full text-left border-collapse opacity-80">
                                             <thead>
-                                                <tr className="bg-emerald-50/50 text-emerald-800 text-xs uppercase tracking-wider">
+                                                <tr className="bg-emerald-50/50 dark:bg-emerald-900/20 text-emerald-800 dark:text-emerald-300 text-xs uppercase tracking-wider">
                                                     <th className="p-4 font-semibold">Nama Proyek</th>
                                                     <th className="p-4 font-semibold">Status Proyek (Makro)</th>
                                                     <th className="p-4 font-semibold">Tugas Sub-Tim ({empCategory})</th>
@@ -1540,7 +1581,7 @@
                                                     <th className="p-4 font-semibold text-center">Status Individu</th>
                                                 </tr>
                                             </thead>
-                                            <tbody className="divide-y divide-emerald-50 text-sm">
+                                            <tbody className="divide-y divide-emerald-50 dark:divide-emerald-900/20 text-sm">
                                                 {completedAssignedProjects.map(p => {
                                                     const microDetails = p.categoryDetails?.[empCategory] || {};
                                                     const mProg = microDetails.progress || 0;
@@ -1549,9 +1590,9 @@
                                                     const mStatus = 'Done';
 
                                                     return (
-                                                        <tr key={p.id} className="hover:bg-emerald-50/30 transition-colors">
+                                                        <tr key={p.id} className="hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10 transition-colors">
                                                             <td className="p-4">
-                                                                <p className="font-semibold text-slate-800">{p.name}</p>
+                                                                <p className="font-semibold text-slate-800 dark:text-slate-200">{p.name}</p>
                                                                 <p className="text-xs text-slate-500">{p.client}</p>
                                                             </td>
                                                             <td className="p-4">
@@ -1559,25 +1600,25 @@
                                                             </td>
                                                             <td className="p-4 w-48">
                                                                 <div className="flex justify-between text-xs mb-1">
-                                                                    <span className="font-medium text-slate-700">{mProg}% Selesai {isIndividuallyDone && <span className="text-emerald-600 font-bold ml-1">(Bebas)</span>}</span>
+                                                                    <span className="font-medium text-slate-700 dark:text-slate-300">{mProg}% Selesai {isIndividuallyDone && <span className="text-emerald-600 font-bold ml-1">(Bebas)</span>}</span>
                                                                 </div>
-                                                                <div className="w-full bg-slate-200 rounded-full h-2">
+                                                                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
                                                                     <div className={`h-2 rounded-full bg-emerald-500`} style={{ width: `${mProg}%` }}></div>
                                                                 </div>
                                                             </td>
-                                                            <td className="p-4 font-medium text-slate-700">
+                                                            <td className="p-4 font-medium text-slate-700 dark:text-slate-300">
                                                                 {mDead ? formatDateIndo(mDead) : <span className="text-slate-400 italic text-xs">Belum diatur</span>}
                                                             </td>
                                                             <td className="p-4 text-center">
                                                                 {mProg >= 100 && !isIndividuallyDone ? (
-                                                                    <div className="px-3 py-2 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 w-full bg-slate-50/50 text-slate-500 border-slate-200 cursor-default shadow-inner" title="Telah diselesaikan secara keseluruhan oleh sub-tim">
+                                                                    <div className="px-3 py-2 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 w-full bg-slate-50/50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 cursor-default shadow-inner" title="Telah diselesaikan secara keseluruhan oleh sub-tim">
                                                                         <Icon name="check-circle" size={14} className="text-emerald-500/70" />
                                                                         Selesai (Otomatis)
                                                                     </div>
                                                                 ) : (
                                                                     <button
                                                                         onClick={() => handleToggleIndividualStatus(p.id, viewingEmployee.name, !isIndividuallyDone)}
-                                                                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center justify-center gap-1.5 w-full hover:scale-[1.03] active:scale-95 shadow-md ${isIndividuallyDone ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 text-emerald-700 border-emerald-200 hover:shadow-emerald-200' : 'bg-gradient-to-r from-white to-slate-50 text-slate-700 border-slate-200 hover:shadow-blue-100 hover:border-blue-300'}`}
+                                                                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center justify-center gap-1.5 w-full hover:scale-[1.03] active:scale-95 shadow-md ${isIndividuallyDone ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-900/30 dark:to-emerald-800/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700/50 hover:shadow-emerald-200' : 'bg-gradient-to-r from-white to-slate-50 dark:from-slate-800 dark:to-slate-700/50 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:shadow-blue-100 dark:hover:shadow-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700'}`}
                                                                     >
                                                                         <Icon name={isIndividuallyDone ? "check-circle" : "zap"} size={14} className={isIndividuallyDone ? "text-emerald-500" : "text-blue-500"} />
                                                                         {isIndividuallyDone ? 'Telah Selesai' : 'Tandai Selesai'}
@@ -1670,10 +1711,10 @@
                 return (
                     <div className="space-y-6 fade-in">
                         <ErrorBanner />
-                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-4 sm:p-6 rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm">
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl p-4 sm:p-6 rounded-2xl sm:rounded-3xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50">
                             <div>
-                                <h3 className="text-lg font-bold text-slate-800">Ploting & Jadwal Personil</h3>
-                                <p className="text-sm text-slate-500 mt-1 leading-relaxed">Visualisasi sisa waktu beban kerja setiap personil dihitung dari <strong>Hari Ini</strong> hingga target <em>Deadline</em> terjauh dari semua proyek aktif mereka. Sangat berguna untuk memutuskan ploting personil ke proyek baru.</p>
+                                <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Ploting & Jadwal Personil</h3>
+                                <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">Visualisasi sisa waktu beban kerja setiap personil dihitung dari <strong className="text-slate-700 dark:text-slate-300">Hari Ini</strong> hingga target <em className="text-slate-700 dark:text-slate-300">Deadline</em> terjauh dari semua proyek aktif mereka. Sangat berguna untuk memutuskan ploting personil ke proyek baru.</p>
                             </div>
                             <div className="w-full sm:w-64 flex-shrink-0 relative">
                                 <Icon name="search" size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
@@ -1682,12 +1723,12 @@
                                     placeholder="Cari pegawai, posisi, tugas..."
                                     value={searchGanttTab}
                                     onChange={e => setSearchGanttTab(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                    className="w-full pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 dark:focus:border-blue-400 transition-all dark:text-slate-200"
                                 />
                             </div>
                         </div>
 
-                        <div className="bg-white rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                        <div className="bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl rounded-2xl sm:rounded-3xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-white/60 dark:border-slate-700/50 overflow-hidden">
                             <div className="overflow-x-auto custom-scrollbar">
                                 <div className="min-w-[600px] p-4 sm:p-6 space-y-5">
                                     {(() => {
@@ -1704,10 +1745,10 @@
                                         if (filteredGanttData.length === 0) {
                                             return (
                                                 <div className="text-center py-8">
-                                                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 text-slate-400 mb-3">
+                                                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-700/50 text-slate-400 dark:text-slate-500 mb-3">
                                                         <Icon name="search" size={24} />
                                                     </div>
-                                                    <h3 className="text-base font-bold text-slate-700">Tidak ada data ditemukan</h3>
+                                                    <h3 className="text-base font-bold text-slate-700 dark:text-slate-300">Tidak ada data ditemukan</h3>
                                                     <p className="text-sm text-slate-500 mt-1">Coba gunakan kata kunci pencarian yang lain.</p>
                                                 </div>
                                             );
@@ -1736,12 +1777,12 @@
                                             }
 
                                             return (
-                                                <div key={idx} className="flex flex-col gap-1.5 border-b border-slate-50 pb-4 last:border-0 last:pb-0">
+                                                <div key={idx} className="flex flex-col gap-1.5 border-b border-slate-50 dark:border-slate-700/50 pb-4 last:border-0 last:pb-0">
                                                     <div className="flex justify-between items-end mb-1">
                                                         <div className="flex flex-col gap-0.5">
-                                                            <span className="text-sm font-bold text-slate-800 flex flex-wrap items-center gap-2">
+                                                            <span className="text-sm font-bold text-slate-800 dark:text-slate-200 flex flex-wrap items-center gap-2">
                                                                 {data.name}
-                                                                <span className="text-[10px] font-bold text-slate-500 bg-slate-100 px-2.5 py-0.5 rounded-full border border-slate-200">{data.role}</span>
+                                                                <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 bg-slate-100 dark:bg-slate-700 px-2.5 py-0.5 rounded-full border border-slate-200 dark:border-slate-600">{data.role}</span>
                                                             </span>
                                                             {data.latestProjectName && !data.availableNow && (
                                                                 <span className="text-[10px] font-medium text-slate-400">
@@ -1751,7 +1792,7 @@
                                                         </div>
                                                         <span className={`text-[11px] font-bold whitespace-nowrap ml-2 ${textColor}`}>{label}</span>
                                                     </div>
-                                                    <div className="w-full bg-slate-100 h-7 rounded-full overflow-hidden relative shadow-inner flex border border-slate-200/50">
+                                                    <div className="w-full bg-slate-100 dark:bg-slate-700/50 h-7 rounded-full overflow-hidden relative shadow-inner flex border border-slate-200/50 dark:border-slate-600/50">
                                                         {data.availableNow ? (
                                                             <div className={`h-full ${barColor} w-full flex items-center px-4 justify-between bg-[url('data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0IiBoZWlnaHQ9IjQiPjxyZWN0IHdpZHRoPSI0IiBoZWlnaHQ9IjQiIGZpbGw9IiNmZmYiIGZpbGwtb3BhY2l0eT0iMC4xIi8+PC9zdmc+')]`}>
                                                                 <span className="text-[11px] font-bold text-white drop-shadow-sm flex items-center gap-1.5"><Icon name="check-circle-2" size={14} /> Available Now</span>
@@ -1789,10 +1830,10 @@
                 return (
                     <div className="space-y-6 fade-in">
                         <ErrorBanner />
-                        <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden flex flex-col">
-                            <div className="p-6 border-b border-slate-100 flex flex-col md:flex-row md:items-center justify-between gap-4">
+                        <div className="bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl rounded-3xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden flex flex-col">
+                            <div className="p-6 border-b border-slate-100 dark:border-slate-700/50 flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white/40 dark:bg-slate-800/40">
                                 <div>
-                                    <h3 className="text-lg font-bold text-slate-800">Alokasi & Beban Kerja Tim</h3>
+                                    <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100">Alokasi & Beban Kerja Tim</h3>
                                     <p className="text-sm text-slate-500">Otomatis dihitung dari jumlah proyek yang mereka pegang (1 Proyek = 25% Beban).</p>
                                 </div>
                                 <div className="flex items-center gap-3">
@@ -1803,7 +1844,7 @@
                                         <input
                                             type="text"
                                             placeholder="Cari nama/Tim..."
-                                            className="w-full md:w-64 pl-9 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-lg text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-colors"
+                                            className="w-full md:w-64 pl-9 pr-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:ring-2 focus:ring-blue-500 transition-colors dark:text-slate-200"
                                             value={searchTeamTab}
                                             onChange={(e) => setSearchTeamTab(e.target.value)}
                                         />
@@ -1816,14 +1857,14 @@
                             <div className="p-0 overflow-x-auto min-h-[400px]">
                                 <table className="w-full text-left border-collapse">
                                     <thead>
-                                        <tr className="bg-slate-50 text-slate-500 text-xs uppercase tracking-wider">
+                                        <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
                                             <th className="p-4 font-semibold whitespace-nowrap">Nama & Tim</th>
                                             <th className="p-4 font-semibold whitespace-nowrap text-center">Total Proyek</th>
                                             <th className="p-4 font-semibold whitespace-nowrap">Indikator Beban Kerja</th>
                                             <th className="p-4 font-semibold whitespace-nowrap text-right">Aksi</th>
                                         </tr>
                                     </thead>
-                                    <tbody className="divide-y divide-slate-100 text-sm">
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm">
                                         {filteredResourcesTab.length === 0 ? (
                                             <tr>
                                                 <td colSpan="4" className="p-8 text-center text-slate-400">
@@ -1835,20 +1876,20 @@
                                             filteredResourcesTab.map((res) => {
                                                 const isOverloaded = res.workload > 100;
                                                 return (
-                                                    <tr key={res.id} className="hover:bg-slate-50 transition-colors group">
+                                                    <tr key={res.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group">
                                                         <td className="p-4">
-                                                            <p className="font-semibold text-slate-800">{res.name}</p>
-                                                            <p className="text-xs text-slate-500">{res.role}</p>
+                                                            <p className="font-semibold text-slate-800 dark:text-slate-200">{res.name}</p>
+                                                            <p className="text-xs text-slate-500 dark:text-slate-400">{res.role}</p>
                                                             {res.level === 'Team Leader' && (
                                                                 <p className="text-[10px] font-bold text-amber-600 mt-1 flex items-center gap-1"><Icon name="star" size={10} className="fill-amber-500" /> Team Leader</p>
                                                             )}
                                                         </td>
-                                                        <td className="p-4 text-center"><span className="inline-block px-3 py-1 bg-slate-100 text-slate-700 rounded-full text-xs font-semibold whitespace-nowrap">{res.projects} Proyek Aktif</span></td>
+                                                        <td className="p-4 text-center"><span className="inline-block px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full text-xs font-semibold whitespace-nowrap">{res.projects} Proyek Aktif</span></td>
                                                         <td className="p-4 w-64">
                                                             <div className="flex justify-between items-end mb-1">
                                                                 <span className={`text-xs font-bold ${isOverloaded ? 'text-red-600' : 'text-blue-600'}`}>{res.workload}% Kapasitas Terpakai</span>
                                                             </div>
-                                                            <div className="w-full bg-slate-100 rounded-full h-2.5 flex overflow-hidden">
+                                                            <div className="w-full bg-slate-100 dark:bg-slate-700 rounded-full h-2.5 flex overflow-hidden">
                                                                 <div className={`h-full ${isOverloaded ? 'bg-red-500' : 'bg-blue-500'}`} style={{ width: `${Math.min(res.workload, 100)}%` }}></div>
                                                                 {isOverloaded && (<div className="h-full bg-red-800" style={{ width: `${res.workload - 100}%` }}></div>)}
                                                             </div>
@@ -1857,12 +1898,12 @@
                                                         <td className="p-4 text-right">
                                                             <div className="flex justify-end gap-2 items-center">
                                                                 {/* TOMBOL DETAIL BARU */}
-                                                                <button onClick={() => setViewingEmployee(res)} className="px-2 py-1.5 text-xs font-semibold bg-indigo-50 text-indigo-600 hover:bg-indigo-100 rounded-lg flex items-center gap-1.5 border border-indigo-200 transition-colors">
+                                                                <button onClick={() => setViewingEmployee(res)} className="px-2 py-1.5 text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg flex items-center gap-1.5 border border-indigo-200 dark:border-indigo-800/50 transition-colors">
                                                                     <Icon name="folder-open" size={14} /> Rincian
                                                                 </button>
                                                                 <div className="lg:opacity-0 lg:group-hover:opacity-100 transition-opacity flex gap-2">
-                                                                    <button onClick={() => openModal('team', 'edit', res)} className="p-1.5 text-blue-600 hover:bg-blue-50 rounded"><Icon name="edit" size={16} /></button>
-                                                                    <button onClick={() => handleDelete('team', res.id)} className="p-1.5 text-red-600 hover:bg-red-50 rounded"><Icon name="trash" size={16} /></button>
+                                                                    <button onClick={() => openModal('team', 'edit', res)} className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"><Icon name="edit" size={16} /></button>
+                                                                    <button onClick={() => handleDelete('team', res.id)} className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"><Icon name="trash" size={16} /></button>
                                                                 </div>
                                                             </div>
                                                         </td>
@@ -1881,11 +1922,11 @@
             // --- KOMPONEN TAB: TIMESHEET ---
             const renderTimesheet = () => (
                 <div className="flex flex-col items-center justify-center h-[60vh] text-center fade-in">
-                    <div className="w-20 h-20 bg-indigo-50 text-indigo-600 rounded-full flex items-center justify-center mb-4">
+                    <div className="w-20 h-20 bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 rounded-full flex items-center justify-center mb-4">
                         <Icon name="calendar-clock" size={40} />
                     </div>
-                    <h2 className="text-2xl font-bold text-slate-800 mb-2">Modul Timesheet</h2>
-                    <p className="text-slate-500 max-w-md">Modul pengisian log harian karyawan sedang dalam tahap pengembangan dan akan segera dirilis pada pembaruan sistem berikutnya.</p>
+                    <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100 mb-2">Modul Timesheet</h2>
+                    <p className="text-slate-500 dark:text-slate-400 max-w-md">Modul pengisian log harian karyawan sedang dalam tahap pengembangan dan akan segera dirilis pada pembaruan sistem berikutnya.</p>
                 </div>
             );
 
@@ -2013,9 +2054,9 @@
 
                 return (
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-end sm:items-center justify-center sm:p-4 fade-in">
-                        <div className="bg-white rounded-t-2xl sm:rounded-2xl shadow-xl w-full sm:max-w-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[95vh] pb-4 sm:pb-0">
-                            <div className="p-5 border-b border-slate-100 flex justify-between items-center bg-slate-50 shrink-0">
-                                <h3 className="font-bold text-lg text-slate-800">
+                        <div className="bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl shadow-xl border border-transparent dark:border-slate-700/50 w-full sm:max-w-2xl overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[95vh] pb-4 sm:pb-0">
+                            <div className="p-5 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 shrink-0">
+                                <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">
                                     {modalConfig.mode === 'add' ? 'Tambah ' : 'Edit '}
                                     {isProject ? 'Data Proyek Terpadu' : 'Data Personil'}
                                 </h3>
@@ -2028,25 +2069,25 @@
                                         <>
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div className="col-span-2 md:col-span-1">
-                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Nama Proyek</label>
-                                                    <input required name="name" value={formData.name} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors" placeholder="Cth: Perencanaan RSUD" />
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nama Proyek</label>
+                                                    <input required name="name" value={formData.name} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200" placeholder="Cth: Perencanaan RSUD" />
                                                 </div>
                                                 <div className="col-span-2 md:col-span-1">
-                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Klien / Owner</label>
-                                                    <input required name="client" value={formData.client} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors" placeholder="Cth: Dinas PUPR" />
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Klien / Owner</label>
+                                                    <input required name="client" value={formData.client} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200" placeholder="Cth: Dinas PUPR" />
                                                 </div>
                                             </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                                 <div>
-                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Tipe Proyek</label>
-                                                    <select name="type" value={formData.type} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-slate-50 focus:bg-white">
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tipe Proyek</label>
+                                                    <select name="type" value={formData.type} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 dark:text-slate-200">
                                                         <option value="Perencanaan">Perencanaan</option><option value="Pengawasan">Pengawasan</option><option value="Manajemen Konstruksi">Manajemen Konstruksi</option>
                                                     </select>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-xs font-semibold text-slate-600 mb-1">Status Proyek (Makro)</label>
-                                                    <select name="status" value={formData.status} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-slate-50 focus:bg-white">
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Status Proyek (Makro)</label>
+                                                    <select name="status" value={formData.status} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 dark:text-slate-200">
                                                         <option value="On Progress">On Progress</option>
                                                         <option value="Done">Done</option>
                                                     </select>
@@ -2054,26 +2095,26 @@
                                             </div>
 
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-600 mb-1 flex items-center gap-1"><Icon name="file-text" size={12} /> Deskripsi / Update Proyek</label>
-                                                <textarea name="description" value={formData.description || ''} onChange={handleChange} rows="3" className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors resize-none" placeholder="Tuliskan update terkini proyek ini... Cth: Sudah masuk tahap DED, menunggu approval dari klien untuk revisi arsitektur." />
+                                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1"><Icon name="file-text" size={12} /> Deskripsi / Update Proyek</label>
+                                                <textarea name="description" value={formData.description || ''} onChange={handleChange} rows="3" className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors resize-none dark:text-slate-200" placeholder="Tuliskan update terkini proyek ini... Cth: Sudah masuk tahap DED, menunggu approval dari klien untuk revisi arsitektur." />
                                             </div>
 
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-100 p-3 rounded-lg border border-slate-200">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-100 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
                                                 <div>
-                                                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Progress Keseluruhan Proyek (%)</label>
+                                                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Progress Keseluruhan Proyek (%)</label>
                                                     <input
                                                         type="number"
                                                         readOnly
                                                         value={computedTotalProgress}
-                                                        className="block w-full p-2.5 border border-slate-200 bg-slate-200 text-slate-600 font-bold rounded-lg text-sm outline-none cursor-not-allowed appearance-none m-0"
+                                                        className="block w-full p-2.5 border border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-sm outline-none cursor-not-allowed appearance-none m-0"
                                                         title="Nilai ini dihitung otomatis"
                                                     />
                                                     <p className="text-[9px] text-slate-500 mt-1">Dihitung otomatis dari rata-rata progress sub-tim.</p>
                                                 </div>
                                                 <div>
-                                                    <label className="block text-[11px] font-bold text-slate-700 mb-1">Tenggat Waktu Kontrak Akhir</label>
+                                                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Tenggat Waktu Kontrak Akhir</label>
                                                     <div className="relative w-full">
-                                                        <div className="flex items-center justify-between w-full p-2.5 border border-slate-200 rounded-lg text-sm bg-white min-h-[42px] text-slate-700">
+                                                        <div className="flex items-center justify-between w-full p-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 min-h-[42px] text-slate-700 dark:text-slate-200">
                                                             <span>{formData.deadline ? formatDateIndo(formData.deadline) : 'Pilih tanggal...'}</span>
                                                             <Icon name="calendar-clock" size={16} className="text-slate-400" />
                                                         </div>
@@ -2086,12 +2127,12 @@
                                             </div>
 
                                             {/* BAGIAN PENUGASAN TIM */}
-                                            <div className="pt-2 border-t border-slate-200">
-                                                <label className="block text-sm font-bold text-slate-800 mb-2">Penugasan Personil</label>
+                                            <div className="pt-2 border-t border-slate-200 dark:border-slate-700/50">
+                                                <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Penugasan Personil</label>
 
-                                                <div className="mb-4 bg-amber-50 p-3 rounded-lg border border-amber-200 shadow-sm">
+                                                <div className="mb-4 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-xl border border-amber-200 dark:border-amber-800/50 shadow-sm">
                                                     <label className="block text-xs font-bold text-amber-800 mb-1 flex items-center gap-1.5"><Icon name="star" size={14} className="text-amber-500" /> Pilih Team Leader Proyek</label>
-                                                    <select name="teamLeader" value={formData.teamLeader || ""} onChange={handleChange} className="w-full p-2.5 border border-amber-200 rounded-lg text-sm outline-none focus:border-amber-500 bg-white shadow-sm font-semibold text-slate-700">
+                                                    <select name="teamLeader" value={formData.teamLeader || ""} onChange={handleChange} className="w-full p-2.5 border border-amber-200 dark:border-amber-700/50 rounded-xl text-sm outline-none focus:border-amber-500 bg-white dark:bg-slate-800 shadow-sm font-semibold text-slate-700 dark:text-slate-200">
                                                         <option value="">-- Tidak Ada Team Leader --</option>
                                                         {resources.filter(r => r.level === 'Team Leader').map(r => (
                                                             <option key={r.id} value={r.name}>{r.name} ({r.role})</option>
@@ -2099,7 +2140,7 @@
                                                     </select>
                                                 </div>
 
-                                                <label className="block text-xs font-bold text-slate-700 mb-1">Anggota Sub-Tim</label>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Anggota Sub-Tim</label>
 
                                                 <div className="relative mb-3">
                                                     <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
@@ -2108,13 +2149,13 @@
                                                     <input
                                                         type="text"
                                                         placeholder="Cari nama personil untuk ditugaskan..."
-                                                        className="w-full pl-8 pr-3 py-2 bg-white border border-slate-300 rounded-md text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all shadow-sm"
+                                                        className="w-full pl-8 pr-3 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-lg text-sm outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 dark:focus:ring-blue-900 transition-all shadow-sm dark:text-slate-200"
                                                         value={searchTeam}
                                                         onChange={(e) => setSearchTeam(e.target.value)}
                                                     />
                                                 </div>
 
-                                                <div className="border border-slate-200 rounded-lg bg-slate-50 p-3 max-h-48 overflow-y-auto">
+                                                <div className="border border-slate-200 dark:border-slate-700/50 rounded-xl bg-slate-50 dark:bg-slate-900/50 p-3 max-h-48 overflow-y-auto">
                                                     {resources.length === 0 ? (
                                                         <p className="text-xs text-slate-400 italic">Belum ada data tim. Tambahkan di menu Alokasi Tim.</p>
                                                     ) : filteredResources.length === 0 ? (
@@ -2134,18 +2175,18 @@
 
                                             {/* BAGIAN TARGET MICRO PER SUB-TIM */}
                                             {activeCategories.length > 0 && (
-                                                <div className="pt-4 border-t border-slate-100">
-                                                    <label className="flex items-center gap-1.5 text-sm font-bold text-slate-800 mb-3"><Icon name="target" size={16} className="text-blue-600" /> Target Khusus Per Sub-Tim</label>
-                                                    <div className="space-y-2 border border-slate-200 rounded-lg p-3 bg-blue-50/30">
+                                                <div className="pt-4 border-t border-slate-100 dark:border-slate-700/50">
+                                                    <label className="flex items-center gap-1.5 text-sm font-bold text-slate-800 dark:text-slate-100 mb-3"><Icon name="target" size={16} className="text-blue-600 dark:text-blue-400" /> Target Khusus Per Sub-Tim</label>
+                                                    <div className="space-y-2 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 bg-blue-50/30 dark:bg-blue-900/10">
                                                         {['Arsitek', 'QS', 'Struktur', 'MEP', 'Tata Ruang', 'Lainnya'].map(cat => {
                                                             if (!activeCategories.includes(cat)) return null;
 
                                                             const details = formData.categoryDetails?.[cat] || { progress: 0, deadline: '' };
 
                                                             return (
-                                                                <div key={cat} className="bg-white border border-slate-200 p-2.5 rounded-lg flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 shadow-sm">
-                                                                    <div className="w-full sm:w-1/3 sm:border-r border-slate-100 sm:pr-2">
-                                                                        <h4 className="text-xs font-bold text-slate-700">{cat}</h4>
+                                                                <div key={cat} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 shadow-sm">
+                                                                    <div className="w-full sm:w-1/3 sm:border-r border-slate-100 dark:border-slate-700 sm:pr-2">
+                                                                        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200">{cat}</h4>
                                                                         <p className="text-[9px] text-slate-500 truncate mt-0.5" title={formData.team.filter(m => { const r = resources.find(x => x.name === m); return r && getCategoryFromRole(r.role) === cat; }).join(', ')}>
                                                                             {formData.team.filter(m => {
                                                                                 const r = resources.find(x => x.name === m);
@@ -2154,8 +2195,8 @@
                                                                         </p>
                                                                     </div>
                                                                     <div className="w-1/3">
-                                                                        <label className="block text-[9px] font-bold text-slate-500 mb-1 uppercase">Progress Tim (%)</label>
-                                                                        <input type="number" min="0" max="100" className="block w-full p-2 border border-slate-200 rounded-md text-xs outline-none focus:border-blue-500 bg-slate-50 focus:bg-white transition-colors appearance-none m-0"
+                                                                        <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">Progress Tim (%)</label>
+                                                                        <input type="number" min="0" max="100" className="block w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors appearance-none m-0 dark:text-slate-200"
                                                                             value={details.progress !== undefined ? details.progress : 0}
                                                                             onChange={(e) => handleCategoryDetailChange(cat, 'progress', e.target.value)}
                                                                         />
@@ -2163,7 +2204,7 @@
                                                                     <div className="w-full sm:w-1/3">
                                                                         <label className="block text-[9px] font-bold text-slate-500 mb-1 uppercase">Deadline Tim</label>
                                                                         <div className="relative w-full">
-                                                                            <div className="flex items-center justify-between w-full p-2 border border-slate-200 rounded-md text-xs bg-slate-50 focus-within:border-blue-500 focus-within:bg-white transition-colors min-h-[34px] text-slate-700">
+                                                                            <div className="flex items-center justify-between w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900/50 focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition-colors min-h-[34px] text-slate-700 dark:text-slate-200">
                                                                                 <span>{details.deadline ? formatDateIndo(details.deadline) : 'Pilih tanggal...'}</span>
                                                                                 <Icon name="calendar-clock" size={14} className="text-slate-400" />
                                                                             </div>
@@ -2182,10 +2223,10 @@
                                         </>
                                     ) : (
                                         <>
-                                            <div><label className="block text-xs font-semibold text-slate-600 mb-1">Nama Personil</label><input required name="name" value={formData.name} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500" placeholder="Cth: Ir. Budi Santoso" /></div>
+                                            <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nama Personil</label><input required name="name" value={formData.name} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200" placeholder="Cth: Ir. Budi Santoso" /></div>
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Tim</label>
-                                                <select name="role" value={formData.role} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500">
+                                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tim</label>
+                                                <select name="role" value={formData.role} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200">
                                                     <option value="Arsitek">Arsitek</option>
                                                     <option value="QS">Quantity Surveyor (QS)</option>
                                                     <option value="Struktur">Struktur</option>
@@ -2195,32 +2236,32 @@
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Tingkat Jabatan</label>
-                                                <select name="level" value={formData.level} onChange={handleChange} className="w-full p-2.5 border border-slate-200 rounded-lg text-sm outline-none focus:border-blue-500 bg-white">
+                                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tingkat Jabatan</label>
+                                                <select name="level" value={formData.level} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200">
                                                     <option value="Staff">Staff (Anggota)</option>
                                                     <option value="Team Leader">Team Leader</option>
                                                 </select>
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-600 mb-1">Rating Kinerja (1-5)</label>
+                                                <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Rating Kinerja (1-5)</label>
                                                 <div className="flex gap-2 items-center p-1">
                                                     {[1, 2, 3, 4, 5].map(star => (
                                                         <button
                                                             key={star}
                                                             type="button"
                                                             onClick={() => setFormData({ ...formData, rating: star })}
-                                                            className={`transition-colors focus:outline-none ${star <= (formData.rating || 3) ? 'text-amber-500' : 'text-slate-200'}`}
+                                                            className={`transition-colors focus:outline-none ${star <= (formData.rating || 3) ? 'text-amber-500' : 'text-slate-200 dark:text-slate-700'}`}
                                                         >
                                                             <Icon name="star" size={28} />
                                                         </button>
                                                     ))}
-                                                    <span className="text-xs text-slate-500 ml-2 font-medium">Bintang {formData.rating || 3}</span>
+                                                    <span className="text-xs text-slate-500 dark:text-slate-400 ml-2 font-medium">Bintang {formData.rating || 3}</span>
                                                 </div>
                                             </div>
 
-                                            <div className="p-4 bg-slate-50 border border-slate-200 rounded-lg space-y-3">
+                                            <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3">
                                                 <div>
-                                                    <label className="block text-xs font-bold text-slate-700 mb-1">Tambah / Kurang Skor KPI (+/-)</label>
+                                                    <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tambah / Kurang Skor KPI (+/-)</label>
                                                     <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">Nilai ini akan langsung ditambahkan secara relatif ke skor terakhir. Contoh: Jika skor 60 dan Anda isi 40, skor menjadi 100.</p>
                                                     <div className="flex flex-wrap gap-3 items-center mt-2">
                                                         <input
@@ -2228,12 +2269,12 @@
                                                             name="adjustmentInput"
                                                             value={formData.adjustmentInput === '' || isNaN(formData.adjustmentInput) ? '' : (formData.adjustmentInput !== undefined ? formData.adjustmentInput : 0)}
                                                             onChange={(e) => setFormData({ ...formData, adjustmentInput: e.target.value === '' ? '' : parseInt(e.target.value) })}
-                                                            className="w-24 p-2 border border-slate-300 rounded-lg text-sm text-center outline-none focus:border-blue-500 bg-white"
+                                                            className="w-24 p-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-center outline-none focus:border-blue-500 bg-white dark:bg-slate-800 dark:text-slate-200"
                                                         />
                                                         <button
                                                             type="button"
                                                             onClick={handleResetTo100}
-                                                            className="px-3 py-2 bg-blue-100 hover:bg-blue-200 text-blue-700 border border-blue-200 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                                                            className="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
                                                         >
                                                             <Icon name="target" size={12} />
                                                             Reset ke 100
@@ -2241,7 +2282,7 @@
                                                         <button
                                                             type="button"
                                                             onClick={handleResetToAuto}
-                                                            className="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                                                            className="px-3 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
                                                             title="Hapus semua penyesuaian manual dan kembalikan ke perhitungan murni otomatis proyek."
                                                         >
                                                             <Icon name="refresh-ccw" size={12} />
@@ -2250,8 +2291,8 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                            <div className="p-3 bg-blue-50 border border-blue-100 rounded-lg mt-4">
-                                                <p className="text-xs text-blue-800 font-medium leading-relaxed">
+                                            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-xl mt-4">
+                                                <p className="text-xs text-blue-800 dark:text-blue-300 font-medium leading-relaxed">
                                                     💡 <strong className="font-bold">Info Cerdas:</strong> Jumlah proyek dan Persentase Beban Kerja orang ini tidak perlu diinput manual. Sistem akan otomatis menghitungnya berdasarkan seberapa banyak proyek yang ia tangani di menu List Proyek.
                                                 </p>
                                             </div>
@@ -2260,9 +2301,9 @@
                                 </form>
                             </div>
 
-                            <div className="p-5 border-t border-slate-100 flex justify-end gap-3 bg-slate-50 shrink-0">
-                                <button onClick={closeModal} type="button" className="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-200 rounded-lg transition-colors">Batal</button>
-                                <button form="crudForm" type="submit" disabled={loading} className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm disabled:opacity-70">
+                            <div className="p-5 border-t border-slate-100 dark:border-slate-700/50 flex justify-end gap-3 bg-slate-50 dark:bg-slate-900/50 shrink-0">
+                                <button onClick={closeModal} type="button" className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl transition-colors">Batal</button>
+                                <button form="crudForm" type="submit" disabled={loading} className="flex items-center gap-2 px-6 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-xl transition-colors shadow-sm disabled:opacity-70">
                                     {loading ? <Icon name="refresh-ccw" className="animate-spin" size={16} /> : <Icon name="save" size={16} />}
                                     Simpan
                                 </button>
@@ -2278,7 +2319,7 @@
                 return (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm transition-opacity" onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl border border-slate-200/50 shadow-2xl rounded-3xl w-full max-w-sm p-8 overflow-hidden scale-in-center">
+                        <div className="relative bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-2xl rounded-3xl w-full max-w-sm p-8 overflow-hidden scale-in-center">
                             <div className={`absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl opacity-20 ${confirmDialog.type === 'danger' ? 'bg-red-500' : 'bg-blue-500'}`}></div>
                             <div className={`absolute -bottom-20 -left-20 w-48 h-48 rounded-full blur-3xl opacity-10 ${confirmDialog.type === 'danger' ? 'bg-rose-500' : 'bg-indigo-500'}`}></div>
 
@@ -2286,13 +2327,12 @@
                                 <div className={`w-20 h-20 rounded-2xl flex items-center justify-center mb-5 shadow-inner backdrop-blur-md ${confirmDialog.type === 'danger' ? 'bg-red-50/80 text-red-500 shadow-red-200 border border-red-100' : 'bg-blue-50/80 text-blue-500 shadow-blue-200 border border-blue-100'}`}>
                                     <Icon name={confirmDialog.type === 'danger' ? 'alert-triangle' : 'help-circle'} size={36} />
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-800 mb-2">{confirmDialog.title}</h3>
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">{confirmDialog.title}</h3>
                                 <p className="text-sm text-slate-500 mb-8 leading-relaxed px-2">{confirmDialog.message}</p>
 
                                 <div className="flex w-full gap-3">
                                     <button
-                                        onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
-                                        className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-600 bg-slate-100/50 hover:bg-slate-100 hover:text-slate-800 transition-all border border-slate-200/60"
+                                        className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100/50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-100 transition-all border border-slate-200/60 dark:border-slate-600/50"
                                     >
                                         Batal
                                     </button>
@@ -2318,19 +2358,19 @@
                 return (
                     <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowDevPrompt(false)}></div>
-                        <div className="relative bg-white/95 backdrop-blur-xl border border-slate-200/50 shadow-2xl rounded-3xl w-full max-w-sm p-8 overflow-hidden scale-in-center">
+                        <div className="relative bg-white/95 dark:bg-slate-800/95 backdrop-blur-xl border border-slate-200/50 dark:border-slate-700/50 shadow-2xl rounded-3xl w-full max-w-sm p-8 overflow-hidden scale-in-center">
                             <div className="absolute -top-20 -right-20 w-48 h-48 rounded-full blur-3xl opacity-20 bg-indigo-500"></div>
                             <div className="flex flex-col items-center text-center relative z-10">
                                 <div className="w-16 h-16 rounded-2xl flex items-center justify-center mb-4 bg-indigo-50 text-indigo-500 shadow-inner">
                                     <Icon name="alert-triangle" size={32} />
                                 </div>
-                                <h3 className="text-xl font-bold text-slate-800 mb-2">Akses Terbatas (BETA)</h3>
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Akses Terbatas (BETA)</h3>
                                 <p className="text-sm text-slate-500 mb-6 leading-relaxed">Menu Evaluasi & KPI masih dalam tahap uji coba (BETA) dan sedang dalam tahap pengembangan sementara hanya dapat diakses oleh Developer (Krisna).</p>
 
                                 <input
                                     type="password"
                                     placeholder="Masukkan Password Developer"
-                                    className="w-full p-3 rounded-xl border border-slate-300 bg-slate-50 text-center text-sm font-semibold mb-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                                    className="w-full p-3 rounded-xl border border-slate-300 dark:border-slate-600 bg-slate-50 dark:bg-slate-900/50 text-center text-sm font-semibold mb-2 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all dark:text-slate-200"
                                     value={devPassword}
                                     onChange={(e) => {
                                         setDevPassword(e.target.value);
@@ -2341,7 +2381,7 @@
                                 {devAuthError ? <p className="text-xs text-red-500 font-medium mb-4">{devAuthError}</p> : <div className="mb-4"></div>}
 
                                 <div className="flex w-full gap-3">
-                                    <button onClick={() => setShowDevPrompt(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-600 bg-slate-100/50 hover:bg-slate-100 transition-all border border-slate-200/60">Batal</button>
+                                    <button onClick={() => setShowDevPrompt(false)} className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100/50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all border border-slate-200/60 dark:border-slate-600/50">Batal</button>
                                     <button onClick={handleDevLogin} className="flex-1 py-3 rounded-xl text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-all shadow-lg shadow-indigo-600/30">Akses</button>
                                 </div>
                             </div>
@@ -2357,21 +2397,21 @@
                 return (
                     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
                         <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setDominoAnalysis(null)}></div>
-                        <div className="relative bg-white border border-slate-200/50 shadow-2xl rounded-2xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden scale-in-center">
-                            <div className="flex items-center justify-between p-5 border-b border-slate-100 bg-slate-50">
+                        <div className="relative bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 shadow-2xl rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden scale-in-center">
+                            <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50">
                                 <div className="flex items-center gap-3">
                                     <div className="w-10 h-10 rounded-xl bg-orange-100 flex items-center justify-center text-orange-600 shadow-sm">
                                         <Icon name="alert-triangle" size={20} />
                                     </div>
                                     <div>
-                                        <h3 className="text-lg font-bold text-slate-800 leading-tight">Analisis Efek Domino 💥</h3>
+                                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">Analisis Efek Domino 💥</h3>
                                         <p className="text-xs text-slate-500 font-medium">Prediksi tabrakan jadwal akibat keterlambatan proyek</p>
                                     </div>
                                 </div>
                                 <button onClick={() => setDominoAnalysis(null)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Icon name="x" size={20} /></button>
                             </div>
 
-                            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-white">
+                            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-white dark:bg-slate-800">
                                 <div className="mb-6 bg-red-50 border border-red-100 p-4 rounded-xl">
                                     <p className="text-sm text-slate-700 leading-relaxed">
                                         Proyek <strong className="text-red-600">{project.name}</strong> saat ini terlambat <strong className="text-red-600 text-lg">{delayDays} hari</strong>.
@@ -2384,28 +2424,28 @@
                                 {impactedEmployees.length === 0 ? (
                                     <div className="flex flex-col items-center justify-center py-10 text-slate-400">
                                         <Icon name="check-circle-2" size={48} className="mb-3 text-emerald-400 opacity-50" />
-                                        <h4 className="text-base font-bold text-slate-700">Aman Terkendali</h4>
+                                        <h4 className="text-base font-bold text-slate-700 dark:text-slate-200">Aman Terkendali</h4>
                                         <p className="text-sm text-center max-w-sm mt-1">Tidak ditemukan efek domino. Anggota sub-tim tidak memiliki jadwal proyek lain di masa depan yang saling berdekatan.</p>
                                     </div>
                                 ) : (
                                     <div className="space-y-6">
                                         {impactedEmployees.map((emp, i) => (
-                                            <div key={i} className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden">
-                                                <div className="bg-slate-50 border-b border-slate-100 px-4 py-3 flex items-center gap-3">
+                                            <div key={i} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 shadow-sm rounded-2xl overflow-hidden">
+                                                <div className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700 px-4 py-3 flex items-center gap-3">
                                                     <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-xs">{emp.name.substring(0, 2).toUpperCase()}</div>
                                                     <div>
-                                                        <p className="text-sm font-bold text-slate-800">{emp.name}</p>
+                                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{emp.name}</p>
                                                         <p className="text-[10px] text-slate-500 font-medium">Beresiko membawa keterlambatan {delayDays} hari</p>
                                                     </div>
                                                 </div>
-                                                <div className="p-4 bg-slate-50/50">
+                                                <div className="p-4 bg-slate-50/50 dark:bg-slate-900/20">
                                                     <p className="text-xs font-semibold text-slate-600 mb-3 uppercase tracking-wider">Proyek Masa Depan Yang Terancam Terlambat:</p>
                                                     <div className="space-y-3">
                                                         {emp.futureProjects.map((fp, j) => (
-                                                            <div key={j} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white border border-slate-200 rounded-lg shadow-sm relative overflow-hidden">
+                                                            <div key={j} className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm relative overflow-hidden">
                                                                 <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500"></div>
                                                                 <div>
-                                                                    <p className="text-sm font-bold text-slate-800">{fp.name}</p>
+                                                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{fp.name}</p>
                                                                     <p className="text-xs text-slate-500 mt-0.5">Deadline: {formatDateIndo(fp.deadlineStr)} (Sisa <span className="font-semibold text-slate-700">{fp.remainingDays} hari</span>)</p>
                                                                 </div>
                                                                 <div className="bg-red-50 px-3 py-2 rounded-lg border border-red-100 text-right">
@@ -2424,8 +2464,8 @@
                                 )}
                             </div>
 
-                            <div className="p-5 border-t border-slate-100 bg-slate-50 flex justify-end">
-                                <button onClick={() => setDominoAnalysis(null)} className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-700 bg-white border border-slate-200 hover:bg-slate-50 transition-colors shadow-sm">Tutup Analisis</button>
+                            <div className="p-5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50 flex justify-end">
+                                <button onClick={() => setDominoAnalysis(null)} className="px-5 py-2.5 rounded-xl text-sm font-bold text-slate-700 dark:text-slate-300 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors shadow-sm">Tutup Analisis</button>
                             </div>
                         </div>
                     </div>
@@ -2433,15 +2473,26 @@
             };
 
             return (
-                <div className="flex h-screen text-slate-800">
-                    {renderFuturisticConfirm()}
-                    {renderDeveloperPromptModal()}
-                    {renderDominoModal()}
-                    <aside className="hidden lg:flex lg:relative z-auto w-64 bg-slate-900 text-slate-300 flex-col shrink-0 h-full top-0 left-0">
+                <div className="flex h-screen text-slate-800 dark:text-slate-200 bg-[#f0f4f8] dark:bg-slate-950 transition-colors duration-200 relative overflow-hidden">
+                    {/* Glowing Orbs for Glassmorphism */}
+                    <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                        <div className="absolute -top-[20%] -left-[10%] w-[60vw] h-[60vw] rounded-full bg-indigo-400/40 dark:bg-indigo-900/20 blur-[120px] mix-blend-multiply dark:mix-blend-screen opacity-80 animate-blob"></div>
+                        <div className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-fuchsia-400/40 dark:bg-fuchsia-900/20 blur-[120px] mix-blend-multiply dark:mix-blend-screen opacity-80 animate-blob" style={{ animationDelay: '2s' }}></div>
+                        <div className="absolute top-[30%] left-[40%] w-[40vw] h-[40vw] rounded-full bg-sky-300/40 dark:bg-sky-900/20 blur-[100px] mix-blend-multiply dark:mix-blend-screen opacity-80 animate-blob" style={{ animationDelay: '4s' }}></div>
+                    </div>
+                    
+                    <div className="relative z-10 flex w-full h-full">
+                        {renderFuturisticConfirm()}
+                        {renderDeveloperPromptModal()}
+                        {renderDominoModal()}
+                        <aside className="hidden lg:flex lg:relative z-auto w-64 bg-white/40 dark:bg-slate-950/60 backdrop-blur-3xl border-r border-white/60 dark:border-slate-800/50 text-slate-600 dark:text-slate-300 flex-col shrink-0 h-full top-0 left-0 transition-colors duration-200 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)] dark:shadow-2xl">
                         <div className="p-4 lg:p-6">
                             <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-3 text-white">
-                                    <div className="w-8 h-8 shrink-0 rounded-lg bg-blue-600 flex items-center justify-center font-bold text-lg shadow-lg shadow-blue-600/30">TM</div>
+                                <div className="flex items-center gap-3 text-slate-800 dark:text-white">
+                                    <div className="w-8 h-8 shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 relative overflow-hidden">
+                                        <Icon name="hexagon" size={28} className="absolute fill-white/10 text-white/20" />
+                                        <Icon name="users" size={16} className="relative z-10" strokeWidth={2.5} />
+                                    </div>
                                     <h1 className="text-base font-bold tracking-wide leading-tight">Team Management System</h1>
                                 </div>
                             </div>
@@ -2456,11 +2507,11 @@
                         </nav>
                     </aside>
 
-                    <main className="flex-1 flex flex-col overflow-hidden bg-slate-50 relative min-w-0">
-                        <header className="h-14 sm:h-16 lg:h-20 bg-white border-b border-slate-200 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 shrink-0 gap-2 shadow-sm">
+                    <main className="flex-1 flex flex-col overflow-hidden bg-transparent relative min-w-0 transition-colors duration-200">
+                        <header className="h-14 sm:h-16 lg:h-20 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-b border-white/60 dark:border-slate-700/50 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 shrink-0 gap-2 shadow-sm dark:shadow-slate-950/20 transition-colors duration-200">
                             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
                                 <div className="min-w-0">
-                                    <h2 className="text-sm sm:text-base lg:text-xl font-bold text-slate-800 truncate">
+                                    <h2 className="text-sm sm:text-base lg:text-xl font-bold text-slate-800 dark:text-slate-100 truncate transition-colors duration-200">
                                         {activeTab === 'dashboard' && 'Ringkasan Proyek & Personil'}
                                         {activeTab === 'proyek' && 'List Proyek'}
                                         {activeTab === 'tim' && 'Alokasi Tim'}
@@ -2470,12 +2521,23 @@
                                     <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 hidden sm:block">Sistem Yang Teknis Teknis Aja</p>
                                 </div>
                             </div>
-                            <div className="flex items-center gap-2 sm:gap-4 shrink-0">
-                                <div className={`hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold shadow-sm ${isLive ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' : 'bg-amber-100 text-amber-700 border border-amber-200'}`}>
+                            <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                                <button
+                                    onClick={() => setIsDarkMode(!isDarkMode)}
+                                    className={`relative inline-flex h-8 w-[64px] shrink-0 items-center rounded-full transition-all duration-500 shadow-inner hover:scale-105 ${isDarkMode ? 'bg-white border-slate-200 dark:bg-slate-200' : 'bg-slate-800 border-slate-700'}`}
+                                    title={isDarkMode ? 'Ubah ke Light Mode' : 'Ubah ke Dark Mode'}
+                                >
+                                    <span
+                                        className={`inline-flex h-6 w-6 transform items-center justify-center rounded-full transition-transform duration-500 ease-out z-10 ${isDarkMode ? 'translate-x-[34px] bg-slate-900 text-white shadow-md' : 'translate-x-1 bg-white text-slate-800 shadow-md'}`}
+                                    >
+                                        <Icon name={isDarkMode ? "moon" : "sun"} size={14} strokeWidth={2.5} />
+                                    </span>
+                                </button>
+                                <div className={`hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold shadow-sm ${isLive ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'}`}>
                                     <Icon name="database" size={14} /> {isLive ? 'Live' : 'Offline'}
                                 </div>
                                 <div className={`sm:hidden w-2.5 h-2.5 rounded-full shrink-0 ${isLive ? 'bg-emerald-500' : 'bg-amber-500'}`} title={isLive ? 'Connected' : 'Offline'} />
-                                <button onClick={fetchFromGoogleSheets} disabled={loading || !GOOGLE_SCRIPT_URL} className={`p-2 rounded-full transition-all shrink-0 ${loading ? 'animate-spin text-blue-500' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50'}`} title="Refresh Database">
+                                <button onClick={fetchFromGoogleSheets} disabled={loading || !GOOGLE_SCRIPT_URL} className={`p-2 rounded-full transition-all shrink-0 ${loading ? 'animate-spin text-blue-500' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 dark:text-slate-500 dark:hover:text-blue-400'}`} title="Refresh Database">
                                     <Icon name="refresh-ccw" size={20} />
                                 </button>
                             </div>
@@ -2483,9 +2545,9 @@
 
                         <div className="flex-1 overflow-auto p-3 sm:p-5 lg:p-8 pb-24 lg:pb-8 relative">
                             {loading && (
-                                <div className="absolute inset-0 bg-white/60 backdrop-blur-sm z-40 flex flex-col items-center justify-center rounded-xl">
-                                    <div className="animate-spin text-blue-600 mb-4"><Icon name="refresh-ccw" size={32} /></div>
-                                    <p className="font-semibold text-slate-700">Sinkronisasi Database...</p>
+                                <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm z-40 flex flex-col items-center justify-center rounded-xl">
+                                    <div className="animate-spin text-blue-600 dark:text-blue-500 mb-4"><Icon name="refresh-ccw" size={32} /></div>
+                                    <p className="font-semibold text-slate-700 dark:text-slate-300">Sinkronisasi Database...</p>
                                 </div>
                             )}
 
@@ -2502,20 +2564,21 @@
 
                     <ModalForm />
 
-                    <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[68px] bg-white border-t border-slate-200 z-50 flex justify-around items-center px-1 pb-safe shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)]">
+                    <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[68px] bg-white/60 dark:bg-slate-900/60 backdrop-blur-3xl border-t border-white/60 dark:border-slate-800 z-50 flex justify-around items-center px-1 pb-safe shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] transition-colors duration-200">
                         <BottomNavItem icon={<Icon name="layout-dashboard" size={22} />} label="Beranda" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
                         <BottomNavItem icon={<Icon name="briefcase" size={22} />} label="Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
                         <BottomNavItem icon={<Icon name="users" size={22} />} label="Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
                         <BottomNavItem icon={<Icon name="calendar" size={22} />} label="Ploting" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
                         <BottomNavItem icon={<Icon name="bar-chart" size={22} />} label="KPI" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
                     </nav>
+                    </div>
                 </div>
             );
         }
 
         function SidebarItem({ icon, label, isActive, onClick }) {
             return (
-                <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 ${isActive ? 'bg-blue-600 text-white shadow-md shadow-blue-900/20' : 'text-slate-400 hover:bg-slate-800 hover:text-slate-200'}`}>
+                <button onClick={onClick} className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl transition-all duration-200 font-semibold ${isActive ? 'bg-indigo-600 text-white shadow-md shadow-indigo-900/20' : 'text-slate-500 dark:text-slate-400 hover:bg-white/60 dark:hover:bg-slate-800 hover:text-slate-800 dark:hover:text-slate-200'}`}>
                     {icon} <span className="font-medium text-sm">{label}</span>
                 </button>
             );
@@ -2523,7 +2586,7 @@
 
         function BottomNavItem({ icon, label, isActive, onClick }) {
             return (
-                <button onClick={onClick} className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${isActive ? 'text-blue-600' : 'text-slate-400 hover:text-slate-500'}`}>
+                <button onClick={onClick} className={`flex flex-col items-center justify-center w-full h-full gap-1 transition-colors ${isActive ? 'text-blue-600 dark:text-blue-400' : 'text-slate-400 hover:text-slate-500 dark:hover:text-slate-300'}`}>
                     <div className={`transition-transform duration-200 ${isActive ? 'scale-110' : 'scale-100'}`}>{icon}</div>
                     <span className="text-[10px] font-bold">{label}</span>
                 </button>
@@ -2531,33 +2594,42 @@
         }
 
         function MetricCard({ title, value, trend, trendUp, icon, color }) {
+            const darkColorMap = {
+                'bg-blue-50': 'dark:bg-blue-900/20 dark:text-blue-400',
+                'bg-indigo-50': 'dark:bg-indigo-900/20 dark:text-indigo-400',
+                'bg-amber-50': 'dark:bg-amber-900/20 dark:text-amber-400',
+                'bg-emerald-50': 'dark:bg-emerald-900/20 dark:text-emerald-400',
+                'bg-teal-50': 'dark:bg-teal-900/20 dark:text-teal-400',
+            };
+            const darkColor = darkColorMap[color] || '';
+            
             return (
-                <div className="bg-white p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                <div className="bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl p-4 sm:p-5 lg:p-6 rounded-3xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 hover:shadow-2xl hover:shadow-blue-900/10 dark:hover:shadow-blue-900/20 transition-all hover:-translate-y-1 flex flex-col justify-between">
                     <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
-                        <div className={`p-2.5 sm:p-3 rounded-xl ${color}`}>{icon}</div>
+                        <div className={`p-3 rounded-2xl ${color} ${darkColor}`}>{icon}</div>
                         {trendUp !== null && (
-                            <div className={`flex items-center gap-1 text-[10px] sm:text-xs font-semibold px-2 py-1 rounded-full whitespace-nowrap ${trendUp ? 'bg-emerald-50 text-emerald-600' : 'bg-red-50 text-red-600'}`}>
+                            <div className={`flex items-center gap-1 text-[10px] sm:text-xs font-semibold px-2.5 py-1 rounded-full whitespace-nowrap ${trendUp ? 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/20 dark:text-emerald-400' : 'bg-red-50 text-red-600 dark:bg-red-900/20 dark:text-red-400'}`}>
                                 <Icon name={trendUp ? 'trending-up' : 'trending-down'} size={12} /> {trend}
                             </div>
                         )}
                     </div>
                     <div>
-                        <h4 className="text-slate-500 text-sm font-medium mb-1">{title}</h4>
-                        <p className="text-2xl lg:text-3xl font-bold text-slate-800">{value}</p>
+                        <h4 className="text-slate-500 dark:text-slate-400 text-sm font-medium mb-1">{title}</h4>
+                        <p className="text-2xl lg:text-3xl font-black text-slate-800 dark:text-white tracking-tight">{value}</p>
                     </div>
                 </div>
             );
         }
 
         function StatusBadge({ status }) {
-            let style = 'bg-slate-50 text-slate-700 border-slate-200';
-            if (status === 'Done') style = 'bg-emerald-50 text-emerald-700 border-emerald-200';
-            else if (status === 'On Progress') style = 'bg-blue-50 text-blue-700 border-blue-200';
-            else if (status === 'Terlambat') style = 'bg-red-50 text-red-700 border-red-200';
-            else if (status === 'Beresiko') style = 'bg-amber-50 text-amber-700 border-amber-200';
+            let style = 'bg-slate-50/80 text-slate-700 border-slate-200 dark:bg-slate-800/80 dark:border-slate-600 dark:text-slate-300';
+            if (status === 'Done') style = 'bg-emerald-50/80 text-emerald-700 border-emerald-200 dark:bg-emerald-900/30 dark:border-emerald-800/50 dark:text-emerald-400';
+            else if (status === 'On Progress') style = 'bg-blue-50/80 text-blue-700 border-blue-200 dark:bg-blue-900/30 dark:border-blue-800/50 dark:text-blue-400';
+            else if (status === 'Terlambat') style = 'bg-red-50/80 text-red-700 border-red-200 dark:bg-red-900/30 dark:border-red-800/50 dark:text-red-400';
+            else if (status === 'Beresiko') style = 'bg-amber-50/80 text-amber-700 border-amber-200 dark:bg-amber-900/30 dark:border-amber-800/50 dark:text-amber-400';
 
             return (
-                <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${style} flex items-center gap-1.5 w-max`}>
+                <span className={`px-2.5 py-1 rounded-full text-xs font-bold border backdrop-blur-sm shadow-sm ${style} flex items-center gap-1.5 w-max`}>
                     {status === 'Done' && <Icon name="check-circle-2" size={12} />}
                     {status === 'On Progress' && <Icon name="clock" size={12} />}
                     {status === 'Terlambat' && <Icon name="alert-triangle" size={12} />}
