@@ -509,6 +509,7 @@
             // State pencarian
             const [searchTeamTab, setSearchTeamTab] = useState("");
             const [searchProjectTab, setSearchProjectTab] = useState("");
+            const [filterProjectType, setFilterProjectType] = useState("Semua Tipe");
             const [searchKPITab, setSearchKPITab] = useState("");
             const [searchGanttTab, setSearchGanttTab] = useState("");
             const [projectPage, setProjectPage] = useState(1);
@@ -587,10 +588,22 @@
                             if (p.teamLeader === res.name) {
                                 numProjects++;
                             } else if (p.team && p.team.includes(res.name)) {
-                                const microProgress = p.categoryDetails?.[empCat]?.progress ? Number(p.categoryDetails[empCat].progress) : 0;
-                                const isIndividuallyDone = p.individualStatus?.[res.name] === true;
-                                if (microProgress < 100 && !isIndividuallyDone) {
-                                    numProjects++;
+                                const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
+                                let isIndividuallyDone = p.individualStatus?.[res.name] === true;
+
+                                if (isPengawasan) {
+                                    const pengawasanDeadline = p.pengawasanDetails?.[res.name]?.deadline;
+                                    if (pengawasanDeadline && pengawasanDeadline < new Date().toISOString().split('T')[0]) {
+                                        isIndividuallyDone = true;
+                                    }
+                                    if (!isIndividuallyDone) {
+                                        numProjects++;
+                                    }
+                                } else {
+                                    const microProgress = p.categoryDetails?.[empCat]?.progress ? Number(p.categoryDetails[empCat].progress) : 0;
+                                    if (microProgress < 100 && !isIndividuallyDone) {
+                                        numProjects++;
+                                    }
                                 }
                             }
                         }
@@ -631,6 +644,7 @@
                             let catDetails = {};
                             let leader = "";
                             let individualStatus = {};
+                            let pengawasanDetails = {};
                             const rawString = p.team ? p.team.join(';') : '';
 
                             if (rawString.startsWith('{')) {
@@ -640,11 +654,12 @@
                                     catDetails = parsed.details || {};
                                     leader = parsed.leader || "";
                                     individualStatus = parsed.individualStatus || {};
+                                    pengawasanDetails = parsed.pengawasanDetails || {};
                                 } catch (e) { parsedTeam = p.team || []; }
                             } else {
                                 parsedTeam = p.team || [];
                             }
-                            return { ...p, team: parsedTeam, categoryDetails: catDetails, teamLeader: leader, individualStatus };
+                            return { ...p, team: parsedTeam, categoryDetails: catDetails, teamLeader: leader, individualStatus, pengawasanDetails };
                         });
 
                         const processedResources = (data.resources || []).map(r => {
@@ -1167,11 +1182,25 @@
                 const statusPriority = { "Terlambat": 1, "Beresiko": 2, "On Progress": 3, "Done": 4 };
 
                 const filteredAndSortedProjects = computedProjects
-                    .filter(p =>
-                        p.name.toLowerCase().includes(searchProjectTab.toLowerCase()) ||
-                        p.client.toLowerCase().includes(searchProjectTab.toLowerCase()) ||
-                        p.id.toLowerCase().includes(searchProjectTab.toLowerCase())
-                    )
+                    .filter(p => {
+                        const matchesSearch = p.name.toLowerCase().includes(searchProjectTab.toLowerCase()) ||
+                                              p.client.toLowerCase().includes(searchProjectTab.toLowerCase()) ||
+                                              p.id.toLowerCase().includes(searchProjectTab.toLowerCase());
+                        
+                        let matchesType = true;
+                        if (filterProjectType !== 'Semua Tipe') {
+                            if (filterProjectType === 'Perencanaan') {
+                                matchesType = p.type?.toLowerCase().includes('perencana');
+                            } else if (filterProjectType === 'Pengawasan') {
+                                matchesType = p.type?.toLowerCase().includes('pengawas');
+                            } else if (filterProjectType === 'Manajemen Konstruksi') {
+                                matchesType = p.type?.toLowerCase().includes('manajemen konstruksi');
+                            } else {
+                                matchesType = p.type === filterProjectType;
+                            }
+                        }
+                        return matchesSearch && matchesType;
+                    })
                     .sort((a, b) => statusPriority[a.computedStatus] - statusPriority[b.computedStatus]);
 
                 const totalPages = Math.ceil(filteredAndSortedProjects.length / projectsPerPage);
@@ -1204,6 +1233,24 @@
                                                 setProjectPage(1);
                                             }}
                                         />
+                                    </div>
+                                    <div className="relative">
+                                        <select
+                                            className="appearance-none w-full md:w-48 pl-3 pr-8 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-blue-500 transition-colors cursor-pointer"
+                                            value={filterProjectType}
+                                            onChange={(e) => {
+                                                setFilterProjectType(e.target.value);
+                                                setProjectPage(1);
+                                            }}
+                                        >
+                                            <option value="Semua Tipe">Semua Tipe</option>
+                                            <option value="Perencanaan">Perencanaan</option>
+                                            <option value="Pengawasan">Pengawasan</option>
+                                            <option value="Manajemen Konstruksi">Manajemen Konstruksi</option>
+                                        </select>
+                                        <div className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none">
+                                            <Icon name="filter" size={14} />
+                                        </div>
                                     </div>
                                     <button onClick={() => openModal('project', 'add')} className="flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap">
                                         <Icon name="plus" size={16} /> Tambah
@@ -1320,15 +1367,17 @@
                                                                     <p className="text-[10px] text-slate-500 font-semibold mb-0.5 uppercase tracking-wider">Tenggat Waktu</p>
                                                                     <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDateIndo(p.deadline)}</p>
                                                                 </div>
-                                                                <div className="mb-3">
-                                                                    <div className="flex justify-between text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">
-                                                                        <span>Total Progress</span>
-                                                                        <span>{p.progress}%</span>
+                                                                {!(p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi')) && (
+                                                                    <div className="mb-3">
+                                                                        <div className="flex justify-between text-[10px] font-semibold text-slate-500 mb-1 uppercase tracking-wider">
+                                                                            <span>Total Progress</span>
+                                                                            <span>{p.progress}%</span>
+                                                                        </div>
+                                                                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                                                            <div className={`h-2 rounded-full ${p.computedStatus === 'Terlambat' ? 'bg-red-500' : p.computedStatus === 'Done' ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${p.progress}%` }}></div>
+                                                                        </div>
                                                                     </div>
-                                                                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                                                                        <div className={`h-2 rounded-full ${p.computedStatus === 'Terlambat' ? 'bg-red-500' : p.computedStatus === 'Done' ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${p.progress}%` }}></div>
-                                                                    </div>
-                                                                </div>
+                                                                )}
                                                                 <StatusBadge status={p.computedStatus} />
                                                             </div>
                                                         </td>
@@ -1339,12 +1388,49 @@
                                                                 </div>
                                                             ) : (
                                                                 <div className="flex flex-col gap-0 text-xs bg-white/40 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700/50 p-2 rounded-2xl shadow-inner shadow-slate-100/50 dark:shadow-none">
-                                                                    {renderSubTeamProgress("Arsitek", teamGroups.Arsitek)}
-                                                                    {renderSubTeamProgress("QS", teamGroups.QS)}
-                                                                    {renderSubTeamProgress("Struktur", teamGroups.Struktur)}
-                                                                    {renderSubTeamProgress("MEP", teamGroups.MEP)}
-                                                                    {renderSubTeamProgress("Tata Ruang", teamGroups['Tata Ruang'])}
-                                                                    {renderSubTeamProgress("Lainnya", teamGroups.Lainnya)}
+                                                                    {p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi') ? (
+                                                                        <div className="space-y-3 mt-1">
+                                                                            {['Team Leader', 'Tenaga Ahli', 'Inspector', 'Administrasi'].map(role => {
+                                                                                const roleMembers = p.team.filter(m => (p.pengawasanDetails?.[m]?.role || 'Inspector') === role);
+                                                                                if (roleMembers.length === 0) return null;
+                                                                                return (
+                                                                                    <div key={role} className="flex flex-col mb-3 last:mb-0">
+                                                                                        <div className="flex justify-between items-center mb-1.5">
+                                                                                            <span className="font-bold text-[11px] text-slate-800 dark:text-slate-200 uppercase tracking-wider">{role}</span>
+                                                                                            <span className="text-[10px] px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 font-semibold">{roleMembers.length} Personil</span>
+                                                                                        </div>
+                                                                                        <div className="space-y-2 pl-2 border-l-2 border-emerald-100 dark:border-emerald-800/50">
+                                                                                            {roleMembers.map(m => {
+                                                                                                const detail = p.pengawasanDetails?.[m] || {};
+                                                                                                const isAutoDone = detail.deadline && detail.deadline < new Date().toISOString().split('T')[0];
+                                                                                                const isIndividuallyDone = p.individualStatus?.[m] || isAutoDone;
+                                                                                                
+                                                                                                return (
+                                                                                                    <div key={m} className="flex flex-col gap-0.5">
+                                                                                                        <span className={`text-[11px] font-semibold ${isIndividuallyDone ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-slate-300'}`}>{m}</span>
+                                                                                                        <span className="text-[9px] text-emerald-600 dark:text-emerald-400 font-medium flex items-center gap-1">
+                                                                                                            <Icon name="calendar-clock" size={10} />
+                                                                                                            {detail.deadline ? `Selesai: ${formatDateIndo(detail.deadline)}` : 'Selesai: Belum diatur'}
+                                                                                                            {isIndividuallyDone && <span className="ml-1 text-emerald-500 font-bold">(Done)</span>}
+                                                                                                        </span>
+                                                                                                    </div>
+                                                                                                )
+                                                                                            })}
+                                                                                        </div>
+                                                                                    </div>
+                                                                                )
+                                                                            })}
+                                                                        </div>
+                                                                    ) : (
+                                                                        <>
+                                                                            {renderSubTeamProgress("Arsitek", teamGroups.Arsitek)}
+                                                                            {renderSubTeamProgress("QS", teamGroups.QS)}
+                                                                            {renderSubTeamProgress("Struktur", teamGroups.Struktur)}
+                                                                            {renderSubTeamProgress("MEP", teamGroups.MEP)}
+                                                                            {renderSubTeamProgress("Tata Ruang", teamGroups['Tata Ruang'])}
+                                                                            {renderSubTeamProgress("Lainnya", teamGroups.Lainnya)}
+                                                                        </>
+                                                                    )}
                                                                 </div>
                                                             )}
                                                         </td>
@@ -1409,16 +1495,36 @@
 
                 const activeAssignedProjects = computedProjects.filter(p => {
                     if (!p.team || !p.team.includes(viewingEmployee.name) || p.computedStatus === 'Done') return false;
-                    const microProgress = p.categoryDetails?.[empCategory]?.progress ? Number(p.categoryDetails[empCategory].progress) : 0;
-                    const isIndividuallyDone = p.individualStatus?.[viewingEmployee.name] === true;
-                    return microProgress < 100 && !isIndividuallyDone;
+                    const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
+                    let isIndividuallyDone = p.individualStatus?.[viewingEmployee.name] === true;
+
+                    if (isPengawasan) {
+                        const pengawasanDeadline = p.pengawasanDetails?.[viewingEmployee.name]?.deadline;
+                        if (pengawasanDeadline && pengawasanDeadline < new Date().toISOString().split('T')[0]) {
+                            isIndividuallyDone = true;
+                        }
+                        return !isIndividuallyDone;
+                    } else {
+                        const microProgress = p.categoryDetails?.[empCategory]?.progress ? Number(p.categoryDetails[empCategory].progress) : 0;
+                        return microProgress < 100 && !isIndividuallyDone;
+                    }
                 });
 
                 const completedAssignedProjects = computedProjects.filter(p => {
                     if (!p.team || !p.team.includes(viewingEmployee.name) || p.computedStatus === 'Done') return false;
-                    const microProgress = p.categoryDetails?.[empCategory]?.progress ? Number(p.categoryDetails[empCategory].progress) : 0;
-                    const isIndividuallyDone = p.individualStatus?.[viewingEmployee.name] === true;
-                    return microProgress >= 100 || isIndividuallyDone;
+                    const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
+                    let isIndividuallyDone = p.individualStatus?.[viewingEmployee.name] === true;
+
+                    if (isPengawasan) {
+                        const pengawasanDeadline = p.pengawasanDetails?.[viewingEmployee.name]?.deadline;
+                        if (pengawasanDeadline && pengawasanDeadline < new Date().toISOString().split('T')[0]) {
+                            isIndividuallyDone = true;
+                        }
+                        return isIndividuallyDone;
+                    } else {
+                        const microProgress = p.categoryDetails?.[empCategory]?.progress ? Number(p.categoryDetails[empCategory].progress) : 0;
+                        return microProgress >= 100 || isIndividuallyDone;
+                    }
                 });
 
                 const ledProjects = computedProjects.filter(p =>
@@ -1521,9 +1627,13 @@
                                             </tr>
                                         ) : (
                                             activeAssignedProjects.map(p => {
+                                                const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
+                                                const pengawasanDetail = p.pengawasanDetails?.[viewingEmployee.name] || {};
+                                                const mRole = pengawasanDetail.role || '-';
+                                                
                                                 const microDetails = p.categoryDetails?.[empCategory] || {};
                                                 const mProg = microDetails.progress || 0;
-                                                const mDead = microDetails.deadline;
+                                                const mDead = isPengawasan ? pengawasanDetail.deadline : microDetails.deadline;
                                                 const isIndividuallyDone = p.individualStatus && p.individualStatus[viewingEmployee.name] === true;
                                                 const mStatus = isIndividuallyDone || mProg === 100 ? 'Done' : getMicroStatus(mProg, mDead);
 
@@ -1536,17 +1646,31 @@
                                                         <td className="p-4">
                                                             <StatusBadge status={p.computedStatus} />
                                                         </td>
-                                                        <td className="p-4 w-48">
-                                                            <div className="flex justify-between text-xs mb-1">
-                                                                <span className="font-medium text-slate-700 dark:text-slate-300">{mProg}% Selesai {isIndividuallyDone && <span className="text-emerald-600 font-bold ml-1">(Bebas)</span>}</span>
-                                                            </div>
-                                                            <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                                                                <div className={`h-2 rounded-full ${mStatus === 'Terlambat' ? 'bg-red-500' : mStatus === 'Done' ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${mProg}%` }}></div>
-                                                            </div>
-                                                        </td>
-                                                        <td className="p-4 font-medium text-slate-700 dark:text-slate-300">
-                                                            {mDead ? formatDateIndo(mDead) : <span className="text-slate-400 italic text-xs">Belum diatur</span>}
-                                                        </td>
+                                                        {isPengawasan ? (
+                                                            <td colSpan="2" className="p-4">
+                                                                <div className="flex flex-col">
+                                                                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Peran: {mRole}</span>
+                                                                    <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                                                                        <Icon name="calendar-clock" size={12} />
+                                                                        <span>{mDead ? formatDateIndo(mDead) : 'Belum diatur'}</span>
+                                                                    </div>
+                                                                </div>
+                                                            </td>
+                                                        ) : (
+                                                            <>
+                                                                <td className="p-4 w-48">
+                                                                    <div className="flex justify-between text-xs mb-1">
+                                                                        <span className="font-medium text-slate-700 dark:text-slate-300">{mProg}% Selesai {isIndividuallyDone && <span className="text-emerald-600 font-bold ml-1">(Bebas)</span>}</span>
+                                                                    </div>
+                                                                    <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                                                        <div className={`h-2 rounded-full ${mStatus === 'Terlambat' ? 'bg-red-500' : mStatus === 'Done' ? 'bg-emerald-500' : 'bg-blue-600'}`} style={{ width: `${mProg}%` }}></div>
+                                                                    </div>
+                                                                </td>
+                                                                <td className="p-4 font-medium text-slate-700 dark:text-slate-300">
+                                                                    {mDead ? formatDateIndo(mDead) : <span className="text-slate-400 italic text-xs">Belum diatur</span>}
+                                                                </td>
+                                                            </>
+                                                        )}
                                                         <td className="p-4 text-center">
                                                             <button
                                                                 onClick={() => handleToggleIndividualStatus(p.id, viewingEmployee.name, !isIndividuallyDone)}
@@ -1583,11 +1707,19 @@
                                             </thead>
                                             <tbody className="divide-y divide-emerald-50 dark:divide-emerald-900/20 text-sm">
                                                 {completedAssignedProjects.map(p => {
+                                                    const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
+                                                    const pengawasanDetail = p.pengawasanDetails?.[viewingEmployee.name] || {};
+                                                    const mRole = pengawasanDetail.role || '-';
+                                                    
                                                     const microDetails = p.categoryDetails?.[empCategory] || {};
                                                     const mProg = microDetails.progress || 0;
-                                                    const mDead = microDetails.deadline;
-                                                    const isIndividuallyDone = p.individualStatus && p.individualStatus[viewingEmployee.name] === true;
-                                                    const mStatus = 'Done';
+                                                    const mDead = isPengawasan ? pengawasanDetail.deadline : microDetails.deadline;
+                                                    
+                                                    let isIndividuallyDone = p.individualStatus?.[viewingEmployee.name] === true;
+                                                    const pengawasanDeadline = isPengawasan ? p.pengawasanDetails?.[viewingEmployee.name]?.deadline : null;
+                                                    const isAutoDone = isPengawasan && pengawasanDeadline && pengawasanDeadline < new Date().toISOString().split('T')[0];
+                                                    
+                                                    if (isAutoDone) isIndividuallyDone = true;
 
                                                     return (
                                                         <tr key={p.id} className="hover:bg-emerald-50/30 dark:hover:bg-emerald-900/10 transition-colors">
@@ -1598,20 +1730,34 @@
                                                             <td className="p-4">
                                                                 <StatusBadge status={p.computedStatus} />
                                                             </td>
-                                                            <td className="p-4 w-48">
-                                                                <div className="flex justify-between text-xs mb-1">
-                                                                    <span className="font-medium text-slate-700 dark:text-slate-300">{mProg}% Selesai {isIndividuallyDone && <span className="text-emerald-600 font-bold ml-1">(Bebas)</span>}</span>
-                                                                </div>
-                                                                <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
-                                                                    <div className={`h-2 rounded-full bg-emerald-500`} style={{ width: `${mProg}%` }}></div>
-                                                                </div>
-                                                            </td>
-                                                            <td className="p-4 font-medium text-slate-700 dark:text-slate-300">
-                                                                {mDead ? formatDateIndo(mDead) : <span className="text-slate-400 italic text-xs">Belum diatur</span>}
-                                                            </td>
+                                                            {isPengawasan ? (
+                                                                <td colSpan="2" className="p-4">
+                                                                    <div className="flex flex-col">
+                                                                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">Peran: {mRole}</span>
+                                                                        <div className="flex items-center gap-1.5 text-xs text-slate-600 dark:text-slate-400">
+                                                                            <Icon name="calendar-clock" size={12} />
+                                                                            <span>{mDead ? formatDateIndo(mDead) : 'Belum diatur'}</span>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                            ) : (
+                                                                <>
+                                                                    <td className="p-4 w-48">
+                                                                        <div className="flex justify-between text-xs mb-1">
+                                                                            <span className="font-medium text-slate-700 dark:text-slate-300">{mProg}% Selesai {isIndividuallyDone && <span className="text-emerald-600 font-bold ml-1">(Bebas)</span>}</span>
+                                                                        </div>
+                                                                        <div className="w-full bg-slate-200 dark:bg-slate-700 rounded-full h-2">
+                                                                            <div className={`h-2 rounded-full bg-emerald-500`} style={{ width: `${mProg}%` }}></div>
+                                                                        </div>
+                                                                    </td>
+                                                                    <td className="p-4 font-medium text-slate-700 dark:text-slate-300">
+                                                                        {mDead ? formatDateIndo(mDead) : <span className="text-slate-400 italic text-xs">Belum diatur</span>}
+                                                                    </td>
+                                                                </>
+                                                            )}
                                                             <td className="p-4 text-center">
-                                                                {mProg >= 100 && !isIndividuallyDone ? (
-                                                                    <div className="px-3 py-2 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 w-full bg-slate-50/50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 cursor-default shadow-inner" title="Telah diselesaikan secara keseluruhan oleh sub-tim">
+                                                                {(mProg >= 100 && !isIndividuallyDone) || isAutoDone ? (
+                                                                    <div className="px-3 py-2 rounded-xl text-xs font-bold border flex items-center justify-center gap-1.5 w-full bg-slate-50/50 dark:bg-slate-800/50 text-slate-500 dark:text-slate-400 border-slate-200 dark:border-slate-700 cursor-default shadow-inner" title="Telah diselesaikan secara otomatis">
                                                                         <Icon name="check-circle" size={14} className="text-emerald-500/70" />
                                                                         Selesai (Otomatis)
                                                                     </div>
@@ -1649,6 +1795,9 @@
 
                     computedProjects.forEach(p => {
                         if (p.computedStatus === 'Done') return; // Hanya yang aktif
+
+                        const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
+                        if (isPengawasan) return; // Abaikan proyek pengawasan di Gantt
 
                         let projDeadlineStr = null;
 
@@ -1940,7 +2089,7 @@
                     modalConfig.data
                         ? { ...modalConfig.data, adjustmentInput: 0 }
                         : (isProject
-                            ? { name: '', client: '', type: 'Perencanaan', status: 'On Progress', progress: 0, deadline: '', description: '', descriptionUpdatedAt: '', team: [], categoryDetails: {}, teamLeader: '' }
+                            ? { name: '', client: '', type: 'Perencanaan', status: 'On Progress', progress: 0, deadline: '', description: '', descriptionUpdatedAt: '', team: [], categoryDetails: {}, teamLeader: '', pengawasanDetails: {} }
                             : { name: '', role: 'Arsitek', level: 'Staff', rating: 3, manualPoints: 0, adjustmentInput: 0 }
                         )
                 );
@@ -1960,6 +2109,19 @@
                             ...prev.categoryDetails,
                             [category]: {
                                 ...(prev.categoryDetails?.[category] || {}),
+                                [field]: value
+                            }
+                        }
+                    }));
+                };
+
+                const handlePengawasanDetailChange = (memberName, field, value) => {
+                    setFormData(prev => ({
+                        ...prev,
+                        pengawasanDetails: {
+                            ...prev.pengawasanDetails,
+                            [memberName]: {
+                                ...(prev.pengawasanDetails?.[memberName] || { role: 'Inspector', deadline: '' }),
                                 [field]: value
                             }
                         }
@@ -2034,7 +2196,8 @@
                             members: finalPayload.team || [],
                             details: cleanDetails,
                             leader: finalPayload.teamLeader || "",
-                            individualStatus: finalPayload.individualStatus || {}
+                            individualStatus: finalPayload.individualStatus || {},
+                            pengawasanDetails: finalPayload.pengawasanDetails || {}
                         };
 
                         // Enkripsi ke string agar aman masuk backend lama
@@ -2051,6 +2214,8 @@
                     res.name.toLowerCase().includes(searchTeam.toLowerCase()) ||
                     res.role.toLowerCase().includes(searchTeam.toLowerCase())
                 );
+
+                const isPengawasanForm = formData.type === 'Pengawasan' || formData.type === 'Manajemen Konstruksi';
 
                 return (
                     <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[70] flex items-end sm:items-center justify-center sm:p-4 fade-in">
@@ -2100,18 +2265,20 @@
                                             </div>
 
                                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-100 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
-                                                <div>
-                                                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Progress Keseluruhan Proyek (%)</label>
-                                                    <input
-                                                        type="number"
-                                                        readOnly
-                                                        value={computedTotalProgress}
-                                                        className="block w-full p-2.5 border border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-sm outline-none cursor-not-allowed appearance-none m-0"
-                                                        title="Nilai ini dihitung otomatis"
-                                                    />
-                                                    <p className="text-[9px] text-slate-500 mt-1">Dihitung otomatis dari rata-rata progress sub-tim.</p>
-                                                </div>
-                                                <div>
+                                                {!isPengawasanForm && (
+                                                    <div>
+                                                        <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Progress Keseluruhan Proyek (%)</label>
+                                                        <input
+                                                            type="number"
+                                                            readOnly
+                                                            value={computedTotalProgress}
+                                                            className="block w-full p-2.5 border border-slate-200 dark:border-slate-700 bg-slate-200 dark:bg-slate-700 text-slate-600 dark:text-slate-300 font-bold rounded-xl text-sm outline-none cursor-not-allowed appearance-none m-0"
+                                                            title="Nilai ini dihitung otomatis"
+                                                        />
+                                                        <p className="text-[9px] text-slate-500 mt-1">Dihitung otomatis dari rata-rata progress sub-tim.</p>
+                                                    </div>
+                                                )}
+                                                <div className={isPengawasanForm ? "col-span-2" : ""}>
                                                     <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Tenggat Waktu Kontrak Akhir</label>
                                                     <div className="relative w-full">
                                                         <div className="flex items-center justify-between w-full p-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 min-h-[42px] text-slate-700 dark:text-slate-200">
@@ -2130,17 +2297,19 @@
                                             <div className="pt-2 border-t border-slate-200 dark:border-slate-700/50">
                                                 <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Penugasan Personil</label>
 
-                                                <div className="mb-4 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-xl border border-amber-200 dark:border-amber-800/50 shadow-sm">
-                                                    <label className="block text-xs font-bold text-amber-800 mb-1 flex items-center gap-1.5"><Icon name="star" size={14} className="text-amber-500" /> Pilih Team Leader Proyek</label>
-                                                    <select name="teamLeader" value={formData.teamLeader || ""} onChange={handleChange} className="w-full p-2.5 border border-amber-200 dark:border-amber-700/50 rounded-xl text-sm outline-none focus:border-amber-500 bg-white dark:bg-slate-800 shadow-sm font-semibold text-slate-700 dark:text-slate-200">
-                                                        <option value="">-- Tidak Ada Team Leader --</option>
-                                                        {resources.filter(r => r.level === 'Team Leader').map(r => (
-                                                            <option key={r.id} value={r.name}>{r.name} ({r.role})</option>
-                                                        ))}
-                                                    </select>
-                                                </div>
+                                                {!isPengawasanForm && (
+                                                    <div className="mb-4 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-xl border border-amber-200 dark:border-amber-800/50 shadow-sm">
+                                                        <label className="block text-xs font-bold text-amber-800 mb-1 flex items-center gap-1.5"><Icon name="star" size={14} className="text-amber-500" /> Pilih Team Leader Proyek</label>
+                                                        <select name="teamLeader" value={formData.teamLeader || ""} onChange={handleChange} className="w-full p-2.5 border border-amber-200 dark:border-amber-700/50 rounded-xl text-sm outline-none focus:border-amber-500 bg-white dark:bg-slate-800 shadow-sm font-semibold text-slate-700 dark:text-slate-200">
+                                                            <option value="">-- Tidak Ada Team Leader --</option>
+                                                            {resources.filter(r => r.level === 'Team Leader').map(r => (
+                                                                <option key={r.id} value={r.name}>{r.name} ({r.role})</option>
+                                                            ))}
+                                                        </select>
+                                                    </div>
+                                                )}
 
-                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Anggota Sub-Tim</label>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">{isPengawasanForm ? "Daftar Personil Tim Pengawasan" : "Anggota Sub-Tim"}</label>
 
                                                 <div className="relative mb-3">
                                                     <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-400">
@@ -2160,6 +2329,8 @@
                                                         <p className="text-xs text-slate-400 italic">Belum ada data tim. Tambahkan di menu Alokasi Tim.</p>
                                                     ) : filteredResources.length === 0 ? (
                                                         <p className="text-xs text-slate-400 italic">Pencarian tidak ditemukan.</p>
+                                                    ) : isPengawasanForm ? (
+                                                        <TeamCheckboxGroup title="Pilih Anggota Tim (Bebas Lintas Jabatan)" roleFilter={r => true} isOptional={false} filteredResources={filteredResources} formData={formData} setFormData={setFormData} />
                                                     ) : (
                                                         <>
                                                             <TeamCheckboxGroup title="Tim Arsitek" roleFilter={r => r.role.toLowerCase().includes('arsitek')} isOptional={false} filteredResources={filteredResources} formData={formData} setFormData={setFormData} />
@@ -2171,10 +2342,53 @@
                                                         </>
                                                     )}
                                                 </div>
+                                                
+                                                {isPengawasanForm && (formData.team || []).length > 0 && (
+                                                    <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-700/50">
+                                                        <label className="flex items-center gap-1.5 text-sm font-bold text-slate-800 dark:text-slate-100 mb-3"><Icon name="user-check" size={16} className="text-emerald-600 dark:text-emerald-400" /> Rincian Penugasan Personil Pengawasan</label>
+                                                        <div className="space-y-2 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 bg-emerald-50/30 dark:bg-emerald-900/10">
+                                                            {formData.team.map(member => {
+                                                                const detail = formData.pengawasanDetails?.[member] || { role: 'Inspector', deadline: '' };
+                                                                return (
+                                                                    <div key={member} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 shadow-sm">
+                                                                        <div className="w-full sm:w-1/3 sm:border-r border-slate-100 dark:border-slate-700 sm:pr-2">
+                                                                            <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200">{member}</h4>
+                                                                        </div>
+                                                                        <div className="w-1/3">
+                                                                            <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">Peran / Jabatan</label>
+                                                                            <select className="block w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs outline-none focus:border-emerald-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200"
+                                                                                value={detail.role}
+                                                                                onChange={(e) => handlePengawasanDetailChange(member, 'role', e.target.value)}
+                                                                            >
+                                                                                <option value="Team Leader">Team Leader</option>
+                                                                                <option value="Tenaga Ahli">Tenaga Ahli</option>
+                                                                                <option value="Inspector">Inspector</option>
+                                                                                <option value="Administrasi">Administrasi</option>
+                                                                            </select>
+                                                                        </div>
+                                                                        <div className="w-full sm:w-1/3">
+                                                                            <label className="block text-[9px] font-bold text-slate-500 mb-1 uppercase">Selesai Penugasan</label>
+                                                                            <div className="relative w-full">
+                                                                                <div className="flex items-center justify-between w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900/50 focus-within:border-emerald-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition-colors min-h-[34px] text-slate-700 dark:text-slate-200">
+                                                                                    <span>{detail.deadline ? formatDateIndo(detail.deadline) : 'Pilih tanggal...'}</span>
+                                                                                    <Icon name="calendar-clock" size={14} className="text-slate-400" />
+                                                                                </div>
+                                                                                <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                                                    value={detail.deadline || ''}
+                                                                                    onChange={(e) => handlePengawasanDetailChange(member, 'deadline', e.target.value)}
+                                                                                />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                )}
                                             </div>
 
                                             {/* BAGIAN TARGET MICRO PER SUB-TIM */}
-                                            {activeCategories.length > 0 && (
+                                            {!isPengawasanForm && activeCategories.length > 0 && (
                                                 <div className="pt-4 border-t border-slate-100 dark:border-slate-700/50">
                                                     <label className="flex items-center gap-1.5 text-sm font-bold text-slate-800 dark:text-slate-100 mb-3"><Icon name="target" size={16} className="text-blue-600 dark:text-blue-400" /> Target Khusus Per Sub-Tim</label>
                                                     <div className="space-y-2 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 bg-blue-50/30 dark:bg-blue-900/10">
@@ -2332,6 +2546,7 @@
 
                                 <div className="flex w-full gap-3">
                                     <button
+                                        onClick={() => setConfirmDialog({ ...confirmDialog, isOpen: false })}
                                         className="flex-1 py-3 rounded-xl text-sm font-bold text-slate-600 dark:text-slate-300 bg-slate-100/50 dark:bg-slate-700/50 hover:bg-slate-100 dark:hover:bg-slate-700 hover:text-slate-800 dark:hover:text-slate-100 transition-all border border-slate-200/60 dark:border-slate-600/50"
                                     >
                                         Batal
