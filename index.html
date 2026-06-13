@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
-    <title>Team Management System (YANG TEKNIS - TEKNIS AJA)</title>
+    <title>Team Management System (Catatan Teknis Krisna)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -35,6 +35,108 @@
     <!-- Babel -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <style>
+        .btn-clean-check {
+            width: 36px;
+            height: 36px;
+            border-radius: 18px;
+            background: transparent;
+            border: 2px solid #e2e8f0;
+            color: #cbd5e1;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            margin: 0 auto;
+        }
+
+        .btn-clean-check:hover {
+            border-color: #10b981;
+            color: #10b981;
+            background: #f0fdf4;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.15);
+        }
+
+        .dark .btn-clean-check {
+            border-color: #334155;
+            color: #475569;
+        }
+
+        .dark .btn-clean-check:hover {
+            border-color: #10b981;
+            color: #10b981;
+            background: rgba(16, 185, 129, 0.1);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.2);
+        }
+
+        .btn-clean-check:active {
+            transform: scale(0.95);
+        }
+
+        .btn-clean-check.success {
+            background: #10b981;
+            border-color: #10b981;
+            color: white;
+            transform: scale(1.1);
+            box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .btn-clean-check.success:hover {
+            transform: scale(1.1) translateY(-2px);
+            box-shadow: 0 6px 16px rgba(239, 68, 68, 0.4);
+            background: #ef4444;
+            border-color: #ef4444;
+        }
+
+        .dark .btn-clean-check.success {
+            background: #059669;
+            border-color: #059669;
+        }
+
+        .dark .btn-clean-check.success:hover {
+            background: #dc2626;
+            border-color: #dc2626;
+            box-shadow: 0 6px 16px rgba(220, 38, 38, 0.4);
+        }
+
+        /* Flip Effect */
+        .flip-wrapper {
+            position: relative;
+            width: 20px;
+            height: 20px;
+            perspective: 1000px;
+        }
+
+        .flip-inner {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            transition: transform 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            transform-style: preserve-3d;
+        }
+
+        .btn-clean-check.success:hover .flip-inner {
+            transform: rotateY(180deg);
+        }
+
+        .flip-front,
+        .flip-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .flip-back {
+            transform: rotateY(180deg);
+        }
+
         body {
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: #f0f4f8;
@@ -153,7 +255,8 @@
                 "zap": '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
                 "sun": '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
                 "moon": '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
-                "hexagon": '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>'
+                "hexagon": '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>',
+                "info": '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'
             };
             return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} dangerouslySetInnerHTML={{ __html: paths[name] }} />;
         };
@@ -505,6 +608,7 @@
             const [devPassword, setDevPassword] = useState("");
             const [devAuthError, setDevAuthError] = useState("");
             const [isDeveloper, setIsDeveloper] = useState(false);
+            const [showKPIInfoModal, setShowKPIInfoModal] = useState(false);
 
             // State pencarian
             const [searchTeamTab, setSearchTeamTab] = useState("");
@@ -918,13 +1022,32 @@
                     return { ...res, ...kpi };
                 });
 
+                const sortKpiData = (a, b) => {
+                    // 1. Prioritas Utama: Skor KPI Tertinggi
+                    if (b.score !== a.score) return b.score - a.score;
+                    
+                    // 2. Prioritas Kedua (Tie-breaker 1): Rating Bintang Manual
+                    if ((b.rating || 0) !== (a.rating || 0)) return (b.rating || 0) - (a.rating || 0);
+                    
+                    // 3. Prioritas Ketiga (Tie-breaker 2): Jumlah Proyek Selesai Tepat Waktu Terbanyak
+                    const doneA = (a.bonusDoneLeader !== undefined ? a.bonusDoneLeader : (a.bonusDone || 0)) + (a.bonusDoneStaff || 0);
+                    const doneB = (b.bonusDoneLeader !== undefined ? b.bonusDoneLeader : (b.bonusDone || 0)) + (b.bonusDoneStaff || 0);
+                    if (doneB !== doneA) return doneB - doneA;
+
+                    // 4. Prioritas Keempat (Tie-breaker 3): Keterlambatan Paling Sedikit
+                    if (a.delayed !== b.delayed) return a.delayed - b.delayed;
+                    
+                    // 5. Prioritas Kelima (Tie-breaker 4): Rata-rata Progress Tertinggi
+                    return b.avgProgress - a.avgProgress;
+                };
+
                 const kpiDataLeaders = allKpiDataLeaders
                     .filter(res => res.name.toLowerCase().includes(searchKPITab.toLowerCase()) || res.role.toLowerCase().includes(searchKPITab.toLowerCase()))
-                    .sort((a, b) => b.score - a.score);
+                    .sort(sortKpiData);
 
                 const kpiDataStaffs = allKpiDataStaffs
                     .filter(res => res.name.toLowerCase().includes(searchKPITab.toLowerCase()) || res.role.toLowerCase().includes(searchKPITab.toLowerCase()))
-                    .sort((a, b) => b.score - a.score);
+                    .sort(sortKpiData);
 
                 const allKpiCombined = [...allKpiDataLeaders, ...allKpiDataStaffs];
                 const needsAttention = allKpiCombined.filter(k => k.score < 60 || (k.isOverloaded && k.delayed > 0));
@@ -1006,7 +1129,7 @@
                             </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-4 justify-start items-center bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl p-4 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-white/60 dark:border-slate-700/50">
+                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl p-4 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-white/60 dark:border-slate-700/50">
                             <div className="relative w-full sm:w-96">
                                 <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                 <input
@@ -1017,6 +1140,13 @@
                                     className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:bg-white dark:focus:bg-slate-900 transition-colors dark:text-slate-200"
                                 />
                             </div>
+                            <button
+                                onClick={() => setShowKPIInfoModal(true)}
+                                className="p-2.5 text-slate-400 hover:text-blue-500 bg-slate-50 hover:bg-blue-50 dark:bg-slate-900/50 dark:hover:bg-blue-900/30 rounded-xl transition-all border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md"
+                                title="Informasi Perhitungan KPI"
+                            >
+                                <Icon name="help-circle" size={20} />
+                            </button>
                         </div>
 
                         {/* TABEL TEAM LEADER */}
@@ -1184,9 +1314,9 @@
                 const filteredAndSortedProjects = computedProjects
                     .filter(p => {
                         const matchesSearch = p.name.toLowerCase().includes(searchProjectTab.toLowerCase()) ||
-                                              p.client.toLowerCase().includes(searchProjectTab.toLowerCase()) ||
-                                              p.id.toLowerCase().includes(searchProjectTab.toLowerCase());
-                        
+                            p.client.toLowerCase().includes(searchProjectTab.toLowerCase()) ||
+                            p.id.toLowerCase().includes(searchProjectTab.toLowerCase());
+
                         let matchesType = true;
                         if (filterProjectType !== 'Semua Tipe') {
                             if (filterProjectType === 'Perencanaan') {
@@ -1404,7 +1534,7 @@
                                                                                                 const detail = p.pengawasanDetails?.[m] || {};
                                                                                                 const isAutoDone = detail.deadline && detail.deadline < new Date().toISOString().split('T')[0];
                                                                                                 const isIndividuallyDone = p.individualStatus?.[m] || isAutoDone;
-                                                                                                
+
                                                                                                 return (
                                                                                                     <div key={m} className="flex flex-col gap-0.5">
                                                                                                         <span className={`text-[11px] font-semibold ${isIndividuallyDone ? 'text-slate-400 line-through' : 'text-slate-700 dark:text-slate-300'}`}>{m}</span>
@@ -1630,7 +1760,7 @@
                                                 const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
                                                 const pengawasanDetail = p.pengawasanDetails?.[viewingEmployee.name] || {};
                                                 const mRole = pengawasanDetail.role || '-';
-                                                
+
                                                 const microDetails = p.categoryDetails?.[empCategory] || {};
                                                 const mProg = microDetails.progress || 0;
                                                 const mDead = isPengawasan ? pengawasanDetail.deadline : microDetails.deadline;
@@ -1673,11 +1803,24 @@
                                                         )}
                                                         <td className="p-4 text-center">
                                                             <button
+                                                                className={`btn-clean-check group ${isIndividuallyDone ? 'success' : ''}`}
                                                                 onClick={() => handleToggleIndividualStatus(p.id, viewingEmployee.name, !isIndividuallyDone)}
-                                                                className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center justify-center gap-1.5 w-full hover:scale-[1.03] active:scale-95 shadow-md ${isIndividuallyDone ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-900/30 dark:to-emerald-800/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700/50 hover:shadow-emerald-200 shadow-sm' : 'bg-gradient-to-r from-white to-slate-50 dark:from-slate-800 dark:to-slate-700/50 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:shadow-blue-100 dark:hover:shadow-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700'}`}
+                                                                title={isIndividuallyDone ? 'Batalkan Selesai' : 'Tandai Selesai'}
                                                             >
-                                                                <Icon name={isIndividuallyDone ? "check-circle" : "zap"} size={14} className={isIndividuallyDone ? "text-emerald-500" : "text-blue-500"} />
-                                                                {isIndividuallyDone ? 'Telah Selesai' : 'Tandai Selesai'}
+                                                                {!isIndividuallyDone ? (
+                                                                    <Icon name="check" size={20} className="transition-colors" />
+                                                                ) : (
+                                                                    <div className="flip-wrapper">
+                                                                        <div className="flip-inner">
+                                                                            <div className="flip-front">
+                                                                                <Icon name="check" size={20} className="transition-colors" />
+                                                                            </div>
+                                                                            <div className="flip-back">
+                                                                                <Icon name="x" size={20} className="transition-colors" />
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                )}
                                                             </button>
                                                         </td>
                                                     </tr>
@@ -1710,15 +1853,15 @@
                                                     const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
                                                     const pengawasanDetail = p.pengawasanDetails?.[viewingEmployee.name] || {};
                                                     const mRole = pengawasanDetail.role || '-';
-                                                    
+
                                                     const microDetails = p.categoryDetails?.[empCategory] || {};
                                                     const mProg = microDetails.progress || 0;
                                                     const mDead = isPengawasan ? pengawasanDetail.deadline : microDetails.deadline;
-                                                    
+
                                                     let isIndividuallyDone = p.individualStatus?.[viewingEmployee.name] === true;
                                                     const pengawasanDeadline = isPengawasan ? p.pengawasanDetails?.[viewingEmployee.name]?.deadline : null;
                                                     const isAutoDone = isPengawasan && pengawasanDeadline && pengawasanDeadline < new Date().toISOString().split('T')[0];
-                                                    
+
                                                     if (isAutoDone) isIndividuallyDone = true;
 
                                                     return (
@@ -1763,11 +1906,24 @@
                                                                     </div>
                                                                 ) : (
                                                                     <button
+                                                                        className={`btn-clean-check group ${isIndividuallyDone ? 'success' : ''}`}
                                                                         onClick={() => handleToggleIndividualStatus(p.id, viewingEmployee.name, !isIndividuallyDone)}
-                                                                        className={`px-3 py-2 rounded-xl text-xs font-bold border transition-all duration-300 flex items-center justify-center gap-1.5 w-full hover:scale-[1.03] active:scale-95 shadow-md ${isIndividuallyDone ? 'bg-gradient-to-r from-emerald-50 to-emerald-100/50 dark:from-emerald-900/30 dark:to-emerald-800/30 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-700/50 hover:shadow-emerald-200' : 'bg-gradient-to-r from-white to-slate-50 dark:from-slate-800 dark:to-slate-700/50 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-600 hover:shadow-blue-100 dark:hover:shadow-blue-900/30 hover:border-blue-300 dark:hover:border-blue-700'}`}
+                                                                        title={isIndividuallyDone ? 'Batalkan Selesai' : 'Tandai Selesai'}
                                                                     >
-                                                                        <Icon name={isIndividuallyDone ? "check-circle" : "zap"} size={14} className={isIndividuallyDone ? "text-emerald-500" : "text-blue-500"} />
-                                                                        {isIndividuallyDone ? 'Telah Selesai' : 'Tandai Selesai'}
+                                                                        {!isIndividuallyDone ? (
+                                                                            <Icon name="check" size={20} className="transition-colors" />
+                                                                        ) : (
+                                                                            <div className="flip-wrapper">
+                                                                                <div className="flip-inner">
+                                                                                    <div className="flip-front">
+                                                                                        <Icon name="check" size={20} className="transition-colors" />
+                                                                                    </div>
+                                                                                    <div className="flip-back">
+                                                                                        <Icon name="x" size={20} className="transition-colors" />
+                                                                                    </div>
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
                                                                     </button>
                                                                 )}
                                                             </td>
@@ -2342,7 +2498,7 @@
                                                         </>
                                                     )}
                                                 </div>
-                                                
+
                                                 {isPengawasanForm && (formData.team || []).length > 0 && (
                                                     <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-700/50">
                                                         <label className="flex items-center gap-1.5 text-sm font-bold text-slate-800 dark:text-slate-100 mb-3"><Icon name="user-check" size={16} className="text-emerald-600 dark:text-emerald-400" /> Rincian Penugasan Personil Pengawasan</label>
@@ -2687,6 +2843,83 @@
                 );
             };
 
+            const renderKPIInfoModal = () => {
+                if (!showKPIInfoModal) return null;
+
+                return (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+                        <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-sm" onClick={() => setShowKPIInfoModal(false)}></div>
+                        <div className="relative bg-white dark:bg-slate-800 border border-slate-200/50 dark:border-slate-700/50 shadow-2xl rounded-3xl w-full max-w-2xl max-h-[90vh] flex flex-col overflow-hidden scale-in-center">
+                            <div className="flex items-center justify-between p-5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 shadow-sm">
+                                        <Icon name="info" size={20} />
+                                    </div>
+                                    <div>
+                                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 leading-tight">Informasi Perhitungan KPI</h3>
+                                        <p className="text-xs text-slate-500 font-medium">Aturan (Rules Point) Evaluasi Kinerja</p>
+                                    </div>
+                                </div>
+                                <button onClick={() => setShowKPIInfoModal(false)} className="p-2 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors"><Icon name="x" size={20} /></button>
+                            </div>
+                            <div className="p-6 overflow-y-auto custom-scrollbar flex-1 bg-white dark:bg-slate-800 space-y-4">
+                                <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-2xl border border-slate-100 dark:border-slate-700/50">
+                                    <h4 className="font-bold text-slate-800 dark:text-slate-200 mb-2 flex items-center gap-2"><Icon name="users" size={16} className="text-blue-500" /> Perhitungan Sebagai Staff / Anggota Tim</h4>
+                                    <ul className="list-disc pl-5 text-sm text-slate-600 dark:text-slate-400 space-y-1.5">
+                                        <li><strong>Skor Dasar:</strong> 100 Poin</li>
+                                        <li><strong className="text-red-500">Penalti Keterlambatan:</strong> <strong className="font-bold">-5 Poin</strong> untuk setiap tugas yang melewati deadline dan belum mencapai 100%.</li>
+                                        <li><strong className="text-emerald-500">Bonus Selesai:</strong> <strong className="font-bold">+15 Poin</strong> untuk setiap tugas yang selesai 100% tepat waktu atau lebih cepat.</li>
+                                    </ul>
+                                </div>
+                                <div className="bg-amber-50/50 dark:bg-amber-900/10 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/30">
+                                    <h4 className="font-bold text-amber-900 dark:text-amber-400 mb-2 flex items-center gap-2"><Icon name="star" size={16} className="text-amber-500" /> Perhitungan Sebagai Team Leader</h4>
+                                    <ul className="list-disc pl-5 text-sm text-slate-600 dark:text-slate-400 space-y-1.5">
+                                        <li><strong>Kondisi 1: Saat memimpin proyek (Makro):</strong>
+                                            <ul className="list-[circle] pl-5 mt-1 space-y-1">
+                                                <li><strong className="text-red-500">Penalti Tanggung Jawab:</strong> <strong className="font-bold">-10 Poin</strong> jika proyek utama terlambat secara keseluruhan.</li>
+                                                <li><strong className="text-emerald-500">Bonus Keberhasilan:</strong> <strong className="font-bold">+20 Poin</strong> jika proyek utama selesai 100% tepat waktu.</li>
+                                            </ul>
+                                        </li>
+                                        <li className="pt-1"><strong>Kondisi 2: Saat bertugas sebagai sub-tim di proyek lain:</strong>
+                                            <ul className="list-[circle] pl-5 mt-1 space-y-1">
+                                                <li>Diberlakukan aturan Staff (<strong className="text-red-500">-5 Poin</strong> jika tugasnya terlambat, <strong className="text-emerald-500">+15 Poin</strong> jika tugasnya selesai).</li>
+                                            </ul>
+                                        </li>
+                                    </ul>
+                                </div>
+                                <div className="bg-purple-50/50 dark:bg-purple-900/10 p-4 rounded-2xl border border-purple-100 dark:border-purple-900/30">
+                                    <h4 className="font-bold text-purple-900 dark:text-purple-400 mb-2 flex items-center gap-2"><Icon name="zap" size={16} className="text-purple-500" /> Aturan Beban Kerja Berlebih (Overload)</h4>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Berlaku untuk semua personil jika menangani <strong>lebih dari 4 proyek aktif</strong> secara bersamaan:</p>
+                                    <ul className="list-disc pl-5 text-sm text-slate-600 dark:text-slate-400 space-y-1.5">
+                                        <li><strong className="text-emerald-500">Bonus Produktivitas:</strong> Jika <strong>tidak ada satu pun</strong> proyek yang terlambat, mendapat tambahan <strong className="font-bold">+10 Poin per proyek ekstra</strong> (contoh: 5 proyek aktif = +10 poin, 6 proyek aktif = +20 poin dan seterusnya).</li>
+                                        <li><strong className="text-red-500">Penalti Kewalahan:</strong> Jika <strong>terdapat proyek yang terlambat</strong> saat kondisi overload, akan langsung dijatuhi penalti tambahan <strong className="font-bold">-10 Poin</strong> (contoh: 5 proyek aktif, salah satunya terlambat = -10 poin, 6 proyek aktif, salah satunya terlambat = -20 poin dan seterusnya).</li>
+                                    </ul>
+                                </div>
+                                <div className="bg-emerald-50/50 dark:bg-emerald-900/10 p-4 rounded-2xl border border-emerald-100 dark:border-emerald-900/30">
+                                    <h4 className="font-bold text-emerald-900 dark:text-emerald-400 mb-2 flex items-center gap-2"><Icon name="bar-chart" size={16} className="text-emerald-500" /> Aturan Tie-Breaker</h4>
+                                    <p className="text-sm text-slate-600 dark:text-slate-400 mb-2">Jika terdapat personil dengan Skor KPI yang <strong>sama persis</strong>, peringkat klasemen (leaderboard) akan ditentukan menggunakan prioritas berikut:</p>
+                                    <ol className="list-decimal pl-5 text-sm text-slate-600 dark:text-slate-400 space-y-1.5 font-medium">
+                                        <li><strong className="text-slate-800 dark:text-slate-200">Rating Bintang Manual:</strong> Personil dengan Bintang Rating Manual lebih tinggi akan diletakkan di atas.</li>
+                                        <li><strong className="text-slate-800 dark:text-slate-200">Penyelesaian Terbanyak:</strong> Jika Bintang Rating sama, personil dengan jumlah proyek selesai 100% tanpa keterlambatan terbanyak akan menang.</li>
+                                        <li><strong className="text-slate-800 dark:text-slate-200">Minim Keterlambatan:</strong> Jika jumlah penyelesaian sama, personil dengan jumlah proyek terlambat lebih sedikit berada di atas.</li>
+                                        <li><strong className="text-slate-800 dark:text-slate-200">Rata-Rata Progress:</strong> Jika tingkat keterlambatan juga sama, personil dengan persentase progress lebih tinggi akan diprioritaskan.</li>
+                                    </ol>
+                                </div>
+                                <div className="bg-slate-50 dark:bg-slate-900/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700 flex items-start gap-2">
+                                    <Icon name="info" size={16} className="text-slate-400 shrink-0 mt-0.5" />
+                                    <p className="text-xs text-slate-500 dark:text-slate-400 italic">
+                                        Skor akhir dibatasi maksimal 100 dan minimal 0. Skor dapat direvisi/di-override secara manual oleh Admin melalui opsi "Rating Manual" pada dashboard KPI.
+                                    </p>
+                                </div>
+                            </div>
+                            <div className="p-5 border-t border-slate-100 dark:border-slate-700/50 bg-slate-50 dark:bg-slate-900/50 flex justify-end">
+                                <button onClick={() => setShowKPIInfoModal(false)} className="px-5 py-2.5 rounded-xl text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 transition-colors shadow-lg shadow-blue-600/30">Mengerti</button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
             return (
                 <div className="flex h-screen text-slate-800 dark:text-slate-200 bg-[#f0f4f8] dark:bg-slate-950 transition-colors duration-200 relative overflow-hidden">
                     {/* Glowing Orbs for Glassmorphism */}
@@ -2695,97 +2928,98 @@
                         <div className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-fuchsia-400/40 dark:bg-fuchsia-900/20 blur-[120px] mix-blend-multiply dark:mix-blend-screen opacity-80 animate-blob" style={{ animationDelay: '2s' }}></div>
                         <div className="absolute top-[30%] left-[40%] w-[40vw] h-[40vw] rounded-full bg-sky-300/40 dark:bg-sky-900/20 blur-[100px] mix-blend-multiply dark:mix-blend-screen opacity-80 animate-blob" style={{ animationDelay: '4s' }}></div>
                     </div>
-                    
+
                     <div className="relative z-10 flex w-full h-full">
                         {renderFuturisticConfirm()}
                         {renderDeveloperPromptModal()}
                         {renderDominoModal()}
+                        {renderKPIInfoModal()}
                         <aside className="hidden lg:flex lg:relative z-auto w-64 bg-white/40 dark:bg-slate-950/60 backdrop-blur-3xl border-r border-white/60 dark:border-slate-800/50 text-slate-600 dark:text-slate-300 flex-col shrink-0 h-full top-0 left-0 transition-colors duration-200 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)] dark:shadow-2xl">
-                        <div className="p-4 lg:p-6">
-                            <div className="flex items-center justify-between mb-2">
-                                <div className="flex items-center gap-3 text-slate-800 dark:text-white">
-                                    <div className="w-8 h-8 shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 relative overflow-hidden">
-                                        <Icon name="hexagon" size={28} className="absolute fill-white/10 text-white/20" />
-                                        <Icon name="users" size={16} className="relative z-10" strokeWidth={2.5} />
+                            <div className="p-4 lg:p-6">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-3 text-slate-800 dark:text-white">
+                                        <div className="w-8 h-8 shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 relative overflow-hidden">
+                                            <Icon name="hexagon" size={28} className="absolute fill-white/10 text-white/20" />
+                                            <Icon name="users" size={16} className="relative z-10" strokeWidth={2.5} />
+                                        </div>
+                                        <h1 className="text-base font-bold tracking-wide leading-tight">Team Management System</h1>
                                     </div>
-                                    <h1 className="text-base font-bold tracking-wide leading-tight">Team Management System</h1>
                                 </div>
+                                <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Catatan Teknis Krisna</p>
                             </div>
-                            <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Yang Teknis - Teknis Aja</p>
-                        </div>
-                        <nav className="flex-1 px-4 space-y-2 mt-4">
-                            <SidebarItem icon={<Icon name="layout-dashboard" size={20} />} label="Dashboard" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
-                            <SidebarItem icon={<Icon name="briefcase" size={20} />} label="List Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
-                            <SidebarItem icon={<Icon name="users" size={20} />} label="Alokasi Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
-                            <SidebarItem icon={<Icon name="calendar" size={20} />} label="Ploting Jadwal" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
-                            <SidebarItem icon={<Icon name="bar-chart" size={20} />} label="Evaluasi & KPI (BETA)" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
-                        </nav>
-                    </aside>
+                            <nav className="flex-1 px-4 space-y-2 mt-4">
+                                <SidebarItem icon={<Icon name="layout-dashboard" size={20} />} label="Dashboard" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
+                                <SidebarItem icon={<Icon name="briefcase" size={20} />} label="List Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
+                                <SidebarItem icon={<Icon name="users" size={20} />} label="Alokasi Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
+                                <SidebarItem icon={<Icon name="calendar" size={20} />} label="Ploting Jadwal" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
+                                <SidebarItem icon={<Icon name="bar-chart" size={20} />} label="Evaluasi & KPI (BETA)" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
+                            </nav>
+                        </aside>
 
-                    <main className="flex-1 flex flex-col overflow-hidden bg-transparent relative min-w-0 transition-colors duration-200">
-                        <header className="h-14 sm:h-16 lg:h-20 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-b border-white/60 dark:border-slate-700/50 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 shrink-0 gap-2 shadow-sm dark:shadow-slate-950/20 transition-colors duration-200">
-                            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                                <div className="min-w-0">
-                                    <h2 className="text-sm sm:text-base lg:text-xl font-bold text-slate-800 dark:text-slate-100 truncate transition-colors duration-200">
-                                        {activeTab === 'dashboard' && 'Ringkasan Proyek & Personil'}
-                                        {activeTab === 'proyek' && 'List Proyek'}
-                                        {activeTab === 'tim' && 'Alokasi Tim'}
-                                        {activeTab === 'gantt' && 'Ploting & Jadwal Personil'}
-                                        {activeTab === 'kpi' && 'Evaluasi & KPI Tim'}
-                                    </h2>
-                                    <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 hidden sm:block">Sistem Yang Teknis Teknis Aja</p>
+                        <main className="flex-1 flex flex-col overflow-hidden bg-transparent relative min-w-0 transition-colors duration-200">
+                            <header className="h-14 sm:h-16 lg:h-20 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-b border-white/60 dark:border-slate-700/50 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 shrink-0 gap-2 shadow-sm dark:shadow-slate-950/20 transition-colors duration-200">
+                                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                                    <div className="min-w-0">
+                                        <h2 className="text-sm sm:text-base lg:text-xl font-bold text-slate-800 dark:text-slate-100 truncate transition-colors duration-200">
+                                            {activeTab === 'dashboard' && 'Ringkasan Proyek & Personil'}
+                                            {activeTab === 'proyek' && 'List Proyek'}
+                                            {activeTab === 'tim' && 'Alokasi Tim'}
+                                            {activeTab === 'gantt' && 'Ploting & Jadwal Personil'}
+                                            {activeTab === 'kpi' && 'Evaluasi & KPI Tim'}
+                                        </h2>
+                                        <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 hidden sm:block">Aplikasi Manajemen Proyek & Progress Tim Teknis</p>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-                                <button
-                                    onClick={() => setIsDarkMode(!isDarkMode)}
-                                    className={`relative inline-flex h-8 w-[64px] shrink-0 items-center rounded-full transition-all duration-500 shadow-inner hover:scale-105 ${isDarkMode ? 'bg-white border-slate-200 dark:bg-slate-200' : 'bg-slate-800 border-slate-700'}`}
-                                    title={isDarkMode ? 'Ubah ke Light Mode' : 'Ubah ke Dark Mode'}
-                                >
-                                    <span
-                                        className={`inline-flex h-6 w-6 transform items-center justify-center rounded-full transition-transform duration-500 ease-out z-10 ${isDarkMode ? 'translate-x-[34px] bg-slate-900 text-white shadow-md' : 'translate-x-1 bg-white text-slate-800 shadow-md'}`}
+                                <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                                    <button
+                                        onClick={() => setIsDarkMode(!isDarkMode)}
+                                        className={`relative inline-flex h-8 w-[64px] shrink-0 items-center rounded-full transition-all duration-500 shadow-inner hover:scale-105 ${isDarkMode ? 'bg-white border-slate-200 dark:bg-slate-200' : 'bg-slate-800 border-slate-700'}`}
+                                        title={isDarkMode ? 'Ubah ke Light Mode' : 'Ubah ke Dark Mode'}
                                     >
-                                        <Icon name={isDarkMode ? "moon" : "sun"} size={14} strokeWidth={2.5} />
-                                    </span>
-                                </button>
-                                <div className={`hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold shadow-sm ${isLive ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'}`}>
-                                    <Icon name="database" size={14} /> {isLive ? 'Live' : 'Offline'}
+                                        <span
+                                            className={`inline-flex h-6 w-6 transform items-center justify-center rounded-full transition-transform duration-500 ease-out z-10 ${isDarkMode ? 'translate-x-[34px] bg-slate-900 text-white shadow-md' : 'translate-x-1 bg-white text-slate-800 shadow-md'}`}
+                                        >
+                                            <Icon name={isDarkMode ? "moon" : "sun"} size={14} strokeWidth={2.5} />
+                                        </span>
+                                    </button>
+                                    <div className={`hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold shadow-sm ${isLive ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'}`}>
+                                        <Icon name="database" size={14} /> {isLive ? 'Live' : 'Offline'}
+                                    </div>
+                                    <div className={`sm:hidden w-2.5 h-2.5 rounded-full shrink-0 ${isLive ? 'bg-emerald-500' : 'bg-amber-500'}`} title={isLive ? 'Connected' : 'Offline'} />
+                                    <button onClick={fetchFromGoogleSheets} disabled={loading || !GOOGLE_SCRIPT_URL} className={`p-2 rounded-full transition-all shrink-0 ${loading ? 'animate-spin text-blue-500' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 dark:text-slate-500 dark:hover:text-blue-400'}`} title="Refresh Database">
+                                        <Icon name="refresh-ccw" size={20} />
+                                    </button>
                                 </div>
-                                <div className={`sm:hidden w-2.5 h-2.5 rounded-full shrink-0 ${isLive ? 'bg-emerald-500' : 'bg-amber-500'}`} title={isLive ? 'Connected' : 'Offline'} />
-                                <button onClick={fetchFromGoogleSheets} disabled={loading || !GOOGLE_SCRIPT_URL} className={`p-2 rounded-full transition-all shrink-0 ${loading ? 'animate-spin text-blue-500' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 dark:text-slate-500 dark:hover:text-blue-400'}`} title="Refresh Database">
-                                    <Icon name="refresh-ccw" size={20} />
-                                </button>
-                            </div>
-                        </header>
+                            </header>
 
-                        <div className="flex-1 overflow-auto p-3 sm:p-5 lg:p-8 pb-24 lg:pb-8 relative">
-                            {loading && (
-                                <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm z-40 flex flex-col items-center justify-center rounded-xl">
-                                    <div className="animate-spin text-blue-600 dark:text-blue-500 mb-4"><Icon name="refresh-ccw" size={32} /></div>
-                                    <p className="font-semibold text-slate-700 dark:text-slate-300">Sinkronisasi Database...</p>
+                            <div className="flex-1 overflow-auto p-3 sm:p-5 lg:p-8 pb-24 lg:pb-8 relative">
+                                {loading && (
+                                    <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm z-40 flex flex-col items-center justify-center rounded-xl">
+                                        <div className="animate-spin text-blue-600 dark:text-blue-500 mb-4"><Icon name="refresh-ccw" size={32} /></div>
+                                        <p className="font-semibold text-slate-700 dark:text-slate-300">Sinkronisasi Database...</p>
+                                    </div>
+                                )}
+
+                                <div className="max-w-7xl mx-auto">
+                                    {activeTab === 'dashboard' && renderDashboard()}
+                                    {activeTab === 'proyek' && renderProyek()}
+                                    {activeTab === 'tim' && renderTim()}
+                                    {activeTab === 'gantt' && renderGantt()}
+                                    {activeTab === 'timesheet' && renderTimesheet()}
+                                    {activeTab === 'kpi' && renderKPI()}
                                 </div>
-                            )}
-
-                            <div className="max-w-7xl mx-auto">
-                                {activeTab === 'dashboard' && renderDashboard()}
-                                {activeTab === 'proyek' && renderProyek()}
-                                {activeTab === 'tim' && renderTim()}
-                                {activeTab === 'gantt' && renderGantt()}
-                                {activeTab === 'timesheet' && renderTimesheet()}
-                                {activeTab === 'kpi' && renderKPI()}
                             </div>
-                        </div>
-                    </main>
+                        </main>
 
-                    <ModalForm />
+                        <ModalForm />
 
-                    <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[68px] bg-white/60 dark:bg-slate-900/60 backdrop-blur-3xl border-t border-white/60 dark:border-slate-800 z-50 flex justify-around items-center px-1 pb-safe shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] transition-colors duration-200">
-                        <BottomNavItem icon={<Icon name="layout-dashboard" size={22} />} label="Beranda" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
-                        <BottomNavItem icon={<Icon name="briefcase" size={22} />} label="Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
-                        <BottomNavItem icon={<Icon name="users" size={22} />} label="Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
-                        <BottomNavItem icon={<Icon name="calendar" size={22} />} label="Ploting" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
-                        <BottomNavItem icon={<Icon name="bar-chart" size={22} />} label="KPI" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
-                    </nav>
+                        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[68px] bg-white/60 dark:bg-slate-900/60 backdrop-blur-3xl border-t border-white/60 dark:border-slate-800 z-50 flex justify-around items-center px-1 pb-safe shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] transition-colors duration-200">
+                            <BottomNavItem icon={<Icon name="layout-dashboard" size={22} />} label="Beranda" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
+                            <BottomNavItem icon={<Icon name="briefcase" size={22} />} label="Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
+                            <BottomNavItem icon={<Icon name="users" size={22} />} label="Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
+                            <BottomNavItem icon={<Icon name="calendar" size={22} />} label="Ploting" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
+                            <BottomNavItem icon={<Icon name="bar-chart" size={22} />} label="KPI" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
+                        </nav>
                     </div>
                 </div>
             );
@@ -2817,7 +3051,7 @@
                 'bg-teal-50': 'dark:bg-teal-900/20 dark:text-teal-400',
             };
             const darkColor = darkColorMap[color] || '';
-            
+
             return (
                 <div className="bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl p-4 sm:p-5 lg:p-6 rounded-3xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 hover:shadow-2xl hover:shadow-blue-900/10 dark:hover:shadow-blue-900/20 transition-all hover:-translate-y-1 flex flex-col justify-between">
                     <div className="flex flex-wrap justify-between items-start gap-2 mb-4">
