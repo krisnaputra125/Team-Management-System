@@ -9,10 +9,10 @@
     <meta name="theme-color" content="#0f172a">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <title>Project Management Control (Catatan Teknis Krisna)</title>
+    <title> (Catatan Teknis Krisna)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
+
     <!-- Firebase SDK (Compat version for Babel standalone) -->
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
@@ -757,24 +757,24 @@
                         try {
                             const response = await fetch(GOOGLE_SCRIPT_URL);
                             const data = await response.json();
-                            
+
                             // Transformasi awal saat migrasi
                             const initialData = {
                                 projects: data.projects || [],
                                 resources: data.resources || []
                             };
-                            
+
                             await firebaseDbRef.set(initialData);
                             console.log("Migrasi selesai!");
                         } catch (error) {
                             console.error("Gagal migrasi:", error);
                         }
                     }
-                    
+
                     // Pasang Listener Real-time
                     firebaseDbRef.on('value', (snap) => {
                         const data = snap.val() || { projects: [], resources: [] };
-                        
+
                         // DEKODE TRIK JSON UNTUK DETAIL TIM
                         const processedProjects = (data.projects || []).filter(Boolean).map(p => {
                             let parsedTeam = [];
@@ -935,10 +935,10 @@
                     // Tarik data terbaru dari Firebase sekali saja untuk dimodifikasi
                     const snapshot = await firebaseDbRef.once('value');
                     const currentData = snapshot.val() || { projects: [], resources: [] };
-                    
+
                     let newProjects = currentData.projects || [];
                     let newResources = currentData.resources || [];
-                    
+
                     // Bersihkan array dari null jika ada
                     newProjects = newProjects.filter(Boolean);
                     newResources = newResources.filter(Boolean);
@@ -2320,43 +2320,43 @@
                     // Helper mencari orang terbaik untuk role tertentu
                     const findBestPerson = (roleKeyword, excludeList, requiredLevel = null) => {
                         let candidates = resources.filter(r => r.role.toLowerCase().includes(roleKeyword.toLowerCase()) && !excludeList.includes(r.name));
-                        if(requiredLevel) {
+                        if (requiredLevel) {
                             candidates = candidates.filter(r => r.level === requiredLevel);
                         }
                         if (candidates.length === 0) return null;
-                        
+
                         let bestCandidate = null;
                         let highestScore = -99999;
-                        
+
                         candidates.forEach(cand => {
                             // Hitung Workload
                             const activeProjCount = computedProjects.filter(p => p.computedStatus !== 'Done' && p.team && p.team.includes(cand.name)).length;
                             const workload = activeProjCount * 25; // Asumsi 1 project = 25% load
-                            
+
                             // Hitung skor KPI
                             const isLeaderMode = cand.level === 'Team Leader';
-                            const kpiResult = isLeaderMode 
-                                ? calculateLeaderKPI(cand, computedProjects) 
+                            const kpiResult = isLeaderMode
+                                ? calculateLeaderKPI(cand, computedProjects)
                                 : calculateEmployeeKPI(cand, computedProjects);
-                            
+
                             let score = kpiResult.score;
-                            
+
                             // Penalty AI untuk Workload
                             if (workload >= 100) {
                                 score -= 1000; // Diskualifikasi jika full load
                             } else {
                                 score -= (workload * 0.5); // Penalti proporsional beban
                             }
-                            
+
                             // Tambah poin dari manual rating (1-5 star)
                             score += ((cand.rating || 0) * 10);
-                            
+
                             if (score > highestScore) {
                                 highestScore = score;
                                 bestCandidate = cand.name;
                             }
                         });
-                        
+
                         return bestCandidate;
                     };
 
@@ -2364,7 +2364,7 @@
                         // Perencanaan
                         const leader = findBestPerson('Team Leader', recommendedTeam, 'Team Leader');
                         if (leader) recommendedLeader = leader;
-                        
+
                         const rolesToFill = ['Arsitek', 'Struktur', 'MEP', 'Estimator', 'Drafter'];
                         rolesToFill.forEach(role => {
                             const best = findBestPerson(role, recommendedTeam);
@@ -2378,7 +2378,7 @@
                             if (best) recommendedTeam.push(best);
                         });
                     }
-                    
+
                     setFormData(prev => ({
                         ...prev,
                         teamLeader: recommendedLeader,
@@ -3084,9 +3084,9 @@
                                             <Icon name="hexagon" size={32} className="absolute fill-white/10 text-white/20" />
                                             <Icon name="users" size={18} className="relative z-10" strokeWidth={2.5} />
                                         </div>
-                                        <h1 className="text-sm font-bold tracking-wide leading-tight flex flex-col whitespace-nowrap">
+                                        <h1 className="text-base font-bold tracking-wide leading-tight flex flex-col whitespace-nowrap">
                                             <span>Project Management</span>
-                                            <span>Control</span>
+                                            <span>Control System</span>
                                         </h1>
                                     </div>
                                 </div>
