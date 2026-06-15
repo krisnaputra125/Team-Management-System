@@ -12,6 +12,10 @@
     <title>Project Management Control (Catatan Teknis Krisna)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Firebase SDK (Compat version for Babel standalone) -->
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-database-compat.js"></script>
     <script>
         tailwind.config = {
             darkMode: 'class',
@@ -596,15 +600,35 @@
                 }
             }, [isDarkMode]);
 
+            const [sidebarOpen, setSidebarOpen] = useState(false);
             const [activeTab, setActiveTab] = useState('dashboard');
             const [projects, setProjects] = useState([]);
             const [resources, setResources] = useState([]);
-            const [loading, setLoading] = useState(false);
-            const [isLive, setIsLive] = useState(false);
+            const [loading, setLoading] = useState(true);
             const [errorMsg, setErrorMsg] = useState("");
+            const [isLive, setIsLive] = useState(false);
+
+            // Firebase Configuration
+            const firebaseConfig = {
+                apiKey: "AIzaSyDerRfccB2e-k3SSLoo5gxh10sRy9FRRwY",
+                authDomain: "project-management-control.firebaseapp.com",
+                databaseURL: "https://project-management-control-default-rtdb.asia-southeast1.firebasedatabase.app/",
+                projectId: "project-management-control",
+                storageBucket: "project-management-control.firebasestorage.app",
+                messagingSenderId: "1065130749964",
+                appId: "1:1065130749964:web:404873304275127c85fe29",
+                measurementId: "G-LLNQ6P9DQ9"
+            };
+
+            if (typeof firebase !== 'undefined' && !firebase.apps.length) {
+                firebase.initializeApp(firebaseConfig);
+            }
+            const firebaseDbRef = typeof firebase !== 'undefined' ? firebase.database().ref('pmc_data') : null;
+
+            // Old URL Web App Google Apps Script (Digunakan sekali saat migrasi otomatis)
+            const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyEt5puRB26FO6mGfnxVvofBJaDwLtH3O0yd-Ugsugn2D2KezKpi_ynGz7hw24kpLIpRQ/exec';
             const [modalConfig, setModalConfig] = useState({ isOpen: false, type: null, mode: 'add', data: null });
             const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', type: 'info', onConfirm: null });
-            const [sidebarOpen, setSidebarOpen] = useState(false);
 
             // State Developer Auth (BETA)
             const [showDevPrompt, setShowDevPrompt] = useState(false);
@@ -625,11 +649,6 @@
 
             // State untuk melihat detail pegawai
             const [viewingEmployee, setViewingEmployee] = useState(null);
-
-            // =========================================================================
-            // MASUKKAN URL GOOGLE SCRIPT ANDA DI SINI
-            // =========================================================================
-            const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyEt5puRB26FO6mGfnxVvofBJaDwLtH3O0yd-Ugsugn2D2KezKpi_ynGz7hw24kpLIpRQ/exec";
 
             // =========================================================================
             // KECERDASAN SISTEM
@@ -726,33 +745,44 @@
             const completedProjectsCount = computedProjects.filter(p => p.computedStatus === 'Done').length;
 
 
-            // FETCH DATA
-            const fetchFromGoogleSheets = async () => {
-                if (!GOOGLE_SCRIPT_URL) return;
+            // FETCH DATA FROM FIREBASE
+            const initFirebaseListener = () => {
+                if (!firebaseDbRef) return;
                 setLoading(true);
                 setErrorMsg("");
-                try {
-                    const response = await fetch(GOOGLE_SCRIPT_URL);
-                    const contentType = response.headers.get("content-type");
 
-                    if (contentType && contentType.includes("text/html")) {
-                        throw new Error("Tolak Akses (CORS/HTML Block). Pastikan Deploy di Apps Script diatur 'Jalankan sebagai: Saya (Me)' dan 'Akses: Siapa saja (Anyone)'.");
+                firebaseDbRef.once('value', async (snapshot) => {
+                    if (!snapshot.exists()) {
+                        console.log("Firebase kosong. Memulai migrasi otomatis dari Google Sheets...");
+                        try {
+                            const response = await fetch(GOOGLE_SCRIPT_URL);
+                            const data = await response.json();
+                            
+                            // Transformasi awal saat migrasi
+                            const initialData = {
+                                projects: data.projects || [],
+                                resources: data.resources || []
+                            };
+                            
+                            await firebaseDbRef.set(initialData);
+                            console.log("Migrasi selesai!");
+                        } catch (error) {
+                            console.error("Gagal migrasi:", error);
+                        }
                     }
-
-                    const data = await response.json();
-
-                    if (data.error) {
-                        setErrorMsg(data.error);
-                        setIsLive(false);
-                    } else {
+                    
+                    // Pasang Listener Real-time
+                    firebaseDbRef.on('value', (snap) => {
+                        const data = snap.val() || { projects: [], resources: [] };
+                        
                         // DEKODE TRIK JSON UNTUK DETAIL TIM
-                        const processedProjects = (data.projects || []).map(p => {
+                        const processedProjects = (data.projects || []).filter(Boolean).map(p => {
                             let parsedTeam = [];
                             let catDetails = {};
                             let leader = "";
                             let individualStatus = {};
                             let pengawasanDetails = {};
-                            const rawString = p.team ? p.team.join(';') : '';
+                            const rawString = Array.isArray(p.team) ? p.team.join(';') : (p.team || '');
 
                             if (rawString.startsWith('{')) {
                                 try {
@@ -769,7 +799,7 @@
                             return { ...p, team: parsedTeam, categoryDetails: catDetails, teamLeader: leader, individualStatus, pengawasanDetails };
                         });
 
-                        const processedResources = (data.resources || []).map(r => {
+                        const processedResources = (data.resources || []).filter(Boolean).map(r => {
                             let role = r.role || "";
                             let level = "Staff";
                             let manualPoints = 0;
@@ -785,17 +815,23 @@
                         setProjects(processedProjects);
                         setResources(processedResources);
                         setIsLive(true);
-                    }
-                } catch (error) {
-                    console.error("Error Fetch:", error);
-                    setErrorMsg(error.message || "Gagal memuat data dari Google Sheets. Periksa koneksi internet atau URL API Anda.");
-                    setIsLive(false);
-                } finally {
-                    setLoading(false);
-                }
+                        setLoading(false);
+                    }, (error) => {
+                        console.error("Firebase Read Error:", error);
+                        setErrorMsg("Koneksi Firebase terputus.");
+                        setIsLive(false);
+                        setLoading(false);
+                    });
+                });
             };
 
-            useEffect(() => { fetchFromGoogleSheets(); }, []);
+            const fetchFromGoogleSheets = () => {
+                // Dipanggil oleh tombol refresh manual (Hanya memicu loading animasi sebentar)
+                setLoading(true);
+                setTimeout(() => setLoading(false), 500);
+            };
+
+            useEffect(() => { initFirebaseListener(); }, []);
 
             // Mengganti Tab dan me-reset view
             const handleTabChange = (tab) => {
@@ -891,30 +927,50 @@
                 });
             };
 
-            // CRUD ACTION
+            // CRUD ACTION FIREBASE REALTIME
             const handleCrudAction = async (action, type, payload) => {
                 setLoading(true);
                 setErrorMsg("");
                 try {
-                    const url = `${GOOGLE_SCRIPT_URL}?action=${action}&type=${type}&payload=${encodeURIComponent(JSON.stringify(payload))}`;
-                    const response = await fetch(url);
-                    const contentType = response.headers.get("content-type");
+                    // Tarik data terbaru dari Firebase sekali saja untuk dimodifikasi
+                    const snapshot = await firebaseDbRef.once('value');
+                    const currentData = snapshot.val() || { projects: [], resources: [] };
+                    
+                    let newProjects = currentData.projects || [];
+                    let newResources = currentData.resources || [];
+                    
+                    // Bersihkan array dari null jika ada
+                    newProjects = newProjects.filter(Boolean);
+                    newResources = newResources.filter(Boolean);
 
-                    if (contentType && contentType.includes("text/html")) {
-                        throw new Error("Gagal menyimpan! Google menolak akses jaringan. Periksa kembali konfigurasi Deploy Anda.");
+                    if (action === 'add') {
+                        payload.id = Date.now().toString();
+                        if (type === 'project') newProjects.push(payload);
+                        else newResources.push(payload);
+                    } else if (action === 'edit') {
+                        if (type === 'project') {
+                            newProjects = newProjects.map(p => p.id === payload.id ? payload : p);
+                        } else {
+                            newResources = newResources.map(r => r.id === payload.id ? payload : r);
+                        }
+                    } else if (action === 'delete') {
+                        if (type === 'project') {
+                            newProjects = newProjects.filter(p => p.id !== payload.id);
+                        } else {
+                            newResources = newResources.filter(r => r.id !== payload.id);
+                        }
                     }
 
-                    const result = await response.json();
+                    await firebaseDbRef.set({
+                        projects: newProjects,
+                        resources: newResources
+                    });
 
-                    if (result.success) {
-                        closeModal();
-                        await fetchFromGoogleSheets();
-                    } else {
-                        setErrorMsg(`Gagal menyimpan data: ${result.error}`);
-                    }
+                    closeModal();
+                    // Tidak perlu memanggil fetch ulang, karena on('value') akan otomatis merender state seketika!
                 } catch (error) {
-                    console.error("Error Action:", error);
-                    setErrorMsg(error.message || "Terjadi kesalahan jaringan saat menyimpan data ke database.");
+                    console.error("Error Action Firebase:", error);
+                    setErrorMsg(error.message || "Terjadi kesalahan saat menyimpan data ke Firebase.");
                 } finally {
                     setLoading(false);
                 }
