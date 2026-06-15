@@ -2311,6 +2311,81 @@
 
                 const [searchTeam, setSearchTeam] = useState("");
 
+                // --- ALGORITMA AI AUTO-PLOTTING ---
+                const handleAutoPlotting = () => {
+                    let recommendedTeam = [];
+                    let recommendedLeader = "";
+                    const checkPengawasan = formData.type === 'Pengawasan' || formData.type === 'Manajemen Konstruksi';
+
+                    // Helper mencari orang terbaik untuk role tertentu
+                    const findBestPerson = (roleKeyword, excludeList, requiredLevel = null) => {
+                        let candidates = resources.filter(r => r.role.toLowerCase().includes(roleKeyword.toLowerCase()) && !excludeList.includes(r.name));
+                        if(requiredLevel) {
+                            candidates = candidates.filter(r => r.level === requiredLevel);
+                        }
+                        if (candidates.length === 0) return null;
+                        
+                        let bestCandidate = null;
+                        let highestScore = -99999;
+                        
+                        candidates.forEach(cand => {
+                            // Hitung Workload
+                            const activeProjCount = computedProjects.filter(p => p.computedStatus !== 'Done' && p.team && p.team.includes(cand.name)).length;
+                            const workload = activeProjCount * 25; // Asumsi 1 project = 25% load
+                            
+                            // Hitung skor KPI
+                            const isLeaderMode = cand.level === 'Team Leader';
+                            const kpiResult = isLeaderMode 
+                                ? calculateLeaderKPI(cand, computedProjects) 
+                                : calculateEmployeeKPI(cand, computedProjects);
+                            
+                            let score = kpiResult.score;
+                            
+                            // Penalty AI untuk Workload
+                            if (workload >= 100) {
+                                score -= 1000; // Diskualifikasi jika full load
+                            } else {
+                                score -= (workload * 0.5); // Penalti proporsional beban
+                            }
+                            
+                            // Tambah poin dari manual rating (1-5 star)
+                            score += ((cand.rating || 0) * 10);
+                            
+                            if (score > highestScore) {
+                                highestScore = score;
+                                bestCandidate = cand.name;
+                            }
+                        });
+                        
+                        return bestCandidate;
+                    };
+
+                    if (!checkPengawasan) {
+                        // Perencanaan
+                        const leader = findBestPerson('Team Leader', recommendedTeam, 'Team Leader');
+                        if (leader) recommendedLeader = leader;
+                        
+                        const rolesToFill = ['Arsitek', 'Struktur', 'MEP', 'Estimator', 'Drafter'];
+                        rolesToFill.forEach(role => {
+                            const best = findBestPerson(role, recommendedTeam);
+                            if (best) recommendedTeam.push(best);
+                        });
+                    } else {
+                        // Pengawasan (Ambil top Inspector/Site Engineer)
+                        const rolesToFill = ['Inspector', 'Site Engineer', 'Quantity Surveyor'];
+                        rolesToFill.forEach(role => {
+                            const best = findBestPerson(role, recommendedTeam);
+                            if (best) recommendedTeam.push(best);
+                        });
+                    }
+                    
+                    setFormData(prev => ({
+                        ...prev,
+                        teamLeader: recommendedLeader,
+                        team: recommendedTeam
+                    }));
+                };
+
                 const handleChange = (e) => {
                     const { name, value } = e.target;
                     setFormData({ ...formData, [name]: value });
@@ -2510,7 +2585,14 @@
 
                                             {/* BAGIAN PENUGASAN TIM */}
                                             <div className="pt-2 border-t border-slate-200 dark:border-slate-700/50">
-                                                <label className="block text-sm font-bold text-slate-800 dark:text-slate-100 mb-2">Penugasan Personil</label>
+                                                <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-2 gap-2">
+                                                    <label className="block text-sm font-bold text-slate-800 dark:text-slate-100">Penugasan Personil</label>
+                                                    {!isPengawasanForm && (
+                                                        <button type="button" onClick={handleAutoPlotting} className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-lg text-xs font-bold transition-all shadow-md">
+                                                            <Icon name="zap" size={14} className="text-amber-300 fill-amber-300" /> Auto-Assign AI
+                                                        </button>
+                                                    )}
+                                                </div>
 
                                                 {!isPengawasanForm && (
                                                     <div className="mb-4 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-xl border border-amber-200 dark:border-amber-800/50 shadow-sm">
@@ -2578,6 +2660,7 @@
                                                                                 <option value="Team Leader">Team Leader</option>
                                                                                 <option value="Tenaga Ahli">Tenaga Ahli</option>
                                                                                 <option value="Inspector">Inspector</option>
+                                                                                <option value="Quantity Surveyor">Quantity Surveyor</option>
                                                                                 <option value="Administrasi">Administrasi</option>
                                                                             </select>
                                                                         </div>
