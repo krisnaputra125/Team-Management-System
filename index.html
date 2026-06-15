@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#0f172a">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <title>Team Management System (Catatan Teknis Krisna)</title>
+    <title>Project Management Control (Catatan Teknis Krisna)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
@@ -1028,10 +1028,10 @@
                 const sortKpiData = (a, b) => {
                     // 1. Prioritas Utama: Skor KPI Tertinggi
                     if (b.score !== a.score) return b.score - a.score;
-                    
+
                     // 2. Prioritas Kedua (Tie-breaker 1): Rating Bintang Manual
                     if ((b.rating || 0) !== (a.rating || 0)) return (b.rating || 0) - (a.rating || 0);
-                    
+
                     // 3. Prioritas Ketiga (Tie-breaker 2): Jumlah Proyek Selesai Tepat Waktu Terbanyak
                     const doneA = (a.bonusDoneLeader !== undefined ? a.bonusDoneLeader : (a.bonusDone || 0)) + (a.bonusDoneStaff || 0);
                     const doneB = (b.bonusDoneLeader !== undefined ? b.bonusDoneLeader : (b.bonusDone || 0)) + (b.bonusDoneStaff || 0);
@@ -1039,7 +1039,7 @@
 
                     // 4. Prioritas Keempat (Tie-breaker 3): Keterlambatan Paling Sedikit
                     if (a.delayed !== b.delayed) return a.delayed - b.delayed;
-                    
+
                     // 5. Prioritas Kelima (Tie-breaker 4): Rata-rata Progress Tertinggi
                     return b.avgProgress - a.avgProgress;
                 };
@@ -2940,12 +2940,15 @@
                         <aside className="hidden lg:flex lg:relative z-auto w-64 bg-white/40 dark:bg-slate-950/60 backdrop-blur-3xl border-r border-white/60 dark:border-slate-800/50 text-slate-600 dark:text-slate-300 flex-col shrink-0 h-full top-0 left-0 transition-colors duration-200 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)] dark:shadow-2xl">
                             <div className="p-4 lg:p-6">
                                 <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-3 text-slate-800 dark:text-white">
-                                        <div className="w-8 h-8 shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 relative overflow-hidden">
-                                            <Icon name="hexagon" size={28} className="absolute fill-white/10 text-white/20" />
-                                            <Icon name="users" size={16} className="relative z-10" strokeWidth={2.5} />
+                                    <div className="flex items-center gap-3 text-slate-800 dark:text-white w-full">
+                                        <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 relative overflow-hidden">
+                                            <Icon name="hexagon" size={32} className="absolute fill-white/10 text-white/20" />
+                                            <Icon name="users" size={18} className="relative z-10" strokeWidth={2.5} />
                                         </div>
-                                        <h1 className="text-base font-bold tracking-wide leading-tight">Team Management System</h1>
+                                        <h1 className="text-sm font-bold tracking-wide leading-tight flex flex-col whitespace-nowrap">
+                                            <span>Project Management</span>
+                                            <span>Control</span>
+                                        </h1>
                                     </div>
                                 </div>
                                 <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Catatan Teknis Krisna</p>
@@ -2970,7 +2973,7 @@
                                             {activeTab === 'gantt' && 'Ploting & Jadwal Personil'}
                                             {activeTab === 'kpi' && 'Evaluasi & KPI Tim'}
                                         </h2>
-                                        <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 hidden sm:block">Aplikasi Manajemen Proyek & Progress Tim Teknis</p>
+                                        <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 hidden sm:block">Aplikasi Manajemen Proyek & Personil Tim Teknis</p>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-3 sm:gap-4 shrink-0">
