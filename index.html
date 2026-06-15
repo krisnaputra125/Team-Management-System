@@ -1129,8 +1129,8 @@
                             </div>
                         </div>
 
-                        <div className="flex flex-col sm:flex-row gap-4 justify-between items-center bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl p-4 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-white/60 dark:border-slate-700/50">
-                            <div className="relative w-full sm:w-96">
+                        <div className="flex flex-row gap-3 items-center bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl p-4 rounded-2xl shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 border border-white/60 dark:border-slate-700/50">
+                            <div className="relative flex-1 sm:flex-none sm:w-96">
                                 <Icon name="search" size={18} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                                 <input
                                     type="text"
@@ -1142,7 +1142,7 @@
                             </div>
                             <button
                                 onClick={() => setShowKPIInfoModal(true)}
-                                className="p-2.5 text-slate-400 hover:text-blue-500 bg-slate-50 hover:bg-blue-50 dark:bg-slate-900/50 dark:hover:bg-blue-900/30 rounded-xl transition-all border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md"
+                                className="shrink-0 p-2.5 text-slate-400 hover:text-blue-500 bg-slate-50 hover:bg-blue-50 dark:bg-slate-900/50 dark:hover:bg-blue-900/30 rounded-xl transition-all border border-slate-200 dark:border-slate-700 shadow-sm hover:shadow-md"
                                 title="Informasi Perhitungan KPI"
                             >
                                 <Icon name="help-circle" size={20} />
