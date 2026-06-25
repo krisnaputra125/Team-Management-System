@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#0f172a">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <title> (Team Management Control System by Krisna)</title>
+    <title>Project Management Control (Catatan Teknis Krisna)</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -37,10 +37,10 @@
         }
     </script>
     <!-- React & ReactDOM -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
     <!-- Babel -->
-    <script src="https://unpkg.com/@babel/standalone@7.24.7/babel.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
     <style>
         .btn-clean-check {
             width: 36px;
@@ -625,6 +625,11 @@
             }
             const firebaseDbRef = typeof firebase !== 'undefined' ? firebase.database().ref('pmc_data') : null;
 
+            // Fitur Sanitasi Firebase: Mengubah karakter dilarang seperti titik (.) menjadi _DOT_ sebelum disimpan, 
+            // lalu mengembalikannya menjadi titik (.) saat dibaca agar nama tetap utuh di UI
+            const encodeKey = (k) => typeof k === 'string' ? k.replace(/\./g, '__DOT__').replace(/#/g, '__HASH__').replace(/\$/g, '__DOLLAR__').replace(/\[/g, '__LBRACK__').replace(/\]/g, '__RBRACK__').replace(/\//g, '__SLASH__') : k;
+            const decodeKey = (k) => typeof k === 'string' ? k.replace(/__DOT__/g, '.').replace(/__HASH__/g, '#').replace(/__DOLLAR__/g, '$').replace(/__LBRACK__/g, '[').replace(/__RBRACK__/g, ']').replace(/__SLASH__/g, '/') : k;
+
             // Old URL Web App Google Apps Script (Digunakan sekali saat migrasi otomatis)
             const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyEt5puRB26FO6mGfnxVvofBJaDwLtH3O0yd-Ugsugn2D2KezKpi_ynGz7hw24kpLIpRQ/exec';
             const [modalConfig, setModalConfig] = useState({ isOpen: false, type: null, mode: 'add', data: null });
@@ -795,8 +800,22 @@
                                 } catch (e) { parsedTeam = p.team || []; }
                             } else {
                                 parsedTeam = p.team || [];
+                                catDetails = p.categoryDetails || {};
+                                leader = p.teamLeader || "";
+                                individualStatus = p.individualStatus || {};
+                                pengawasanDetails = p.pengawasanDetails || {};
                             }
-                            return { ...p, team: parsedTeam, categoryDetails: catDetails, teamLeader: leader, individualStatus, pengawasanDetails };
+
+                            const finalPengawasan = {};
+                            for (const k in pengawasanDetails || {}) {
+                                finalPengawasan[decodeKey(k)] = pengawasanDetails[k];
+                            }
+                            const finalIndividual = {};
+                            for (const k in individualStatus || {}) {
+                                finalIndividual[decodeKey(k)] = individualStatus[k];
+                            }
+
+                            return { ...p, team: parsedTeam, categoryDetails: catDetails, teamLeader: leader, individualStatus: finalIndividual, pengawasanDetails: finalPengawasan };
                         });
 
                         const processedResources = (data.resources || []).filter(Boolean).map(r => {
@@ -812,7 +831,33 @@
                             return { ...r, role, level, manualPoints };
                         });
 
-                        setProjects(processedProjects);
+                        // Auto-Heal Project Names: Mencegah bug "Lainnya" akibat perbedaan tanda baca pada nama
+                        const normalizeName = (name) => name ? name.toLowerCase().replace(/[^a-z0-9]/g, '') : '';
+                        const healedProjects = processedProjects.map(p => {
+                            const healedP = { ...p };
+                            const healName = (oldName) => {
+                                if (!oldName) return oldName;
+                                const exactMatch = processedResources.find(r => r.name === oldName);
+                                if (exactMatch) return oldName;
+                                const fuzzyMatch = processedResources.find(r => normalizeName(r.name) === normalizeName(oldName));
+                                return fuzzyMatch ? fuzzyMatch.name : oldName;
+                            };
+
+                            healedP.teamLeader = healName(healedP.teamLeader);
+                            if (healedP.team) healedP.team = healedP.team.map(m => healName(m));
+                            
+                            const newPengawasan = {};
+                            for(const k in healedP.pengawasanDetails) newPengawasan[healName(k)] = healedP.pengawasanDetails[k];
+                            healedP.pengawasanDetails = newPengawasan;
+
+                            const newIndividual = {};
+                            for(const k in healedP.individualStatus) newIndividual[healName(k)] = healedP.individualStatus[k];
+                            healedP.individualStatus = newIndividual;
+
+                            return healedP;
+                        });
+
+                        setProjects(healedProjects);
                         setResources(processedResources);
                         setIsLive(true);
                         setLoading(false);
@@ -961,8 +1006,27 @@
                         }
                     }
 
+                    const cleanProjects = newProjects.map(proj => {
+                        const newP = { ...proj };
+                        if (newP.pengawasanDetails) {
+                            const cleanP = {};
+                            for (const k in newP.pengawasanDetails) {
+                                cleanP[encodeKey(k)] = newP.pengawasanDetails[k];
+                            }
+                            newP.pengawasanDetails = cleanP;
+                        }
+                        if (newP.individualStatus) {
+                            const cleanI = {};
+                            for (const k in newP.individualStatus) {
+                                cleanI[encodeKey(k)] = newP.individualStatus[k];
+                            }
+                            newP.individualStatus = cleanI;
+                        }
+                        return newP;
+                    });
+
                     await firebaseDbRef.set({
-                        projects: newProjects,
+                        projects: cleanProjects,
                         resources: newResources
                     });
 
@@ -1450,7 +1514,6 @@
                                 <table className="w-full text-left border-collapse">
                                     <thead>
                                         <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
-                                            <th className="p-4 font-semibold">ID</th>
                                             <th className="p-4 font-semibold min-w-[200px]">Nama Proyek & Klien</th>
                                             <th className="p-4 font-semibold min-w-[120px]">Target Makro</th>
                                             <th className="p-4 font-semibold min-w-[300px]">Rincian & Target Sub-Tim</th>
@@ -1460,7 +1523,7 @@
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm">
                                         {filteredAndSortedProjects.length === 0 ? (
                                             <tr>
-                                                <td colSpan="5" className="p-8 text-center text-slate-400">
+                                                <td colSpan="4" className="p-8 text-center text-slate-400">
                                                     <Icon name="folder-open" size={32} className="mx-auto mb-2 opacity-50" />
                                                     <p>Pencarian tidak ditemukan atau data kosong.</p>
                                                 </td>
@@ -1528,7 +1591,6 @@
 
                                                 return (
                                                     <tr key={p.id} className="hover:bg-slate-50 dark:hover:bg-slate-700/30 transition-colors group align-top">
-                                                        <td className="p-4 font-mono text-xs text-slate-400 pt-5">{p.id}</td>
                                                         <td className="p-4 pt-5">
                                                             <p className="font-bold text-slate-800 dark:text-slate-200 text-base">{p.name}</p>
                                                             <p className="text-xs text-slate-500 mb-2">{p.client}</p>
@@ -2405,6 +2467,68 @@
                     }));
                 };
 
+                // --- SISTEM MICRO-CHECKLIST ---
+                const handleAddTask = (category, taskName) => {
+                    if (!taskName.trim()) return;
+                    setFormData(prev => {
+                        const currentCat = prev.categoryDetails?.[category] || { progress: 0, deadline: '', tasks: [], completedTasks: [] };
+                        const currentTasks = currentCat.tasks || [];
+                        if (currentTasks.includes(taskName.trim())) return prev;
+                        const newTasks = [...currentTasks, taskName.trim()];
+
+                        const completed = currentCat.completedTasks || [];
+                        const newProgress = newTasks.length > 0 ? Math.round((completed.length / newTasks.length) * 100) : 0;
+
+                        return {
+                            ...prev,
+                            categoryDetails: {
+                                ...prev.categoryDetails,
+                                [category]: { ...currentCat, tasks: newTasks, progress: newProgress }
+                            }
+                        };
+                    });
+                };
+
+                const handleRemoveTask = (category, taskName) => {
+                    setFormData(prev => {
+                        const currentCat = prev.categoryDetails?.[category] || { progress: 0, deadline: '', tasks: [], completedTasks: [] };
+                        const newTasks = (currentCat.tasks || []).filter(t => t !== taskName);
+                        const newCompleted = (currentCat.completedTasks || []).filter(t => t !== taskName);
+
+                        const newProgress = newTasks.length > 0 ? Math.round((newCompleted.length / newTasks.length) * 100) : 0;
+
+                        return {
+                            ...prev,
+                            categoryDetails: {
+                                ...prev.categoryDetails,
+                                [category]: { ...currentCat, tasks: newTasks, completedTasks: newCompleted, progress: newProgress }
+                            }
+                        };
+                    });
+                };
+
+                const handleToggleTask = (category, taskName) => {
+                    setFormData(prev => {
+                        const currentCat = prev.categoryDetails?.[category] || { progress: 0, deadline: '', tasks: [], completedTasks: [] };
+                        const currentCompleted = currentCat.completedTasks || [];
+                        const isCompleted = currentCompleted.includes(taskName);
+                        const newCompleted = isCompleted
+                            ? currentCompleted.filter(t => t !== taskName)
+                            : [...currentCompleted, taskName];
+
+                        const totalTasks = currentCat.tasks || [];
+                        const newProgress = totalTasks.length > 0 ? Math.round((newCompleted.length / totalTasks.length) * 100) : 0;
+
+                        return {
+                            ...prev,
+                            categoryDetails: {
+                                ...prev.categoryDetails,
+                                [category]: { ...currentCat, completedTasks: newCompleted, progress: newProgress }
+                            }
+                        };
+                    });
+                };
+
                 const handlePengawasanDetailChange = (memberName, field, value) => {
                     setFormData(prev => ({
                         ...prev,
@@ -2578,6 +2702,7 @@
                                                         <input type="date" name="deadline" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                                             value={formData.deadline || ''}
                                                             onChange={handleChange}
+                                                            onClick={(e) => e.target.showPicker && e.target.showPicker()}
                                                         />
                                                     </div>
                                                 </div>
@@ -2674,6 +2799,7 @@
                                                                                 <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
                                                                                     value={detail.deadline || ''}
                                                                                     onChange={(e) => handlePengawasanDetailChange(member, 'deadline', e.target.value)}
+                                                                                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
                                                                                 />
                                                                             </div>
                                                                         </div>
@@ -2696,34 +2822,107 @@
                                                             const details = formData.categoryDetails?.[cat] || { progress: 0, deadline: '' };
 
                                                             return (
-                                                                <div key={cat} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-2.5 rounded-xl flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-4 shadow-sm">
-                                                                    <div className="w-full sm:w-1/3 sm:border-r border-slate-100 dark:border-slate-700 sm:pr-2">
-                                                                        <h4 className="text-xs font-bold text-slate-700 dark:text-slate-200">{cat}</h4>
-                                                                        <p className="text-[9px] text-slate-500 truncate mt-0.5" title={formData.team.filter(m => { const r = resources.find(x => x.name === m); return r && getCategoryFromRole(r.role) === cat; }).join(', ')}>
-                                                                            {formData.team.filter(m => {
-                                                                                const r = resources.find(x => x.name === m);
-                                                                                return r && getCategoryFromRole(r.role) === cat;
-                                                                            }).join(', ')}
-                                                                        </p>
-                                                                    </div>
-                                                                    <div className="w-1/3">
-                                                                        <label className="block text-[9px] font-bold text-slate-500 dark:text-slate-400 mb-1 uppercase">Progress Tim (%)</label>
-                                                                        <input type="number" min="0" max="100" className="block w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors appearance-none m-0 dark:text-slate-200"
-                                                                            value={details.progress !== undefined ? details.progress : 0}
-                                                                            onChange={(e) => handleCategoryDetailChange(cat, 'progress', e.target.value)}
-                                                                        />
-                                                                    </div>
-                                                                    <div className="w-full sm:w-1/3">
-                                                                        <label className="block text-[9px] font-bold text-slate-500 mb-1 uppercase">Deadline Tim</label>
-                                                                        <div className="relative w-full">
-                                                                            <div className="flex items-center justify-between w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900/50 focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition-colors min-h-[34px] text-slate-700 dark:text-slate-200">
-                                                                                <span>{details.deadline ? formatDateIndo(details.deadline) : 'Pilih tanggal...'}</span>
-                                                                                <Icon name="calendar-clock" size={14} className="text-slate-400" />
+                                                                <div key={cat} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl flex flex-col gap-3 shadow-sm">
+                                                                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                                                                        <div className="w-full sm:w-1/3 sm:border-r border-slate-100 dark:border-slate-700 sm:pr-2">
+                                                                            <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5"><Icon name="target" size={14} className="text-blue-500" /> {cat}</h4>
+                                                                            <p className="text-[9px] text-slate-500 truncate mt-0.5" title={formData.team.filter(m => { const r = resources.find(x => x.name === m); return r && getCategoryFromRole(r.role) === cat; }).join(', ')}>
+                                                                                {formData.team.filter(m => {
+                                                                                    const r = resources.find(x => x.name === m);
+                                                                                    return r && getCategoryFromRole(r.role) === cat;
+                                                                                }).join(', ')}
+                                                                            </p>
+                                                                        </div>
+                                                                        <div className="w-full sm:w-1/3">
+                                                                            {(details.tasks || []).length > 0 ? (
+                                                                                <>
+                                                                                    <label className="block text-[9px] font-bold text-slate-500 mb-1 uppercase">Progress Terkunci (%)</label>
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <div className="flex-1 h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
+                                                                                            <div className="h-full bg-blue-500 transition-all duration-500" style={{ width: `${details.progress || 0}%` }}></div>
+                                                                                        </div>
+                                                                                        <span className="text-xs font-bold text-slate-700 dark:text-slate-200">{details.progress || 0}%</span>
+                                                                                    </div>
+                                                                                </>
+                                                                            ) : (
+                                                                                <>
+                                                                                    <label className="block text-[9px] font-bold text-slate-500 mb-1 uppercase">Progress Manual (%)</label>
+                                                                                    <div className="flex items-center gap-2">
+                                                                                        <input
+                                                                                            type="number"
+                                                                                            min="0"
+                                                                                            max="100"
+                                                                                            value={details.progress || 0}
+                                                                                            onChange={(e) => {
+                                                                                                let val = parseInt(e.target.value) || 0;
+                                                                                                if (val > 100) val = 100;
+                                                                                                if (val < 0) val = 0;
+                                                                                                handleCategoryDetailChange(cat, 'progress', val);
+                                                                                            }}
+                                                                                            className="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900/50 focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition-colors text-slate-700 dark:text-slate-200"
+                                                                                        />
+                                                                                    </div>
+                                                                                </>
+                                                                            )}
+                                                                        </div>
+                                                                        <div className="w-full sm:w-1/3">
+                                                                            <label className="block text-[9px] font-bold text-slate-500 mb-1 uppercase">Deadline Tim</label>
+                                                                            <div className="relative w-full">
+                                                                                <div className="flex items-center justify-between w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900/50 focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition-colors min-h-[34px] text-slate-700 dark:text-slate-200">
+                                                                                    <span>{details.deadline ? formatDateIndo(details.deadline) : 'Pilih tanggal...'}</span>
+                                                                                    <Icon name="calendar-clock" size={14} className="text-slate-400" />
+                                                                                </div>
+                                                                                <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                                                    value={details.deadline || ''}
+                                                                                    onChange={(e) => handleCategoryDetailChange(cat, 'deadline', e.target.value)}
+                                                                                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                                                                                />
                                                                             </div>
-                                                                            <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                                                value={details.deadline || ''}
-                                                                                onChange={(e) => handleCategoryDetailChange(cat, 'deadline', e.target.value)}
-                                                                            />
+                                                                        </div>
+                                                                    </div>
+
+                                                                    {/* Micro-Tasks Checklist */}
+                                                                    <div className="bg-slate-50 dark:bg-slate-900/50 p-2.5 rounded-lg border border-slate-100 dark:border-slate-700/50 mt-1">
+                                                                        <label className="block text-[10px] font-bold text-slate-500 dark:text-slate-400 mb-2 uppercase">Custom Micro-Tasks</label>
+                                                                        <input
+                                                                            type="text"
+                                                                            placeholder={
+                                                                                cat === 'QS' ? "Ketik tugas baru (Cth: RAB) lalu tekan Enter..." :
+                                                                                    cat === 'Struktur' ? "Ketik tugas baru (Cth: Perhitungan Struktur Kolom) lalu tekan Enter..." :
+                                                                                        cat === 'MEP' ? "Ketik tugas baru (Cth: Perhitungan sanitair) lalu tekan Enter..." :
+                                                                                            "Ketik tugas baru (Cth: Denah Lantai 1) lalu tekan Enter..."
+                                                                            }
+                                                                            className="w-full p-2 text-xs border border-slate-200 dark:border-slate-700 rounded-md mb-2 bg-white dark:bg-slate-800 outline-none focus:border-blue-500 dark:text-slate-200 transition-colors"
+                                                                            onKeyDown={(e) => {
+                                                                                if (e.key === 'Enter') {
+                                                                                    e.preventDefault();
+                                                                                    handleAddTask(cat, e.target.value);
+                                                                                    e.target.value = '';
+                                                                                }
+                                                                            }}
+                                                                        />
+                                                                        <div className="flex flex-col gap-1.5 max-h-32 overflow-y-auto pr-1">
+                                                                            {(details.tasks || []).length === 0 ? (
+                                                                                <p className="text-[10px] text-slate-400 italic">Belum ada tugas. Tambahkan tugas agar progres dapat dihitung.</p>
+                                                                            ) : (
+                                                                                (details.tasks || []).map((task, idx) => {
+                                                                                    const isChecked = (details.completedTasks || []).includes(task);
+                                                                                    return (
+                                                                                        <div key={idx} className={`flex items-center justify-between p-1.5 rounded-md border text-xs transition-all ${isChecked ? 'bg-blue-50 border-blue-200 dark:bg-blue-900/20 dark:border-blue-800/50' : 'bg-white border-slate-200 dark:bg-slate-800 dark:border-slate-700'}`}>
+                                                                                            <label className="flex items-center gap-2 cursor-pointer flex-1">
+                                                                                                <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
+                                                                                                    checked={isChecked}
+                                                                                                    onChange={() => handleToggleTask(cat, task)}
+                                                                                                />
+                                                                                                <span className={`${isChecked ? 'text-blue-800 dark:text-blue-300 line-through opacity-70' : 'text-slate-700 dark:text-slate-200 font-medium'}`}>{task}</span>
+                                                                                            </label>
+                                                                                            <button type="button" onClick={() => handleRemoveTask(cat, task)} className="text-slate-400 hover:text-red-500 transition-colors px-1 ml-2 flex-shrink-0" title="Hapus Tugas">
+                                                                                                <Icon name="x" size={12} />
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    )
+                                                                                })
+                                                                            )}
                                                                         </div>
                                                                     </div>
                                                                 </div>
@@ -3090,7 +3289,7 @@
                                         </h1>
                                     </div>
                                 </div>
-                                <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Catatan Teknis Krisna</p>
+                                <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Tim Teknis Gaharu Sempana Group</p>
                             </div>
                             <nav className="flex-1 px-4 space-y-2 mt-4">
                                 <SidebarItem icon={<Icon name="layout-dashboard" size={20} />} label="Dashboard" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
