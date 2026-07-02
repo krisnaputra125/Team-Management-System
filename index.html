@@ -561,7 +561,7 @@
         };
 
         // --- KOMPONEN CHECKBOX DIPISAH AGAR SCROLL TIDAK RESET ---
-        function TeamCheckboxGroup({ title, roleFilter, isOptional, filteredResources, formData, setFormData }) {
+        function TeamCheckboxGroup({ title, roleFilter, isOptional, filteredResources, formData, setFormData, teamField = 'team' }) {
             const groupResources = filteredResources.filter(roleFilter);
             if (groupResources.length === 0) return null;
 
@@ -577,12 +577,12 @@
                                 <input
                                     type="checkbox"
                                     className="mt-0.5 rounded border-slate-300 w-4 h-4 text-blue-600 focus:ring-blue-500"
-                                    checked={(formData.team || []).includes(res.name)}
+                                    checked={(formData[teamField] || []).includes(res.name)}
                                     onChange={(e) => {
                                         const newTeam = e.target.checked
-                                            ? [...(formData.team || []), res.name]
-                                            : (formData.team || []).filter(n => n !== res.name);
-                                        setFormData({ ...formData, team: newTeam });
+                                            ? [...(formData[teamField] || []), res.name]
+                                            : (formData[teamField] || []).filter(n => n !== res.name);
+                                        setFormData({ ...formData, [teamField]: newTeam });
                                     }}
                                 />
                                 <div className="flex flex-col">
@@ -590,6 +590,96 @@
                                 </div>
                             </label>
                         ))}
+                    </div>
+                </div>
+            );
+        }
+
+        function TeamVisionaryMultiSelect({ title, filteredResources, formData, setFormData, teamField = 'surveyorTeam' }) {
+            const [searchTerm, setSearchTerm] = React.useState('');
+
+            const searchResults = filteredResources.filter(r => 
+                searchTerm === '' || 
+                r.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                r.role.toLowerCase().includes(searchTerm.toLowerCase())
+            );
+
+            const togglePerson = (name) => {
+                const current = formData[teamField] || [];
+                if (current.includes(name)) {
+                    setFormData({ ...formData, [teamField]: current.filter(n => n !== name) });
+                } else {
+                    setFormData({ ...formData, [teamField]: [...current, name] });
+                }
+            };
+
+            return (
+                <div className="mb-4 bg-blue-50/40 dark:bg-blue-900/10 border border-blue-200 dark:border-blue-800/60 p-3 rounded-xl shadow-sm">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                        <h4 className="text-[12px] font-bold text-blue-800 dark:text-blue-300 flex items-center gap-1.5">
+                            <Icon name="users" size={14} className="text-blue-600 dark:text-blue-400" />
+                            {title}
+                        </h4>
+                        <div className="relative w-full sm:w-1/2">
+                            <div className="absolute left-2.5 top-1/2 -translate-y-1/2 text-blue-400">
+                                <Icon name="search" size={12} />
+                            </div>
+                            <input
+                                type="text"
+                                placeholder="Cari nama/jabatan (cth: arsitek)..."
+                                className="w-full pl-7 pr-3 py-1.5 bg-white dark:bg-slate-900 border border-blue-200 dark:border-blue-700/50 rounded-lg text-[11px] outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-sm dark:text-slate-200"
+                                value={searchTerm}
+                                onChange={(e) => setSearchTerm(e.target.value)}
+                            />
+                        </div>
+                    </div>
+
+                    {(formData[teamField] || []).length > 0 && (
+                        <div className="flex flex-wrap gap-1.5 mb-3 p-2 bg-white dark:bg-slate-800/80 rounded-lg border border-blue-100 dark:border-blue-800/50 shadow-inner min-h-[36px] items-center">
+                            <span className="text-[9px] font-bold text-slate-400 mr-1 uppercase tracking-wider">Terpilih:</span>
+                            {(formData[teamField] || []).map(name => (
+                                <div key={name} className="flex items-center gap-1 bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold shadow-sm group">
+                                    <span>{name}</span>
+                                    <button 
+                                        type="button" 
+                                        onClick={() => togglePerson(name)} 
+                                        className="text-blue-200 hover:text-white bg-blue-700 hover:bg-red-500 rounded-full w-3.5 h-3.5 flex items-center justify-center transition-colors"
+                                        title="Hapus"
+                                    >
+                                        ×
+                                    </button>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    <div className="max-h-32 overflow-y-auto pr-1.5 space-y-1">
+                        {searchResults.length === 0 ? (
+                            <p className="text-[11px] text-slate-400 italic text-center py-3">Tidak ditemukan personil dengan pencarian "{searchTerm}".</p>
+                        ) : (
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-1.5">
+                                {searchResults.map(res => {
+                                    const isSelected = (formData[teamField] || []).includes(res.name);
+                                    return (
+                                        <label 
+                                            key={res.id} 
+                                            className={`flex items-start space-x-2 text-sm cursor-pointer p-1.5 rounded-lg transition-all border ${isSelected ? 'bg-blue-50/80 dark:bg-blue-900/40 border-blue-300 dark:border-blue-600 shadow-sm' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50 border-transparent hover:border-slate-200 dark:hover:border-slate-700'}`}
+                                        >
+                                            <input
+                                                type="checkbox"
+                                                className="mt-0.5 rounded border-slate-300 dark:border-slate-600 w-3.5 h-3.5 text-blue-600 focus:ring-blue-500 transition-colors"
+                                                checked={isSelected}
+                                                onChange={() => togglePerson(res.name)}
+                                            />
+                                            <div className="flex flex-col">
+                                                <span className={`text-[11px] font-bold leading-tight ${isSelected ? 'text-blue-800 dark:text-blue-300' : 'text-slate-700 dark:text-slate-200'}`}>{res.name}</span>
+                                                <span className="text-[9px] text-slate-500 dark:text-slate-400 mt-0.5">{res.role}</span>
+                                            </div>
+                                        </label>
+                                    )
+                                })}
+                            </div>
+                        )}
                     </div>
                 </div>
             );
@@ -686,6 +776,10 @@
                             if (!catMembers[cat]) catMembers[cat] = [];
                             catMembers[cat].push(m);
                         });
+
+                        if (p.surveyorTeam && p.surveyorTeam.length > 0) {
+                            catMembers['Surveyor'] = p.surveyorTeam;
+                        }
 
                         activeCategories = Object.keys(catMembers);
                         activeCategories.forEach(cat => {
@@ -1545,11 +1639,20 @@
                                         ) : (
                                             currentProjects.map((p) => {
                                                 const teamGroups = {
-                                                    Arsitek: [], QS: [], Struktur: [], MEP: [], 'Tata Ruang': [], Lainnya: []
+                                                    Arsitek: [], QS: [], Struktur: [], MEP: [], 'Tata Ruang': [], Surveyor: [], Lainnya: []
                                                 };
+                                                const isPerencanaan = p.type?.toLowerCase().includes('perencana');
+                                                const surveyorList = p.surveyorTeam || [];
 
                                                 if (p.team && p.team.length > 0) {
                                                     p.team.forEach(teamMemberName => {
+                                                        if (isPerencanaan && surveyorList.includes(teamMemberName)) {
+                                                            if (!teamGroups.Surveyor.includes(teamMemberName)) {
+                                                                teamGroups.Surveyor.push(teamMemberName);
+                                                            }
+                                                            return; // Memastikan mereka tidak muncul di sub-tim aslinya (hide from default category)
+                                                        }
+
                                                         const resInfo = resources.find(r => r.name === teamMemberName);
                                                         if (resInfo) {
                                                             const cat = getCategoryFromRole(resInfo.role);
@@ -1706,6 +1809,7 @@
                                                                     ) : (
                                                                         <>
                                                                             {renderSubTeamProgress("Arsitek", teamGroups.Arsitek)}
+                                                                            {renderSubTeamProgress("Surveyor", teamGroups.Surveyor)}
                                                                             {renderSubTeamProgress("QS", teamGroups.QS)}
                                                                             {renderSubTeamProgress("Struktur", teamGroups.Struktur)}
                                                                             {renderSubTeamProgress("MEP", teamGroups.MEP)}
@@ -2399,7 +2503,7 @@
                     modalConfig.data
                         ? { ...modalConfig.data, adjustmentInput: 0 }
                         : (isProject
-                            ? { name: '', client: '', type: 'Perencanaan', status: 'On Progress', progress: 0, deadline: '', spmk: '', description: '', descriptionUpdatedAt: '', team: [], categoryDetails: {}, teamLeader: '', pengawasanDetails: {} }
+                            ? { name: '', client: '', type: 'Perencanaan', status: 'On Progress', progress: 0, deadline: '', spmk: '', description: '', descriptionUpdatedAt: '', team: [], surveyorTeam: [], categoryDetails: {}, teamLeader: '', pengawasanDetails: {} }
                             : { name: '', role: 'Arsitek', level: 'Staff', rating: 3, manualPoints: 0, adjustmentInput: 0 }
                         )
                 );
@@ -2618,11 +2722,19 @@
                     });
                 };
 
+                const surveyorTeamList = formData.surveyorTeam || [];
+                const isPerencanaanForm = formData.type?.toLowerCase().includes('perencana');
+                
                 // Dapatkan Kategori Aktif untuk menampilkan form progres spesifik tim & menghitung rata-rata
                 const activeCategories = Array.from(new Set((formData.team || []).map(memberName => {
+                    if (isPerencanaanForm && surveyorTeamList.includes(memberName)) return null;
                     const res = resources.find(r => r.name === memberName);
                     return res ? getCategoryFromRole(res.role) : 'Lainnya';
-                })));
+                }).filter(cat => cat !== null)));
+                
+                if (surveyorTeamList.length > 0) {
+                    activeCategories.push('Surveyor');
+                }
 
                 // HITUNG PROGRESS TOTAL OTOMATIS BERDASARKAN RATA-RATA SUB-TIM
                 const computedTotalProgress = useMemo(() => {
@@ -2674,6 +2786,10 @@
                             const res = resources.find(r => r.name === memberName);
                             return res ? getCategoryFromRole(res.role) : 'Lainnya';
                         }));
+                        if (finalPayload.type === 'Perencanaan' && finalPayload.surveyorTeam && finalPayload.surveyorTeam.length > 0) {
+                            activeCats.add('Surveyor');
+                            finalPayload.team = Array.from(new Set([...(finalPayload.team || []), ...finalPayload.surveyorTeam]));
+                        }
 
                         const cleanDetails = {};
                         activeCats.forEach(cat => {
@@ -2859,6 +2975,13 @@
                                                     )}
                                                 </div>
 
+                                                {!isPengawasanForm && resources.length > 0 && (
+                                                    <div className="mt-4 border-t border-slate-200 dark:border-slate-700/50 pt-4">
+                                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-2">Penugasan Ekstra (Opsional)</label>
+                                                        <TeamVisionaryMultiSelect title="Tim Surveyor (Sub Tim Khusus Lintas Jabatan)" filteredResources={resources} formData={formData} setFormData={setFormData} teamField="surveyorTeam" />
+                                                    </div>
+                                                )}
+
                                                 {isPengawasanForm && (formData.team || []).length > 0 && (
                                                     <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-700/50">
                                                         <label className="flex items-center gap-1.5 text-sm font-bold text-slate-800 dark:text-slate-100 mb-3"><Icon name="user-check" size={16} className="text-emerald-600 dark:text-emerald-400" /> Rincian Penugasan Personil Pengawasan</label>
@@ -2931,21 +3054,23 @@
                                                 <div className="pt-4 border-t border-slate-100 dark:border-slate-700/50">
                                                     <label className="flex items-center gap-1.5 text-sm font-bold text-slate-800 dark:text-slate-100 mb-3"><Icon name="target" size={16} className="text-blue-600 dark:text-blue-400" /> Target Khusus Per Sub-Tim</label>
                                                     <div className="space-y-2 border border-slate-200 dark:border-slate-700/50 rounded-xl p-3 bg-blue-50/30 dark:bg-blue-900/10">
-                                                        {['Arsitek', 'QS', 'Struktur', 'MEP', 'Tata Ruang', 'Lainnya'].map(cat => {
+                                                        {['Arsitek', 'QS', 'Struktur', 'MEP', 'Tata Ruang', 'Surveyor', 'Lainnya'].map(cat => {
                                                             if (!activeCategories.includes(cat)) return null;
 
                                                             const details = formData.categoryDetails?.[cat] || { progress: 0, deadline: '' };
+                                                            const catMembers = cat === 'Surveyor' ? (formData.surveyorTeam || []) : formData.team.filter(m => {
+                                                                if (isPerencanaanForm && (formData.surveyorTeam || []).includes(m)) return false;
+                                                                const r = resources.find(x => x.name === m);
+                                                                return r && getCategoryFromRole(r.role) === cat;
+                                                            });
 
                                                             return (
                                                                 <div key={cat} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl flex flex-col gap-3 shadow-sm">
                                                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                                                                         <div className="w-full sm:w-1/3 sm:border-r border-slate-100 dark:border-slate-700 sm:pr-2">
                                                                             <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5"><Icon name="target" size={14} className="text-blue-500" /> {cat}</h4>
-                                                                            <p className="text-[9px] text-slate-500 truncate mt-0.5" title={formData.team.filter(m => { const r = resources.find(x => x.name === m); return r && getCategoryFromRole(r.role) === cat; }).join(', ')}>
-                                                                                {formData.team.filter(m => {
-                                                                                    const r = resources.find(x => x.name === m);
-                                                                                    return r && getCategoryFromRole(r.role) === cat;
-                                                                                }).join(', ')}
+                                                                            <p className="text-[9px] text-slate-500 truncate mt-0.5" title={catMembers.join(', ')}>
+                                                                                {catMembers.join(', ')}
                                                                             </p>
                                                                         </div>
                                                                         <div className="w-full sm:w-1/3">
