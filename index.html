@@ -582,7 +582,14 @@
                                         const newTeam = e.target.checked
                                             ? [...(formData[teamField] || []), res.name]
                                             : (formData[teamField] || []).filter(n => n !== res.name);
-                                        setFormData({ ...formData, [teamField]: newTeam });
+                                        const updates = { [teamField]: newTeam };
+                                        
+                                        // Jika dicentang di sub-tim biasa, hapus dari surveyorTeam (mencegah centang ganda)
+                                        if (e.target.checked && teamField === 'team' && formData.surveyorTeam && formData.surveyorTeam.includes(res.name)) {
+                                            updates.surveyorTeam = formData.surveyorTeam.filter(n => n !== res.name);
+                                        }
+                                        
+                                        setFormData({ ...formData, ...updates });
                                     }}
                                 />
                                 <div className="flex flex-col">
@@ -609,7 +616,14 @@
                 if (current.includes(name)) {
                     setFormData({ ...formData, [teamField]: current.filter(n => n !== name) });
                 } else {
-                    setFormData({ ...formData, [teamField]: [...current, name] });
+                    const updates = { [teamField]: [...current, name] };
+                    
+                    // Jika diplot ke surveyorTeam, hapus dari sub-tim biasa (team) agar tidak tercentang ganda
+                    if (teamField === 'surveyorTeam' && formData.team && formData.team.includes(name)) {
+                        updates.team = formData.team.filter(n => n !== name);
+                    }
+                    
+                    setFormData({ ...formData, ...updates });
                 }
             };
 
@@ -2499,14 +2513,18 @@
 
                 const isProject = modalConfig.type === 'project';
 
-                const [formData, setFormData] = useState(
-                    modalConfig.data
-                        ? { ...modalConfig.data, adjustmentInput: 0 }
-                        : (isProject
-                            ? { name: '', client: '', type: 'Perencanaan', status: 'On Progress', progress: 0, deadline: '', spmk: '', description: '', descriptionUpdatedAt: '', team: [], surveyorTeam: [], categoryDetails: {}, teamLeader: '', pengawasanDetails: {} }
-                            : { name: '', role: 'Arsitek', level: 'Staff', rating: 3, manualPoints: 0, adjustmentInput: 0 }
-                        )
-                );
+                const [formData, setFormData] = useState(() => {
+                    if (modalConfig.data) {
+                        const data = { ...modalConfig.data, adjustmentInput: 0 };
+                        if (modalConfig.type === 'project' && data.type === 'Perencanaan' && data.surveyorTeam && data.surveyorTeam.length > 0) {
+                            data.team = (data.team || []).filter(m => !data.surveyorTeam.includes(m));
+                        }
+                        return data;
+                    }
+                    return isProject
+                        ? { name: '', client: '', type: 'Perencanaan', status: 'On Progress', progress: 0, deadline: '', spmk: '', description: '', descriptionUpdatedAt: '', team: [], surveyorTeam: [], categoryDetails: {}, teamLeader: '', pengawasanDetails: {} }
+                        : { name: '', role: 'Arsitek', level: 'Staff', rating: 3, manualPoints: 0, adjustmentInput: 0 };
+                });
 
                 const [searchTeam, setSearchTeam] = useState("");
 
