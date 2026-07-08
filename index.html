@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#0f172a">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <title>Project Management Control (Catatan Teknis Krisna)</title>
+    <title>Project Management Control Gaharu Sempana Group</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -263,7 +263,8 @@
                 "sun": '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
                 "moon": '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
                 "hexagon": '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>',
-                "info": '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>'
+                "info": '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
+                "printer": '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>'
             };
             return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} dangerouslySetInnerHTML={{ __html: paths[name] }} />;
         };
@@ -583,12 +584,12 @@
                                             ? [...(formData[teamField] || []), res.name]
                                             : (formData[teamField] || []).filter(n => n !== res.name);
                                         const updates = { [teamField]: newTeam };
-                                        
+
                                         // Jika dicentang di sub-tim biasa, hapus dari surveyorTeam (mencegah centang ganda)
                                         if (e.target.checked && teamField === 'team' && formData.surveyorTeam && formData.surveyorTeam.includes(res.name)) {
                                             updates.surveyorTeam = formData.surveyorTeam.filter(n => n !== res.name);
                                         }
-                                        
+
                                         setFormData({ ...formData, ...updates });
                                     }}
                                 />
@@ -605,9 +606,9 @@
         function TeamVisionaryMultiSelect({ title, filteredResources, formData, setFormData, teamField = 'surveyorTeam' }) {
             const [searchTerm, setSearchTerm] = React.useState('');
 
-            const searchResults = filteredResources.filter(r => 
-                searchTerm === '' || 
-                r.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+            const searchResults = filteredResources.filter(r =>
+                searchTerm === '' ||
+                r.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                 r.role.toLowerCase().includes(searchTerm.toLowerCase())
             );
 
@@ -617,12 +618,12 @@
                     setFormData({ ...formData, [teamField]: current.filter(n => n !== name) });
                 } else {
                     const updates = { [teamField]: [...current, name] };
-                    
+
                     // Jika diplot ke surveyorTeam, hapus dari sub-tim biasa (team) agar tidak tercentang ganda
                     if (teamField === 'surveyorTeam' && formData.team && formData.team.includes(name)) {
                         updates.team = formData.team.filter(n => n !== name);
                     }
-                    
+
                     setFormData({ ...formData, ...updates });
                 }
             };
@@ -654,9 +655,9 @@
                             {(formData[teamField] || []).map(name => (
                                 <div key={name} className="flex items-center gap-1 bg-blue-600 text-white px-2 py-0.5 rounded text-[10px] font-bold shadow-sm group">
                                     <span>{name}</span>
-                                    <button 
-                                        type="button" 
-                                        onClick={() => togglePerson(name)} 
+                                    <button
+                                        type="button"
+                                        onClick={() => togglePerson(name)}
                                         className="text-blue-200 hover:text-white bg-blue-700 hover:bg-red-500 rounded-full w-3.5 h-3.5 flex items-center justify-center transition-colors"
                                         title="Hapus"
                                     >
@@ -675,8 +676,8 @@
                                 {searchResults.map(res => {
                                     const isSelected = (formData[teamField] || []).includes(res.name);
                                     return (
-                                        <label 
-                                            key={res.id} 
+                                        <label
+                                            key={res.id}
                                             className={`flex items-start space-x-2 text-sm cursor-pointer p-1.5 rounded-lg transition-all border ${isSelected ? 'bg-blue-50/80 dark:bg-blue-900/40 border-blue-300 dark:border-blue-600 shadow-sm' : 'hover:bg-slate-100 dark:hover:bg-slate-800/50 border-transparent hover:border-slate-200 dark:hover:border-slate-700'}`}
                                         >
                                             <input
@@ -725,6 +726,19 @@
             const [loading, setLoading] = useState(true);
             const [errorMsg, setErrorMsg] = useState("");
             const [isLive, setIsLive] = useState(false);
+
+            const [printData, setPrintData] = useState(null);
+            const [showPrintModal, setShowPrintModal] = useState(false);
+            const [printOptions, setPrintOptions] = useState({ projectType: 'Semua', section: 'Semua' });
+
+            React.useEffect(() => {
+                if (printData) {
+                    setTimeout(() => {
+                        window.print();
+                        setPrintData(null);
+                    }, 300);
+                }
+            }, [printData]);
 
             // Firebase Configuration
             const firebaseConfig = {
@@ -967,13 +981,13 @@
 
                             healedP.teamLeader = healName(healedP.teamLeader);
                             if (healedP.team) healedP.team = healedP.team.map(m => healName(m));
-                            
+
                             const newPengawasan = {};
-                            for(const k in healedP.pengawasanDetails) newPengawasan[healName(k)] = healedP.pengawasanDetails[k];
+                            for (const k in healedP.pengawasanDetails) newPengawasan[healName(k)] = healedP.pengawasanDetails[k];
                             healedP.pengawasanDetails = newPengawasan;
 
                             const newIndividual = {};
-                            for(const k in healedP.individualStatus) newIndividual[healName(k)] = healedP.individualStatus[k];
+                            for (const k in healedP.individualStatus) newIndividual[healName(k)] = healedP.individualStatus[k];
                             healedP.individualStatus = newIndividual;
 
                             return healedP;
@@ -1778,7 +1792,7 @@
                                                                 <div className="flex flex-col gap-0 text-xs bg-white/40 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700/50 p-2 rounded-2xl shadow-inner shadow-slate-100/50 dark:shadow-none">
                                                                     {p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi') ? (
                                                                         <div className="space-y-3 mt-1">
-                                                                            {['Team Leader', 'Tenaga Ahli', 'Inspector', 'Quantity Surveyor', 'K3', 'Administrasi'].map(role => {
+                                                                            {['Team Leader', 'Tenaga Ahli', 'Inspector', 'Laboratory Technician', 'Quantity Surveyor', 'K3', 'Administrasi'].map(role => {
                                                                                 const roleMembers = p.team.filter(m => (p.pengawasanDetails?.[m]?.role || 'Inspector') === role);
                                                                                 if (roleMembers.length === 0) return null;
                                                                                 return (
@@ -1839,6 +1853,7 @@
                                                                 {p.computedStatus === 'Terlambat' && (
                                                                     <button onClick={() => handleAnalyzeDomino(p)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 text-white hover:from-orange-600 hover:to-rose-600 rounded-lg shadow-md animate-pulse hover:animate-none"><Icon name="alert-triangle" size={14} /> Cek Domino</button>
                                                                 )}
+                                                                <button onClick={() => setPrintData({ type: 'project', id: p.id })} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg border border-indigo-200 dark:border-indigo-800/50"><Icon name="printer" size={14} /> Cetak PDF</button>
                                                                 <button onClick={() => openModal('project', 'edit', p)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-800/50"><Icon name="edit" size={14} /> Edit Data</button>
                                                                 <button onClick={() => handleDelete('project', p.id)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-lg border border-red-200 dark:border-red-800/50"><Icon name="trash" size={14} /> Hapus</button>
                                                             </div>
@@ -1934,14 +1949,19 @@
 
                 return (
                     <div className="space-y-6 fade-in">
-                        <div className="flex items-center gap-4">
-                            <button onClick={() => setViewingEmployee(null)} className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors shadow-sm">
-                                <Icon name="arrow-left" size={20} className="text-slate-600 dark:text-slate-300" />
-                            </button>
-                            <div>
-                                <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800 dark:text-slate-100">Rincian Penugasan: {viewingEmployee.name}</h2>
-                                <p className="text-sm text-slate-500">{viewingEmployee.role} • Kapasitas Terpakai: <strong className={viewingEmployee.workload > 100 ? 'text-red-600' : 'text-blue-600'}>{viewingEmployee.workload}%</strong></p>
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+                            <div className="flex items-center gap-4">
+                                <button onClick={() => setViewingEmployee(null)} className="p-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700/50 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-700/50 transition-colors shadow-sm">
+                                    <Icon name="arrow-left" size={20} className="text-slate-600 dark:text-slate-300" />
+                                </button>
+                                <div>
+                                    <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-slate-800 dark:text-slate-100">Rincian Penugasan: {viewingEmployee.name}</h2>
+                                    <p className="text-sm text-slate-500">{viewingEmployee.role} • Kapasitas Terpakai: <strong className={viewingEmployee.workload > 100 ? 'text-red-600' : 'text-blue-600'}>{viewingEmployee.workload}%</strong></p>
+                                </div>
                             </div>
+                            <button onClick={() => setPrintData({ type: 'personnel', name: viewingEmployee.name })} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm shrink-0">
+                                <Icon name="printer" size={16} /> Cetak Laporan Pegawai
+                            </button>
                         </div>
 
                         <div className="bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl rounded-3xl border border-white/60 dark:border-slate-700/50 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden flex flex-col">
@@ -2048,10 +2068,10 @@
                                                         </td>
                                                         {isPengawasan ? (
                                                             <td colSpan="2" className="p-4">
-                                                                    <div className="flex flex-col gap-1">
-                                                                        <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Peran: {mRole} | Status: {pengawasanDetail.statusTurun || 'Tidak Turun'}</span>
-                                                                        <span className="text-[11px] text-slate-600 dark:text-slate-400">SPMK: {p.spmk ? formatDateIndo(p.spmk) : '-'} | {pengawasanDetail.manMonth || '-'} Bulan</span>
-                                                                        <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
+                                                                <div className="flex flex-col gap-1">
+                                                                    <span className="text-[11px] font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">Peran: {mRole} | Status: {pengawasanDetail.statusTurun || 'Tidak Turun'}</span>
+                                                                    <span className="text-[11px] text-slate-600 dark:text-slate-400">SPMK: {p.spmk ? formatDateIndo(p.spmk) : '-'} | {pengawasanDetail.manMonth || '-'} Bulan</span>
+                                                                    <div className="flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400 font-medium">
                                                                         <Icon name="calendar-clock" size={12} />
                                                                         <span>Deadline: {mDead ? formatDateIndo(mDead) : 'Belum diatur'}</span>
                                                                     </div>
@@ -2527,6 +2547,27 @@
                 });
 
                 const [searchTeam, setSearchTeam] = useState("");
+                const [freelanceInput, setFreelanceInput] = useState("");
+
+                const handleAddFreelance = (e) => {
+                    e.preventDefault();
+                    const name = freelanceInput.trim();
+                    if (!name) return;
+                    if (!(formData.team || []).includes(name)) {
+                        setFormData(prev => ({
+                            ...prev,
+                            team: [...(prev.team || []), name]
+                        }));
+                    }
+                    setFreelanceInput("");
+                };
+
+                const handleFreelanceKeyDown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddFreelance(e);
+                    }
+                };
 
                 // --- ALGORITMA AI AUTO-PLOTTING ---
                 const handleAutoPlotting = () => {
@@ -2713,7 +2754,7 @@
                     setFormData(prev => {
                         const currentDetail = prev.pengawasanDetails?.[memberName] || { role: 'Inspector', deadline: '', manMonth: '', statusTurun: 'Tidak Turun' };
                         let newDetail = { ...currentDetail, [field]: value };
-                        
+
                         if (field === 'manMonth') {
                             if (prev.spmk && newDetail.manMonth) {
                                 const manMonthVal = parseFloat(newDetail.manMonth);
@@ -2742,14 +2783,14 @@
 
                 const surveyorTeamList = formData.surveyorTeam || [];
                 const isPerencanaanForm = formData.type?.toLowerCase().includes('perencana');
-                
+
                 // Dapatkan Kategori Aktif untuk menampilkan form progres spesifik tim & menghitung rata-rata
                 const activeCategories = Array.from(new Set((formData.team || []).map(memberName => {
                     if (isPerencanaanForm && surveyorTeamList.includes(memberName)) return null;
                     const res = resources.find(r => r.name === memberName);
                     return res ? getCategoryFromRole(res.role) : 'Lainnya';
                 }).filter(cat => cat !== null)));
-                
+
                 if (surveyorTeamList.length > 0) {
                     activeCategories.push('Surveyor');
                 }
@@ -2922,18 +2963,18 @@
                                                     <div>
                                                         <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Tenggat Waktu Kontrak Akhir</label>
                                                         <div className="relative w-full">
-                                                        <div className="flex items-center justify-between w-full p-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 min-h-[42px] text-slate-700 dark:text-slate-200">
-                                                            <span>{formData.deadline ? formatDateIndo(formData.deadline) : 'Pilih tanggal...'}</span>
-                                                            <Icon name="calendar-clock" size={16} className="text-slate-400" />
+                                                            <div className="flex items-center justify-between w-full p-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 min-h-[42px] text-slate-700 dark:text-slate-200">
+                                                                <span>{formData.deadline ? formatDateIndo(formData.deadline) : 'Pilih tanggal...'}</span>
+                                                                <Icon name="calendar-clock" size={16} className="text-slate-400" />
+                                                            </div>
+                                                            <input type="date" name="deadline" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                                value={formData.deadline || ''}
+                                                                onChange={handleChange}
+                                                                onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                                                            />
                                                         </div>
-                                                        <input type="date" name="deadline" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                            value={formData.deadline || ''}
-                                                            onChange={handleChange}
-                                                            onClick={(e) => e.target.showPicker && e.target.showPicker()}
-                                                        />
                                                     </div>
                                                 </div>
-                                            </div>
                                             </div>
 
                                             {/* BAGIAN PENUGASAN TIM */}
@@ -3000,6 +3041,47 @@
                                                     </div>
                                                 )}
 
+                                                {isPengawasanForm && (
+                                                    <div className="mt-4 border-t border-slate-200 dark:border-slate-700/50 pt-4">
+                                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tambah Personil Freelance Manual</label>
+                                                        <p className="text-[10px] text-slate-500 mb-2">Ketik nama personil freelance lalu tekan Enter. Personil ini akan otomatis masuk ke Rincian Penugasan di bawah namun tidak dihitung dalam KPI.</p>
+                                                        <div className="flex gap-2 mb-3">
+                                                            <input
+                                                                type="text"
+                                                                value={freelanceInput}
+                                                                onChange={(e) => setFreelanceInput(e.target.value)}
+                                                                onKeyDown={handleFreelanceKeyDown}
+                                                                className="flex-1 p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-sm outline-none focus:border-blue-500 bg-white dark:bg-slate-800 transition-colors dark:text-slate-200 shadow-sm"
+                                                                placeholder="Ketik nama freelance..."
+                                                            />
+                                                            <button
+                                                                type="button"
+                                                                onClick={handleAddFreelance}
+                                                                className="px-4 py-2 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-200 font-semibold rounded-lg text-sm hover:bg-slate-200 dark:hover:bg-slate-600 transition-colors"
+                                                            >
+                                                                Tambah
+                                                            </button>
+                                                        </div>
+                                                        {formData.team && formData.team.filter(name => !resources.some(r => r.name === name)).length > 0 && (
+                                                            <div className="flex flex-wrap gap-2">
+                                                                {formData.team.filter(name => !resources.some(r => r.name === name)).map(name => (
+                                                                    <div key={name} className="flex items-center gap-1.5 px-2.5 py-1 bg-amber-50 dark:bg-amber-900/30 border border-amber-200 dark:border-amber-700 rounded-md text-xs font-semibold text-amber-700 dark:text-amber-400">
+                                                                        <span>{name}</span>
+                                                                        <button type="button" onClick={() => {
+                                                                            setFormData(prev => ({
+                                                                                ...prev,
+                                                                                team: prev.team.filter(t => t !== name)
+                                                                            }))
+                                                                        }} className="text-amber-500 hover:text-amber-700 transition-colors">
+                                                                            <Icon name="x" size={12} />
+                                                                        </button>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                )}
+
                                                 {isPengawasanForm && (formData.team || []).length > 0 && (
                                                     <div className="pt-4 mt-4 border-t border-slate-100 dark:border-slate-700/50">
                                                         <label className="flex items-center gap-1.5 text-sm font-bold text-slate-800 dark:text-slate-100 mb-3"><Icon name="user-check" size={16} className="text-emerald-600 dark:text-emerald-400" /> Rincian Penugasan Personil Pengawasan</label>
@@ -3021,6 +3103,7 @@
                                                                                     <option value="Team Leader">Team Leader</option>
                                                                                     <option value="Tenaga Ahli">Tenaga Ahli</option>
                                                                                     <option value="Inspector">Inspector</option>
+                                                                                    <option value="Laboratory Technician">Laboratory Technician</option>
                                                                                     <option value="Quantity Surveyor">Quantity Surveyor</option>
                                                                                     <option value="K3">K3</option>
                                                                                     <option value="Administrasi">Administrasi</option>
@@ -3519,111 +3602,446 @@
                 );
             };
 
-            return (
-                <div className="flex h-screen text-slate-800 dark:text-slate-200 bg-[#f0f4f8] dark:bg-slate-950 transition-colors duration-200 relative overflow-hidden">
-                    {/* Glowing Orbs for Glassmorphism */}
-                    <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
-                        <div className="absolute -top-[20%] -left-[10%] w-[60vw] h-[60vw] rounded-full bg-indigo-400/40 dark:bg-indigo-900/20 blur-[120px] mix-blend-multiply dark:mix-blend-screen opacity-80 animate-blob"></div>
-                        <div className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-fuchsia-400/40 dark:bg-fuchsia-900/20 blur-[120px] mix-blend-multiply dark:mix-blend-screen opacity-80 animate-blob" style={{ animationDelay: '2s' }}></div>
-                        <div className="absolute top-[30%] left-[40%] w-[40vw] h-[40vw] rounded-full bg-sky-300/40 dark:bg-sky-900/20 blur-[100px] mix-blend-multiply dark:mix-blend-screen opacity-80 animate-blob" style={{ animationDelay: '4s' }}></div>
-                    </div>
+            const renderPrintExecutiveReport = () => {
+                if (!printData) return null;
 
-                    <div className="relative z-10 flex w-full h-full">
-                        {renderFuturisticConfirm()}
-                        {renderDeveloperPromptModal()}
-                        {renderDominoModal()}
-                        {renderKPIInfoModal()}
-                        <aside className="hidden lg:flex lg:relative z-auto w-64 bg-white/40 dark:bg-slate-950/60 backdrop-blur-3xl border-r border-white/60 dark:border-slate-800/50 text-slate-600 dark:text-slate-300 flex-col shrink-0 h-full top-0 left-0 transition-colors duration-200 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)] dark:shadow-2xl">
-                            <div className="p-4 lg:p-6">
-                                <div className="flex items-center justify-between mb-2">
-                                    <div className="flex items-center gap-3 text-slate-800 dark:text-white w-full">
-                                        <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 relative overflow-hidden">
-                                            <Icon name="hexagon" size={32} className="absolute fill-white/10 text-white/20" />
-                                            <Icon name="users" size={18} className="relative z-10" strokeWidth={2.5} />
-                                        </div>
-                                        <h1 className="text-base font-bold tracking-wide leading-tight flex flex-col whitespace-nowrap">
-                                            <span>Project Management</span>
-                                            <span>Control System</span>
-                                        </h1>
-                                    </div>
+                let title = "Laporan Eksekutif Status Proyek & Penugasan Personil";
+                let filteredProjects = [...computedProjects].filter(p => p.computedStatus !== 'Done');
+                let filteredResources = [...calculatedResources];
+
+                if (printData.type === 'project') {
+                    filteredProjects = filteredProjects.filter(p => p.id === printData.id);
+                    title = `Laporan Rincian Proyek: ${filteredProjects[0]?.name}`;
+                    filteredResources = filteredResources.filter(r => filteredProjects[0]?.team?.includes(r.name));
+                } else if (printData.type === 'personnel') {
+                    filteredResources = filteredResources.filter(r => r.name === printData.name);
+                    title = `Laporan Rekam Penugasan Personil: ${filteredResources[0]?.name}`;
+                    filteredProjects = filteredProjects.filter(p => p.team?.includes(filteredResources[0]?.name) || p.teamLeader === filteredResources[0]?.name);
+                } else if (printData.type === 'custom') {
+                    if (printData.options.section === 'ProyekSaja') title = "Laporan Eksekutif Status Proyek";
+                    if (printData.options.section === 'PegawaiSaja') title = "Laporan Eksekutif Penugasan Personil";
+
+                    if (printData.options.projectType !== 'Semua') {
+                        title += ` (Tipe: ${printData.options.projectType})`;
+                        filteredProjects = filteredProjects.filter(p => {
+                            const pType = (p.type || '').toLowerCase();
+                            if (printData.options.projectType === 'Perencanaan') return pType.includes('perencana');
+                            if (printData.options.projectType === 'Pengawasan') return pType === 'pengawasan' || pType === 'supervisi';
+                            if (printData.options.projectType === 'Manajemen Konstruksi') return pType.includes('manajemen konstruksi') || pType === 'mk';
+                            return true;
+                        });
+                    }
+                }
+
+                // Sort proyek berdasarkan deadline
+                filteredProjects.sort((a, b) => {
+                    const dateA = a.deadline ? new Date(a.deadline) : new Date(8640000000000000);
+                    const dateB = b.deadline ? new Date(b.deadline) : new Date(8640000000000000);
+                    return dateA - dateB;
+                });
+
+                const normalizeProjectType = (typeStr) => {
+                    if (!typeStr) return '-';
+                    const lower = typeStr.toLowerCase();
+                    if (lower.includes('perencana')) return 'Perencanaan';
+                    if (lower.includes('pengawas') || lower === 'supervisi') return 'Pengawasan';
+                    if (lower.includes('manajemen konstruksi') || lower === 'mk') return 'Manajemen Konstruksi';
+                    return typeStr;
+                };
+
+                const renderProjectPrintCard = (p) => {
+                    const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
+                    return (
+                        <div key={p.id} className="border-2 border-black p-4" style={{ pageBreakInside: 'avoid' }}>
+                            <div className="flex justify-between items-start border-b border-gray-300 pb-2 mb-3">
+                                <div>
+                                    <h3 className="text-base font-bold uppercase">{p.name}</h3>
+                                    <p className="text-xs uppercase tracking-wide mt-0.5">{normalizeProjectType(p.type)} | Klien: {p.client || '-'}</p>
+                                    {!isPengawasan && <p className="text-xs font-semibold mt-1 text-gray-800">Team Leader: {p.teamLeader || 'Belum Ditentukan'}</p>}
                                 </div>
-                                <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Tim Teknis Gaharu Sempana Group</p>
+                                <div className="text-right shrink-0 ml-4">
+                                    <p className="text-xs font-bold border border-black px-2 py-1 inline-block uppercase whitespace-nowrap">Status Makro: {p.computedStatus}</p>
+                                    {isPengawasan && <p className="text-xs mt-1 whitespace-nowrap font-semibold text-gray-800">Tanggal SPMK: {p.spmk ? formatDateIndo(p.spmk) : '-'}</p>}
+                                    <p className="text-xs mt-1 whitespace-nowrap">Tenggat Kontrak: {p.deadline ? formatDateIndo(p.deadline) : '-'}</p>
+                                </div>
                             </div>
-                            <nav className="flex-1 px-4 space-y-2 mt-4">
-                                <SidebarItem icon={<Icon name="layout-dashboard" size={20} />} label="Dashboard" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
-                                <SidebarItem icon={<Icon name="briefcase" size={20} />} label="List Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
-                                <SidebarItem icon={<Icon name="users" size={20} />} label="Alokasi Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
-                                <SidebarItem icon={<Icon name="calendar" size={20} />} label="Ploting Jadwal" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
-                                <SidebarItem icon={<Icon name="bar-chart" size={20} />} label="Evaluasi & KPI (BETA)" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
-                            </nav>
-                        </aside>
 
-                        <main className="flex-1 flex flex-col overflow-hidden bg-transparent relative min-w-0 transition-colors duration-200">
-                            <header className="h-14 sm:h-16 lg:h-20 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-b border-white/60 dark:border-slate-700/50 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 shrink-0 gap-2 shadow-sm dark:shadow-slate-950/20 transition-colors duration-200">
-                                <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                                    <div className="min-w-0">
-                                        <h2 className="text-sm sm:text-base lg:text-xl font-bold text-slate-800 dark:text-slate-100 truncate transition-colors duration-200">
-                                            {activeTab === 'dashboard' && 'Ringkasan Proyek & Personil'}
-                                            {activeTab === 'proyek' && 'List Proyek'}
-                                            {activeTab === 'tim' && 'Alokasi Tim'}
-                                            {activeTab === 'gantt' && 'Ploting & Jadwal Personil'}
-                                            {activeTab === 'kpi' && 'Evaluasi & KPI Tim'}
-                                        </h2>
-                                        <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 hidden sm:block">Aplikasi Manajemen Proyek & Personil Tim Teknis</p>
-                                    </div>
-                                </div>
-                                <div className="flex items-center gap-3 sm:gap-4 shrink-0">
-                                    <button
-                                        onClick={() => setIsDarkMode(!isDarkMode)}
-                                        className={`relative inline-flex h-8 w-[64px] shrink-0 items-center rounded-full transition-all duration-500 shadow-inner hover:scale-105 ${isDarkMode ? 'bg-white border-slate-200 dark:bg-slate-200' : 'bg-slate-800 border-slate-700'}`}
-                                        title={isDarkMode ? 'Ubah ke Light Mode' : 'Ubah ke Dark Mode'}
-                                    >
-                                        <span
-                                            className={`inline-flex h-6 w-6 transform items-center justify-center rounded-full transition-transform duration-500 ease-out z-10 ${isDarkMode ? 'translate-x-[34px] bg-slate-900 text-white shadow-md' : 'translate-x-1 bg-white text-slate-800 shadow-md'}`}
-                                        >
-                                            <Icon name={isDarkMode ? "moon" : "sun"} size={14} strokeWidth={2.5} />
-                                        </span>
-                                    </button>
-                                    <div className={`hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold shadow-sm ${isLive ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'}`}>
-                                        <Icon name="database" size={14} /> {isLive ? 'Live' : 'Offline'}
-                                    </div>
-                                    <div className={`sm:hidden w-2.5 h-2.5 rounded-full shrink-0 ${isLive ? 'bg-emerald-500' : 'bg-amber-500'}`} title={isLive ? 'Connected' : 'Offline'} />
-                                    <button onClick={fetchFromGoogleSheets} disabled={loading || !GOOGLE_SCRIPT_URL} className={`p-2 rounded-full transition-all shrink-0 ${loading ? 'animate-spin text-blue-500' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 dark:text-slate-500 dark:hover:text-blue-400'}`} title="Refresh Database">
-                                        <Icon name="refresh-ccw" size={20} />
-                                    </button>
-                                </div>
-                            </header>
+                            <div>
+                                <h4 className="text-[11px] font-bold uppercase mb-2">Rincian Penugasan & Target Sub-Tim</h4>
+                                {isPengawasan ? (
+                                    <table className="w-full text-xs border-collapse border border-black mb-1">
+                                        <thead>
+                                            <tr className="bg-gray-100">
+                                                <th className="border border-black p-1.5 text-left w-[30%]">Nama Personil</th>
+                                                <th className="border border-black p-1.5 text-left w-[20%]">Peran</th>
+                                                <th className="border border-black p-1.5 text-left w-[15%]">Man Month</th>
+                                                <th className="border border-black p-1.5 text-left w-[20%]">Deadline Spesifik</th>
+                                                <th className="border border-black p-1.5 text-left w-[15%]">Status Lapangan</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {(p.team || []).map(member => {
+                                                const details = p.pengawasanDetails?.[member] || {};
+                                                return (
+                                                    <tr key={member}>
+                                                        <td className="border border-black p-1.5 font-bold">{member}</td>
+                                                        <td className="border border-black p-1.5">{details.role || 'Inspector'}</td>
+                                                        <td className="border border-black p-1.5 text-center">{details.manMonth || '-'}</td>
+                                                        <td className="border border-black p-1.5">{details.deadline ? formatDateIndo(details.deadline) : '-'}</td>
+                                                        <td className="border border-black p-1.5">{details.statusTurun || 'Tidak Turun'}</td>
+                                                    </tr>
+                                                )
+                                            })}
+                                            {(!p.team || p.team.length === 0) && (
+                                                <tr><td colSpan="5" className="border border-black p-1.5 text-center italic">Belum ada personil diplot.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                ) : (
+                                    <table className="w-full text-xs border-collapse border border-black mb-1">
+                                        <thead>
+                                            <tr className="bg-gray-100">
+                                                <th className="border border-black p-1.5 text-left w-1/4">Kategori Sub Tim</th>
+                                                <th className="border border-black p-1.5 text-left w-1/4">Target Progress</th>
+                                                <th className="border border-black p-1.5 text-left w-1/4">Tenggat Waktu Tim</th>
+                                                <th className="border border-black p-1.5 text-left w-1/4">Personil Terploting</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {['Arsitektur', 'Struktur', 'MEP', 'QS', 'Estimator', 'Tata Ruang', 'Lainnya', 'Surveyor'].map(cat => {
+                                                let catMembers = [];
+                                                if (cat === 'Surveyor') {
+                                                    catMembers = p.surveyorTeam || [];
+                                                } else {
+                                                    catMembers = (p.team || []).filter(m => {
+                                                        const isSurveyor = (p.surveyorTeam || []).includes(m);
+                                                        if (isSurveyor) return false;
+                                                        const r = resources.find(res => res.name === m);
 
-                            <div className="flex-1 overflow-auto p-3 sm:p-5 lg:p-8 pb-24 lg:pb-8 relative">
-                                {loading && (
-                                    <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm z-40 flex flex-col items-center justify-center rounded-xl">
-                                        <div className="animate-spin text-blue-600 dark:text-blue-500 mb-4"><Icon name="refresh-ccw" size={32} /></div>
-                                        <p className="font-semibold text-slate-700 dark:text-slate-300">Sinkronisasi Database...</p>
+                                                        if (cat === 'Lainnya') {
+                                                            const matchesOther = ['Arsitektur', 'Struktur', 'MEP', 'QS', 'Estimator', 'Tata Ruang'].some(other => r?.role?.includes(other) || getCategoryFromRole(r?.role) === other || (other === 'Arsitektur' && getCategoryFromRole(r?.role) === 'Arsitek'));
+                                                            return !matchesOther;
+                                                        } else {
+                                                            return r?.role?.includes(cat) || getCategoryFromRole(r?.role) === cat || (cat === 'Arsitektur' && getCategoryFromRole(r?.role) === 'Arsitek');
+                                                        }
+                                                    });
+                                                }
+                                                if (catMembers.length === 0) return null;
+                                                const details = p.categoryDetails?.[cat] || {};
+                                                const progressVal = details.progress || 0;
+                                                return (
+                                                    <tr key={cat}>
+                                                        <td className="border border-black p-1.5 font-bold">{cat}</td>
+                                                        <td className="border border-black p-1.5">
+                                                            {progressVal}% Tercapai
+                                                        </td>
+                                                        <td className="border border-black p-1.5">{details.deadline ? formatDateIndo(details.deadline) : '-'}</td>
+                                                        <td className="border border-black p-1.5">{catMembers.join(', ')}</td>
+                                                    </tr>
+                                                )
+                                            })}
+                                            {(!p.team || p.team.length === 0) && (
+                                                <tr><td colSpan="4" className="border border-black p-1.5 text-center italic">Belum ada personil diplot.</td></tr>
+                                            )}
+                                        </tbody>
+                                    </table>
+                                )}
+                            </div>
+                        </div>
+                    );
+                };
+
+                return (
+                    <div className="hidden print:block text-black bg-white w-full h-auto min-h-screen font-sans">
+                        <div className="border-b-2 border-black pb-4 mb-6">
+                            <h1 className="text-2xl font-bold uppercase tracking-wider">{title}</h1>
+                            <div className="flex justify-between items-end mt-2">
+                                <div>
+                                    <p className="text-sm">Dicetak pada: {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
+                                    <p className="text-sm mt-0.5">Sistem Project Management Control (PMC) Gaharu Sempana Group</p>
+                                </div>
+                                <div className="text-right">
+                                    <p className="text-xs border border-black px-2 py-1 uppercase font-bold">Dokumen Internal</p>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* BAGIAN 1: DAFTAR PROYEK */}
+                        {(printData.type === 'all' || printData.type === 'project' || (printData.type === 'custom' && printData.options.section !== 'PegawaiSaja')) && (
+                            <div className="mb-10" style={{ pageBreakAfter: (printData.type === 'all' || (printData.type === 'custom' && printData.options.section === 'Semua')) ? 'always' : 'auto' }}>
+                                <h2 className="text-lg font-bold mb-4 uppercase border-b border-gray-400 pb-2">Bagian A: Laporan Status Proyek</h2>
+                                {filteredProjects.length === 0 ? (
+                                    <p className="text-sm italic">Tidak ada proyek aktif untuk kriteria ini.</p>
+                                ) : (
+                                    <div className="space-y-8">
+                                        {(printData.type === 'all' || printData.type === 'custom') ? (
+                                            ((printData.type === 'custom' && printData.options.projectType !== 'Semua') ? [printData.options.projectType] : ['Perencanaan', 'Pengawasan', 'Manajemen Konstruksi']).map(kategoriTipe => {
+                                                const proyeksInKategori = filteredProjects.filter(p => {
+                                                    const pType = (p.type || '').toLowerCase();
+                                                    if (kategoriTipe === 'Perencanaan') return pType.includes('perencana');
+                                                    if (kategoriTipe === 'Pengawasan') return pType === 'pengawasan' || pType === 'supervisi';
+                                                    if (kategoriTipe === 'Manajemen Konstruksi') return pType.includes('manajemen konstruksi') || pType === 'mk';
+                                                    return false;
+                                                });
+
+                                                if (proyeksInKategori.length === 0) return null;
+
+                                                return (
+                                                    <div key={kategoriTipe} className="mb-6">
+                                                        <h3 className="text-md font-bold mb-3 uppercase bg-gray-200 border-t border-b border-black py-1 px-2">Sub Bab: {kategoriTipe}</h3>
+                                                        <div className="space-y-6">
+                                                            {proyeksInKategori.map(p => renderProjectPrintCard(p))}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            })
+                                        ) : (
+                                            <div className="space-y-6">
+                                                {filteredProjects.map(p => renderProjectPrintCard(p))}
+                                            </div>
+                                        )}
                                     </div>
                                 )}
-
-                                <div className="max-w-7xl mx-auto">
-                                    {activeTab === 'dashboard' && renderDashboard()}
-                                    {activeTab === 'proyek' && renderProyek()}
-                                    {activeTab === 'tim' && renderTim()}
-                                    {activeTab === 'gantt' && renderGantt()}
-                                    {activeTab === 'timesheet' && renderTimesheet()}
-                                    {activeTab === 'kpi' && renderKPI()}
-                                </div>
                             </div>
-                        </main>
+                        )}
 
-                        <ModalForm />
+                        {/* BAGIAN 2: DAFTAR PERSONIL */}
+                        {(printData.type === 'all' || printData.type === 'personnel' || (printData.type === 'custom' && printData.options.section !== 'ProyekSaja')) && (
+                            <div>
+                                <h2 className="text-lg font-bold mb-4 uppercase border-b border-gray-400 pb-2">Bagian B: Laporan Rincian Penugasan Pegawai</h2>
+                                {filteredResources.length === 0 ? (
+                                    <p className="text-sm italic">Tidak ada personil untuk kriteria ini.</p>
+                                ) : (
+                                    <div className="grid grid-cols-1 gap-6">
+                                        {filteredResources.map(res => {
+                                            const activeProjectsForRes = filteredProjects.filter(p => p.team?.includes(res.name) || p.teamLeader === res.name);
+                                            if (printData.type === 'custom' && printData.options.projectType !== 'Semua' && activeProjectsForRes.length === 0) return null;
+                                            return (
+                                                <div key={res.id} className="border-2 border-black p-4" style={{ pageBreakInside: 'avoid' }}>
+                                                    <div className="flex justify-between items-center mb-2">
+                                                        <div>
+                                                            <h3 className="font-bold uppercase text-base">{res.name}</h3>
+                                                            <p className="text-xs mt-0.5">{res.role} | {res.level || 'Staff'}</p>
+                                                        </div>
+                                                        <span className="text-xs border border-black px-2 py-1 font-bold">
+                                                            {activeProjectsForRes.length} Proyek Aktif
+                                                        </span>
+                                                    </div>
 
-                        <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[68px] bg-white/60 dark:bg-slate-900/60 backdrop-blur-3xl border-t border-white/60 dark:border-slate-800 z-50 flex justify-around items-center px-1 pb-safe shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] transition-colors duration-200">
-                            <BottomNavItem icon={<Icon name="layout-dashboard" size={22} />} label="Beranda" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
-                            <BottomNavItem icon={<Icon name="briefcase" size={22} />} label="Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
-                            <BottomNavItem icon={<Icon name="users" size={22} />} label="Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
-                            <BottomNavItem icon={<Icon name="calendar" size={22} />} label="Ploting" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
-                            <BottomNavItem icon={<Icon name="bar-chart" size={22} />} label="KPI" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
-                        </nav>
+                                                    <table className="w-full text-xs border-collapse border border-black mt-3">
+                                                        <thead>
+                                                            <tr className="bg-gray-100">
+                                                                <th className="border border-black p-1.5 text-left w-[35%]">Nama Proyek</th>
+                                                                <th className="border border-black p-1.5 text-left w-[20%]">Peran/Tim Lapangan</th>
+                                                                <th className="border border-black p-1.5 text-left w-[15%]">Man Month</th>
+                                                                <th className="border border-black p-1.5 text-left w-[20%]">Deadline Spesifik Tugas</th>
+                                                                <th className="border border-black p-1.5 text-left w-[10%]">Status Lapangan</th>
+                                                            </tr>
+                                                        </thead>
+                                                        <tbody>
+                                                            {activeProjectsForRes.length === 0 ? (
+                                                                <tr><td colSpan="5" className="border border-black p-1.5 text-center italic">Sedang tidak memegang proyek aktif (Available).</td></tr>
+                                                            ) : activeProjectsForRes.map(p => {
+                                                                const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
+                                                                let deadlineStr = '-';
+                                                                let roleStr = '-';
+                                                                let statusLapangan = '-';
+                                                                let manMonthStr = '-';
+
+                                                                if (p.teamLeader === res.name) {
+                                                                    deadlineStr = p.deadline ? formatDateIndo(p.deadline) : '-';
+                                                                    roleStr = 'Team Leader';
+                                                                    if (isPengawasan) {
+                                                                        const details = p.pengawasanDetails?.[res.name] || {};
+                                                                        statusLapangan = details.statusTurun || 'Tidak Turun';
+                                                                        manMonthStr = details.manMonth || '-';
+                                                                    }
+                                                                } else if (isPengawasan) {
+                                                                    const details = p.pengawasanDetails?.[res.name] || {};
+                                                                    deadlineStr = details.deadline ? formatDateIndo(details.deadline) : '-';
+                                                                    roleStr = details.role || 'Inspector';
+                                                                    statusLapangan = details.statusTurun || 'Tidak Turun';
+                                                                    manMonthStr = details.manMonth || '-';
+                                                                } else {
+                                                                    const isSurveyor = (p.surveyorTeam || []).includes(res.name);
+                                                                    const empCat = isSurveyor ? 'Surveyor' : getCategoryFromRole(res.role);
+                                                                    const details = p.categoryDetails?.[empCat] || {};
+                                                                    deadlineStr = details.deadline ? formatDateIndo(details.deadline) : '-';
+                                                                    roleStr = isSurveyor ? 'Tim Surveyor' : `Sub-Tim ${empCat}`;
+                                                                }
+
+                                                                return (
+                                                                    <tr key={p.id}>
+                                                                        <td className="border border-black p-1.5">{p.name}</td>
+                                                                        <td className="border border-black p-1.5">{roleStr}</td>
+                                                                        <td className="border border-black p-1.5 text-center">{manMonthStr}</td>
+                                                                        <td className="border border-black p-1.5 font-semibold">{deadlineStr}</td>
+                                                                        <td className="border border-black p-1.5 font-semibold">{statusLapangan}</td>
+                                                                    </tr>
+                                                                )
+                                                            })}
+                                                        </tbody>
+                                                    </table>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
-                </div>
+                );
+            };
+
+            return (
+                <>
+                    {renderPrintExecutiveReport()}
+                    <div className="flex h-screen text-slate-800 dark:text-slate-200 bg-[#f0f4f8] dark:bg-slate-950 transition-colors duration-200 relative overflow-hidden print:hidden">
+                        {/* Glowing Orbs for Glassmorphism */}
+                        <div className="absolute inset-0 pointer-events-none z-0 overflow-hidden">
+                            <div className="absolute -top-[20%] -left-[10%] w-[60vw] h-[60vw] rounded-full bg-indigo-400/40 dark:bg-indigo-900/20 blur-[120px] mix-blend-multiply dark:mix-blend-screen opacity-80 animate-blob"></div>
+                            <div className="absolute -bottom-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-fuchsia-400/40 dark:bg-fuchsia-900/20 blur-[120px] mix-blend-multiply dark:mix-blend-screen opacity-80 animate-blob" style={{ animationDelay: '2s' }}></div>
+                            <div className="absolute top-[30%] left-[40%] w-[40vw] h-[40vw] rounded-full bg-sky-300/40 dark:bg-sky-900/20 blur-[100px] mix-blend-multiply dark:mix-blend-screen opacity-80 animate-blob" style={{ animationDelay: '4s' }}></div>
+                        </div>
+
+                        <div className="relative z-10 flex w-full h-full">
+                            {renderFuturisticConfirm()}
+                            {renderDeveloperPromptModal()}
+                            {renderDominoModal()}
+                            {renderKPIInfoModal()}
+                            {showPrintModal && (
+                                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl max-w-md w-full animate-in fade-in zoom-in duration-200">
+                                        <div className="flex items-center justify-between mb-5">
+                                            <h3 className="text-lg font-bold text-slate-800 dark:text-slate-200">Opsi Ekspor PDF</h3>
+                                            <button onClick={() => setShowPrintModal(false)} className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"><Icon name="x" size={20} /></button>
+                                        </div>
+                                        <div className="space-y-4">
+                                            <div>
+                                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Tipe Proyek</label>
+                                                <select value={printOptions.projectType} onChange={(e) => setPrintOptions({ ...printOptions, projectType: e.target.value })} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                                                    <option value="Semua">Semua Tipe Proyek</option>
+                                                    <option value="Perencanaan">Hanya Perencanaan</option>
+                                                    <option value="Pengawasan">Hanya Pengawasan</option>
+                                                    <option value="Manajemen Konstruksi">Hanya Manajemen Konstruksi</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-sm font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Cakupan Laporan</label>
+                                                <select value={printOptions.section} onChange={(e) => setPrintOptions({ ...printOptions, section: e.target.value })} className="w-full bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-lg px-3 py-2 text-sm text-slate-700 dark:text-slate-300 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500">
+                                                    <option value="Semua">Lengkap (Status Proyek & Penugasan Pegawai)</option>
+                                                    <option value="ProyekSaja">Hanya Laporan Status Proyek Saja</option>
+                                                    <option value="PegawaiSaja">Hanya Rincian Penugasan Pegawai Saja</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="mt-6 flex justify-end gap-3">
+                                            <button onClick={() => setShowPrintModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">Batal</button>
+                                            <button onClick={() => {
+                                                setShowPrintModal(false);
+                                                setPrintData({ type: 'custom', options: printOptions });
+                                            }} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-md">
+                                                <Icon name="printer" size={16} /> Cetak Sekarang
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+                            <aside className="hidden lg:flex lg:relative z-auto w-64 bg-white/40 dark:bg-slate-950/60 backdrop-blur-3xl border-r border-white/60 dark:border-slate-800/50 text-slate-600 dark:text-slate-300 flex-col shrink-0 h-full top-0 left-0 transition-colors duration-200 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)] dark:shadow-2xl">
+                                <div className="p-4 lg:p-6">
+                                    <div className="flex items-center justify-between mb-2">
+                                        <div className="flex items-center gap-3 text-slate-800 dark:text-white w-full">
+                                            <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 relative overflow-hidden">
+                                                <Icon name="hexagon" size={32} className="absolute fill-white/10 text-white/20" />
+                                                <Icon name="users" size={18} className="relative z-10" strokeWidth={2.5} />
+                                            </div>
+                                            <h1 className="text-base font-bold tracking-wide leading-tight flex flex-col whitespace-nowrap">
+                                                <span>Project Management</span>
+                                                <span>Control System</span>
+                                            </h1>
+                                        </div>
+                                    </div>
+                                    <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Tim Teknis Gaharu Sempana Group</p>
+                                </div>
+                                <nav className="flex-1 px-4 space-y-2 mt-4">
+                                    <SidebarItem icon={<Icon name="layout-dashboard" size={20} />} label="Dashboard" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
+                                    <SidebarItem icon={<Icon name="briefcase" size={20} />} label="List Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
+                                    <SidebarItem icon={<Icon name="users" size={20} />} label="Alokasi Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
+                                    <SidebarItem icon={<Icon name="calendar" size={20} />} label="Ploting Jadwal" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
+                                    <SidebarItem icon={<Icon name="bar-chart" size={20} />} label="Evaluasi & KPI (BETA)" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
+                                </nav>
+                            </aside>
+
+                            <main className="flex-1 flex flex-col overflow-hidden bg-transparent relative min-w-0 transition-colors duration-200">
+                                <header className="h-14 sm:h-16 lg:h-20 bg-white/50 dark:bg-slate-900/50 backdrop-blur-xl border-b border-white/60 dark:border-slate-700/50 flex items-center justify-between px-4 sm:px-6 lg:px-8 z-10 shrink-0 gap-2 shadow-sm dark:shadow-slate-950/20 transition-colors duration-200">
+                                    <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                                        <div className="min-w-0">
+                                            <h2 className="text-sm sm:text-base lg:text-xl font-bold text-slate-800 dark:text-slate-100 truncate transition-colors duration-200">
+                                                {activeTab === 'dashboard' && 'Ringkasan Proyek & Personil'}
+                                                {activeTab === 'proyek' && 'List Proyek'}
+                                                {activeTab === 'tim' && 'Alokasi Tim'}
+                                                {activeTab === 'gantt' && 'Ploting & Jadwal Personil'}
+                                                {activeTab === 'kpi' && 'Evaluasi & KPI Tim'}
+                                            </h2>
+                                            <p className="text-[10px] sm:text-xs text-slate-500 mt-0.5 hidden sm:block">Aplikasi Manajemen Proyek & Personil Tim Teknis</p>
+                                        </div>
+                                    </div>
+                                    <div className="flex items-center gap-3 sm:gap-4 shrink-0">
+                                        <button
+                                            onClick={() => setIsDarkMode(!isDarkMode)}
+                                            className={`relative inline-flex h-8 w-[64px] shrink-0 items-center rounded-full transition-all duration-500 shadow-inner hover:scale-105 ${isDarkMode ? 'bg-white border-slate-200 dark:bg-slate-200' : 'bg-slate-800 border-slate-700'}`}
+                                            title={isDarkMode ? 'Ubah ke Light Mode' : 'Ubah ke Dark Mode'}
+                                        >
+                                            <span
+                                                className={`inline-flex h-6 w-6 transform items-center justify-center rounded-full transition-transform duration-500 ease-out z-10 ${isDarkMode ? 'translate-x-[34px] bg-slate-900 text-white shadow-md' : 'translate-x-1 bg-white text-slate-800 shadow-md'}`}
+                                            >
+                                                <Icon name={isDarkMode ? "moon" : "sun"} size={14} strokeWidth={2.5} />
+                                            </span>
+                                        </button>
+                                        <div className={`hidden sm:flex items-center gap-2 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full text-xs font-semibold shadow-sm ${isLive ? 'bg-emerald-100 text-emerald-700 border border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800' : 'bg-amber-100 text-amber-700 border border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800'}`}>
+                                            <Icon name="database" size={14} /> {isLive ? 'Live' : 'Offline'}
+                                        </div>
+                                        <div className={`sm:hidden w-2.5 h-2.5 rounded-full shrink-0 ${isLive ? 'bg-emerald-500' : 'bg-amber-500'}`} title={isLive ? 'Connected' : 'Offline'} />
+                                        <button onClick={() => setShowPrintModal(true)} className="hidden sm:flex items-center gap-2 px-3 py-1.5 text-xs font-bold text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 transition-colors shadow-sm dark:bg-slate-800 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-700">
+                                            <Icon name="printer" size={14} /> Ekspor PDF
+                                        </button>
+                                        <button onClick={fetchFromGoogleSheets} disabled={loading || !GOOGLE_SCRIPT_URL} className={`p-2 rounded-full transition-all shrink-0 ${loading ? 'animate-spin text-blue-500' : 'text-slate-400 hover:text-blue-600 hover:bg-blue-50 dark:hover:bg-slate-800 dark:text-slate-500 dark:hover:text-blue-400'}`} title="Refresh Database">
+                                            <Icon name="refresh-ccw" size={20} />
+                                        </button>
+                                    </div>
+                                </header>
+
+                                <div className="flex-1 overflow-auto p-3 sm:p-5 lg:p-8 pb-24 lg:pb-8 relative">
+                                    {loading && (
+                                        <div className="absolute inset-0 bg-white/60 dark:bg-slate-900/60 backdrop-blur-sm z-40 flex flex-col items-center justify-center rounded-xl">
+                                            <div className="animate-spin text-blue-600 dark:text-blue-500 mb-4"><Icon name="refresh-ccw" size={32} /></div>
+                                            <p className="font-semibold text-slate-700 dark:text-slate-300">Sinkronisasi Database...</p>
+                                        </div>
+                                    )}
+
+                                    <div className="max-w-7xl mx-auto">
+                                        {activeTab === 'dashboard' && renderDashboard()}
+                                        {activeTab === 'proyek' && renderProyek()}
+                                        {activeTab === 'tim' && renderTim()}
+                                        {activeTab === 'gantt' && renderGantt()}
+                                        {activeTab === 'timesheet' && renderTimesheet()}
+                                        {activeTab === 'kpi' && renderKPI()}
+                                    </div>
+                                </div>
+                            </main>
+
+                            <ModalForm />
+
+                            <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[68px] bg-white/60 dark:bg-slate-900/60 backdrop-blur-3xl border-t border-white/60 dark:border-slate-800 z-50 flex justify-around items-center px-1 pb-safe shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] transition-colors duration-200">
+                                <BottomNavItem icon={<Icon name="layout-dashboard" size={22} />} label="Beranda" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
+                                <BottomNavItem icon={<Icon name="briefcase" size={22} />} label="Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
+                                <BottomNavItem icon={<Icon name="users" size={22} />} label="Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
+                                <BottomNavItem icon={<Icon name="calendar" size={22} />} label="Ploting" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
+                                <BottomNavItem icon={<Icon name="bar-chart" size={22} />} label="KPI" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
+                            </nav>
+                        </div>
+                    </div>
+                </>
             );
         }
 
