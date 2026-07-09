@@ -3783,15 +3783,44 @@
                 };
 
                 return (
-                    <div className="hidden print:block text-black bg-white w-full h-auto min-h-screen font-sans">
-                        <div className="border-b-4 border-black pb-4 mb-6 flex items-center justify-between">
-                            <div className="flex items-center gap-6">
-                                <img src="./LGIHT TRANSPARAN (1).PNG" alt="Gaharu Sempana Group Logo" className="h-20 object-contain" />
-                                <div>
-                                    <h1 className="text-2xl font-black uppercase tracking-wider">{title}</h1>
-                                    <p className="text-sm mt-1 font-semibold">Sistem Project Management Control (PMC)</p>
-                                    <p className="text-sm">Gaharu Sempana Group</p>
-                                </div>
+                    <div className="hidden print:block text-black bg-white w-full h-auto min-h-screen font-sans relative">
+                        <style type="text/css">
+                            {`
+                            @media print {
+                                @page { margin: 0; }
+                                body { -webkit-print-color-adjust: exact; print-color-adjust: exact; padding: 0; margin: 0; }
+                                .custom-print-footer {
+                                    position: fixed;
+                                    bottom: 8mm;
+                                    left: 10mm;
+                                    font-size: 10px;
+                                    color: #475569;
+                                    font-style: italic;
+                                    font-weight: 600;
+                                    z-index: 1000;
+                                }
+                            }
+                            `}
+                        </style>
+                        <div className="custom-print-footer">
+                            This Document Created By Tim Teknis Gaharu Sempana Group
+                        </div>
+                        
+                        <table style={{ width: '100%' }}>
+                            <thead>
+                                <tr><td style={{ height: '12mm' }}></td></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td className="px-10 pb-4">
+                                    
+                                    <div className="border-b-4 border-black pb-4 mb-6 flex items-center justify-between">
+                                        <div className="flex items-center gap-6">
+                                            <img src="./LGIHT TRANSPARAN (1).PNG" alt="Gaharu Sempana Group Logo" className="h-20 object-contain" />
+                                            <div>
+                                                <h1 className="text-2xl font-black uppercase tracking-wider">{title}</h1>
+                                                <p className="text-sm mt-1 font-semibold">Sistem Project Management Control (PMC)</p>
+                                                <p className="text-sm">Gaharu Sempana Group</p>
+                                            </div>
                             </div>
                             <div className="text-right flex flex-col justify-between h-20">
                                 <div className="flex justify-end">
@@ -3937,6 +3966,14 @@
                                 <p className="font-bold underline decoration-black underline-offset-2">Ir. Putu Andre Wicaksana Putra, S.T., M.Ars., IPP.</p>
                             </div>
                         </div>
+
+                                    {/* --- AKHIR KONTEN UTAMA --- */}
+                                    </td></tr>
+                            </tbody>
+                            <tfoot>
+                                <tr><td style={{ height: '20mm' }}></td></tr>
+                            </tfoot>
+                        </table>
                     </div>
                 );
             };
