@@ -380,7 +380,16 @@
             const involvedProjectsMap = new Map();
             ledProjects.forEach(p => involvedProjectsMap.set(p.id, p));
             subProjects.forEach(p => involvedProjectsMap.set(p.id, p));
-            const involvedProjects = Array.from(involvedProjectsMap.values());
+            const allInvolvedProjects = Array.from(involvedProjectsMap.values());
+
+            const involvedProjects = allInvolvedProjects.filter(p => {
+                const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
+                if (isPengawasan) {
+                    const statusTurun = p.pengawasanDetails?.[employee.name]?.statusTurun;
+                    if (statusTurun === 'Tidak Turun') return false;
+                }
+                return true;
+            });
 
             const activeProjects = involvedProjects.filter(p => p.status !== "Done" && p.computedStatus !== "Done");
             const totalActive = activeProjects.length;
@@ -481,10 +490,20 @@
         };
 
         const calculateEmployeeKPI = (employee, allProjects) => {
-            const involvedProjects = allProjects.filter(p => {
+            const allInvolvedProjects = allProjects.filter(p => {
                 const members = Array.isArray(p.team) ? p.team : [];
                 return members.includes(employee.name);
             });
+
+            const involvedProjects = allInvolvedProjects.filter(p => {
+                const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
+                if (isPengawasan) {
+                    const statusTurun = p.pengawasanDetails?.[employee.name]?.statusTurun;
+                    if (statusTurun === 'Tidak Turun') return false;
+                }
+                return true;
+            });
+
             const activeProjects = involvedProjects.filter(p => p.status !== "Done" && p.computedStatus !== "Done");
 
             const totalProjects = activeProjects.length;
@@ -852,10 +871,17 @@
 
                     computedProjects.forEach(p => {
                         if (p.computedStatus !== 'Done') {
+                            const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
+                            
+                            // Jika pengawasan dan statusnya tidak turun, lewati (tidak dihitung beban)
+                            if (isPengawasan) {
+                                const statusTurun = p.pengawasanDetails?.[res.name]?.statusTurun;
+                                if (statusTurun === 'Tidak Turun') return;
+                            }
+
                             if (p.teamLeader === res.name) {
                                 numProjects++;
                             } else if (p.team && p.team.includes(res.name)) {
-                                const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
                                 let isIndividuallyDone = p.individualStatus?.[res.name] === true;
 
                                 if (isPengawasan) {
@@ -3826,7 +3852,7 @@
                                             <img src="./LGIHT TRANSPARAN (1).PNG" alt="Gaharu Sempana Group Logo" className="h-20 object-contain" />
                                             <div>
                                                 <h1 className="text-2xl font-black uppercase tracking-wider">{title}</h1>
-                                                <p className="text-sm mt-1 font-semibold">Sistem Project Management Control (PMC)</p>
+                                                <p className="text-sm mt-1 font-semibold">Project Management Control System (PMC)</p>
                                                 <p className="text-sm">Gaharu Sempana Group</p>
                                             </div>
                                         </div>
