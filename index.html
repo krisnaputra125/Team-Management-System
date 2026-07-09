@@ -3758,7 +3758,7 @@
                                                 const details = p.categoryDetails?.[cat] || {};
                                                 const progressVal = details.progress || 0;
                                                 const statusTarget = getMicroStatus(progressVal, details.deadline);
-                                                
+
                                                 return (
                                                     <tr key={cat}>
                                                         <td className="border border-black p-1.5 font-bold">{cat}</td>
@@ -3784,16 +3784,20 @@
 
                 return (
                     <div className="hidden print:block text-black bg-white w-full h-auto min-h-screen font-sans">
-                        <div className="border-b-2 border-black pb-4 mb-6">
-                            <h1 className="text-2xl font-bold uppercase tracking-wider">{title}</h1>
-                            <div className="flex justify-between items-end mt-2">
+                        <div className="border-b-4 border-black pb-4 mb-6 flex items-center justify-between">
+                            <div className="flex items-center gap-6">
+                                <img src="./LGIHT TRANSPARAN (1).PNG" alt="Gaharu Sempana Group Logo" className="h-20 object-contain" />
                                 <div>
-                                    <p className="text-sm">Dicetak pada: {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
-                                    <p className="text-sm mt-0.5">Sistem Project Management Control (PMC) Gaharu Sempana Group</p>
+                                    <h1 className="text-2xl font-black uppercase tracking-wider">{title}</h1>
+                                    <p className="text-sm mt-1 font-semibold">Sistem Project Management Control (PMC)</p>
+                                    <p className="text-sm">Gaharu Sempana Group</p>
                                 </div>
-                                <div className="text-right">
-                                    <p className="text-xs border border-black px-2 py-1 uppercase font-bold">Dokumen Internal</p>
+                            </div>
+                            <div className="text-right flex flex-col justify-between h-20">
+                                <div className="flex justify-end">
+                                    <p className="text-xs border-2 border-black px-2 py-1 uppercase font-black whitespace-nowrap">Dokumen Internal</p>
                                 </div>
+                                <p className="text-sm font-semibold mt-auto">Dicetak pada: {new Date().toLocaleDateString('id-ID', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}</p>
                             </div>
                         </div>
 
@@ -3805,28 +3809,29 @@
                                     <p className="text-sm italic">Tidak ada proyek aktif untuk kriteria ini.</p>
                                 ) : (
                                     <div className="space-y-8">
-                                        {(printData.type === 'all' || printData.type === 'custom') ? (
-                                            ((printData.type === 'custom' && printData.options.projectType !== 'Semua') ? [printData.options.projectType] : ['Perencanaan', 'Pengawasan', 'Manajemen Konstruksi']).map(kategoriTipe => {
-                                                const proyeksInKategori = filteredProjects.filter(p => {
-                                                    const pType = (p.type || '').toLowerCase();
-                                                    if (kategoriTipe === 'Perencanaan') return pType.includes('perencana');
-                                                    if (kategoriTipe === 'Pengawasan') return pType === 'pengawasan' || pType === 'supervisi';
-                                                    if (kategoriTipe === 'Manajemen Konstruksi') return pType.includes('manajemen konstruksi') || pType === 'mk';
-                                                    return false;
-                                                });
+                                        {(printData.type === 'all' || printData.type === 'custom') ? (() => {
+                                            const categoriesToRender = ((printData.type === 'custom' && printData.options.projectType !== 'Semua') ? [printData.options.projectType] : ['Perencanaan', 'Pengawasan', 'Manajemen Konstruksi']).map(kategoriTipe => {
+                                                return {
+                                                    kategoriTipe,
+                                                    proyeksInKategori: filteredProjects.filter(p => {
+                                                        const pType = (p.type || '').toLowerCase();
+                                                        if (kategoriTipe === 'Perencanaan') return pType.includes('perencana');
+                                                        if (kategoriTipe === 'Pengawasan') return pType === 'pengawasan' || pType === 'supervisi';
+                                                        if (kategoriTipe === 'Manajemen Konstruksi') return pType.includes('manajemen konstruksi') || pType === 'mk';
+                                                        return false;
+                                                    })
+                                                };
+                                            }).filter(cat => cat.proyeksInKategori.length > 0);
 
-                                                if (proyeksInKategori.length === 0) return null;
-
-                                                return (
-                                                    <div key={kategoriTipe} className="mb-6">
-                                                        <h3 className="text-md font-bold mb-3 uppercase bg-gray-200 border-t border-b border-black py-1 px-2">Sub Bab: {kategoriTipe}</h3>
-                                                        <div className="space-y-6">
-                                                            {proyeksInKategori.map(p => renderProjectPrintCard(p))}
-                                                        </div>
+                                            return categoriesToRender.map((catData, index) => (
+                                                <div key={catData.kategoriTipe} className="mb-6" style={{ pageBreakBefore: index === 0 ? 'auto' : 'always' }}>
+                                                    <h3 className="text-md font-bold mb-3 uppercase bg-gray-200 border-t border-b border-black py-1 px-2">Sub Bab: {catData.kategoriTipe}</h3>
+                                                    <div className="space-y-6">
+                                                        {catData.proyeksInKategori.map(p => renderProjectPrintCard(p))}
                                                     </div>
-                                                );
-                                            })
-                                        ) : (
+                                                </div>
+                                            ));
+                                        })() : (
                                             <div className="space-y-6">
                                                 {filteredProjects.map(p => renderProjectPrintCard(p))}
                                             </div>
@@ -3924,11 +3929,11 @@
                         {/* BAGIAN TANDA TANGAN */}
                         <div className="mt-16 pt-8 flex justify-between px-10 text-sm text-black" style={{ pageBreakInside: 'avoid' }}>
                             <div className="text-center">
-                                <p className="mb-24">Diketahui Oleh,<br/>Manajer Teknis Gaharu Sempana Group</p>
+                                <p className="mb-24">Diketahui Oleh,<br />Manajer Teknis Gaharu Sempana Group</p>
                                 <p className="font-bold underline decoration-black underline-offset-2">Ar. Ir. I Nyoman Adi Putra wijaya, ST. IAI.</p>
                             </div>
                             <div className="text-center">
-                                <p className="mb-24">Disetujui Oleh,<br/>CEO Gaharu Sempana Group</p>
+                                <p className="mb-24">Disetujui Oleh,<br />CEO Gaharu Sempana Group</p>
                                 <p className="font-bold underline decoration-black underline-offset-2">Ir. Putu Andre Wicaksana Putra, S.T., M.Ars., IPP.</p>
                             </div>
                         </div>
