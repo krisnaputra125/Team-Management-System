@@ -750,28 +750,15 @@
             const [showPrintModal, setShowPrintModal] = useState(false);
             const [printOptions, setPrintOptions] = useState({ projectType: 'Semua', section: 'Semua' });
 
-            const triggerPrint = (newData) => {
-                const isIOS = typeof navigator !== 'undefined' && (/iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1));
-                const isSafari = typeof navigator !== 'undefined' && /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
-                
-                if ((isIOS || isSafari) && typeof window !== 'undefined' && window.ReactDOM && window.ReactDOM.flushSync) {
-                    // Sinkronus untuk iOS/Safari agar tidak diblokir popup blocker
-                    window.ReactDOM.flushSync(() => {
-                        setShowPrintModal(false);
-                        setPrintData(newData);
-                    });
-                    window.print();
-                    setPrintData(null);
-                } else {
-                    // Asinkronus (setTimeout) untuk Chrome PC agar DOM ter-paint sempurna dan tidak blank
-                    setShowPrintModal(false);
-                    setPrintData(newData);
-                    setTimeout(() => {
-                        window.print();
-                        setPrintData(null);
-                    }, 500);
+            const [showConfirmPrintModal, setConfirmPrintModal] = useState(false);
+
+            // Selalu update DOM print tersembunyi secara real-time berdasarkan opsi yang dipilih saat Modal Ekspor terbuka.
+            // Dengan cara ini, saat user klik "Cetak", DOM sudah selesai di-paint oleh browser (menghindari blank page).
+            React.useEffect(() => {
+                if (showPrintModal) {
+                    setPrintData({ type: 'custom', options: printOptions });
                 }
-            };
+            }, [showPrintModal, printOptions]);
 
             // Firebase Configuration
             const firebaseConfig = {
@@ -1903,7 +1890,7 @@
                                                                 {p.computedStatus === 'Terlambat' && (
                                                                     <button onClick={() => handleAnalyzeDomino(p)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 text-white hover:from-orange-600 hover:to-rose-600 rounded-lg shadow-md animate-pulse hover:animate-none"><Icon name="alert-triangle" size={14} /> Cek Domino</button>
                                                                 )}
-                                                                <button onClick={() => triggerPrint({ type: 'project', id: p.id })} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg border border-indigo-200 dark:border-indigo-800/50"><Icon name="printer" size={14} /> Cetak PDF</button>
+                                                                <button onClick={() => { setPrintData({ type: 'project', id: p.id }); setConfirmPrintModal(true); }} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg border border-indigo-200 dark:border-indigo-800/50"><Icon name="printer" size={14} /> Cetak PDF</button>
                                                                 <button onClick={() => openModal('project', 'edit', p)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-800/50"><Icon name="edit" size={14} /> Edit Data</button>
                                                                 <button onClick={() => handleDelete('project', p.id)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-lg border border-red-200 dark:border-red-800/50"><Icon name="trash" size={14} /> Hapus</button>
                                                             </div>
@@ -2018,7 +2005,7 @@
                                     )}
                                 </div>
                             </div>
-                            <button onClick={() => triggerPrint({ type: 'personnel', name: viewingEmployee.name })} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm shrink-0">
+                            <button onClick={() => { setPrintData({ type: 'personnel', name: viewingEmployee.name }); setConfirmPrintModal(true); }} className="flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm shrink-0">
                                 <Icon name="printer" size={16} /> Cetak Laporan Pegawai
                             </button>
                         </div>
@@ -4078,6 +4065,26 @@
                             {renderDeveloperPromptModal()}
                             {renderDominoModal()}
                             {renderKPIInfoModal()}
+                            {showConfirmPrintModal && (
+                                <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+                                    <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-200 text-center">
+                                        <div className="mx-auto w-16 h-16 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 rounded-full flex items-center justify-center mb-4">
+                                            <Icon name="printer" size={32} />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-slate-800 dark:text-slate-200 mb-2">Dokumen Siap Dicetak</h3>
+                                        <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
+                                            Sistem telah selesai menyusun halaman PDF. Lanjutkan untuk mencetak dokumen.
+                                        </p>
+                                        <div className="flex gap-3 w-full">
+                                            <button onClick={() => { setConfirmPrintModal(false); setPrintData(null); }} className="flex-1 px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">Batal</button>
+                                            <button onClick={() => {
+                                                setConfirmPrintModal(false);
+                                                window.print();
+                                            }} className="flex-1 px-4 py-2 rounded-lg text-sm font-bold text-white bg-indigo-600 hover:bg-indigo-700 transition-colors shadow-lg shadow-indigo-600/30">Cetak Sekarang</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
                             {showProjectTypeModal && (
                                 <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
                                     <div className="bg-white dark:bg-slate-800 p-6 rounded-xl shadow-2xl max-w-sm w-full animate-in fade-in zoom-in duration-200">
@@ -4142,7 +4149,10 @@
                                         </div>
                                         <div className="mt-6 flex justify-end gap-3">
                                             <button onClick={() => setShowPrintModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">Batal</button>
-                                            <button onClick={() => triggerPrint({ type: 'custom', options: printOptions })} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-md">
+                                            <button onClick={() => {
+                                                setShowPrintModal(false);
+                                                window.print();
+                                            }} className="px-4 py-2 rounded-lg text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-md">
                                                 <Icon name="printer" size={16} /> Cetak Sekarang
                                             </button>
                                         </div>
