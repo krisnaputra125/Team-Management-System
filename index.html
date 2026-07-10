@@ -372,14 +372,26 @@
             return 'Lainnya';
         };
 
+        const getEffectiveEmpCategory = (project, employeeName, employeeRole) => {
+            if (project.type?.toLowerCase().includes('perencana') && project.surveyorTeam?.includes(employeeName)) {
+                return 'Surveyor';
+            }
+            return getCategoryFromRole(employeeRole);
+        };
+
         const calculateLeaderKPI = (employee, allProjects) => {
+            const isKordinator = employee.level?.startsWith('Kordinator Divisi');
+            const kordinatorDivisi = isKordinator ? employee.level.replace('Kordinator Divisi ', 'Divisi ') : null;
+
             const ledProjects = allProjects.filter(p => p.teamLeader === employee.name);
             const subProjects = allProjects.filter(p => p.team && p.team.includes(employee.name));
+            const kontrolProjects = isKordinator ? allProjects.filter(p => p.type?.toLowerCase().includes('perencana') && p.divisiKontrol === kordinatorDivisi) : [];
 
             // Gabungkan proyek dan hapus duplikat
             const involvedProjectsMap = new Map();
             ledProjects.forEach(p => involvedProjectsMap.set(p.id, p));
             subProjects.forEach(p => involvedProjectsMap.set(p.id, p));
+            kontrolProjects.forEach(p => involvedProjectsMap.set(p.id, p));
             const allInvolvedProjects = Array.from(involvedProjectsMap.values());
 
             const involvedProjects = allInvolvedProjects.filter(p => {
@@ -399,11 +411,11 @@
             let atRiskCount = 0;
             let totalProgress = 0;
             let doneOnTimeBonus = 0;
-            const empCat = getCategoryFromRole(employee.role);
             let staffDoneBonus = 0;
 
             involvedProjects.forEach(p => {
-                const isLeader = p.teamLeader === employee.name;
+                const isLeader = p.teamLeader === employee.name || (isKordinator && p.divisiKontrol === kordinatorDivisi);
+                const empCat = getEffectiveEmpCategory(p, employee.name, employee.role);
 
                 if (isLeader) {
                     if (p.computedStatus === "Terlambat" && p.status !== "Done") {
@@ -507,7 +519,6 @@
             const activeProjects = involvedProjects.filter(p => p.status !== "Done" && p.computedStatus !== "Done");
 
             const totalProjects = activeProjects.length;
-            const empCat = getCategoryFromRole(employee.role);
 
             let delayedCount = 0;
             let atRiskCount = 0;
@@ -516,6 +527,7 @@
             let score = 100;
 
             involvedProjects.forEach(p => {
+                const empCat = getEffectiveEmpCategory(p, employee.name, employee.role);
                 let pProgress = 0;
                 let pStatus = "On Progress";
                 const microProgress = p.categoryDetails?.[empCat]?.progress ? Number(p.categoryDetails[empCat].progress) : 0;
@@ -894,7 +906,8 @@
                                         numProjects++;
                                     }
                                 } else {
-                                    const microProgress = p.categoryDetails?.[empCat]?.progress ? Number(p.categoryDetails[empCat].progress) : 0;
+                                    const effectiveCat = getEffectiveEmpCategory(p, res.name, res.role);
+                                    const microProgress = p.categoryDetails?.[effectiveCat]?.progress ? Number(p.categoryDetails[effectiveCat].progress) : 0;
                                     if (microProgress < 100 && !isIndividuallyDone) {
                                         numProjects++;
                                     }
@@ -1069,18 +1082,43 @@
                 const today = new Date();
                 today.setHours(0, 0, 0, 0);
 
-                const deadlineDate = new Date(project.deadline);
-                deadlineDate.setHours(0, 0, 0, 0);
-
-                const delayDays = Math.ceil((today.getTime() - deadlineDate.getTime()) / (1000 * 60 * 60 * 24));
-                if (delayDays <= 0) return; // not delayed logically
+                let globalDelayDays = 0;
+                if (project.deadline) {
+                    const deadlineDate = new Date(project.deadline);
+                    deadlineDate.setHours(0, 0, 0, 0);
+                    globalDelayDays = Math.ceil((today.getTime() - deadlineDate.getTime()) / (1000 * 60 * 60 * 24));
+                }
 
                 const impactedEmployees = [];
+                let maxDelay = globalDelayDays > 0 ? globalDelayDays : 0;
 
                 if (project.team && Array.isArray(project.team)) {
                     project.team.forEach(memberName => {
                         const isIndividuallyDone = project.individualStatus?.[memberName] === true;
                         if (!isIndividuallyDone) {
+                            const res = resources.find(r => r.name === memberName);
+                            let memberDeadlineStr = null;
+                            
+                            if (res) {
+                                const effectiveCat = getEffectiveEmpCategory(project, res.name, res.role);
+                                if (project.categoryDetails?.[effectiveCat]?.deadline) {
+                                    memberDeadlineStr = project.categoryDetails[effectiveCat].deadline;
+                                }
+                            }
+                            if (!memberDeadlineStr) memberDeadlineStr = project.deadline;
+
+                            if (!memberDeadlineStr) return;
+
+                            const memberDeadlineDate = new Date(memberDeadlineStr);
+                            memberDeadlineDate.setHours(0, 0, 0, 0);
+
+                            const delayDays = Math.ceil((today.getTime() - memberDeadlineDate.getTime()) / (1000 * 60 * 60 * 24));
+                            
+                            // Jika secara individu tidak terlambat, lewati
+                            if (delayDays <= 0) return;
+
+                            if (delayDays > maxDelay) maxDelay = delayDays;
+
                             const futureProjects = [];
                             computedProjects.forEach(fp => {
                                 if (fp.id === project.id) return;
@@ -1089,11 +1127,10 @@
                                     const fpIndvDone = fp.individualStatus?.[memberName] === true;
                                     if (!fpIndvDone) {
                                         let fpDeadlineStr = null;
-                                        const res = resources.find(r => r.name === memberName);
                                         if (res) {
-                                            const empCat = getCategoryFromRole(res.role);
-                                            if (fp.categoryDetails?.[empCat]?.deadline) {
-                                                fpDeadlineStr = fp.categoryDetails[empCat].deadline;
+                                            const fpEffectiveCat = getEffectiveEmpCategory(fp, res.name, res.role);
+                                            if (fp.categoryDetails?.[fpEffectiveCat]?.deadline) {
+                                                fpDeadlineStr = fp.categoryDetails[fpEffectiveCat].deadline;
                                             }
                                         }
                                         if (!fpDeadlineStr) fpDeadlineStr = fp.deadline;
@@ -1103,7 +1140,7 @@
                                             fDate.setHours(0, 0, 0, 0);
                                             if (!isNaN(fDate.getTime()) && fDate >= today) {
                                                 const remaining = Math.ceil((fDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-                                                // Jika sisa waktu proyek masa depan lebih kecil atau sama dengan hari keterlambatan proyek ini, berarti akan saling menumpuk/gagal
+                                                // Jika sisa waktu proyek masa depan lebih kecil atau sama dengan hari keterlambatan individu ini
                                                 if (remaining <= delayDays + 3) { // buffer 3 hari
                                                     futureProjects.push({
                                                         name: fp.name,
@@ -1121,16 +1158,21 @@
                             if (futureProjects.length > 0) {
                                 impactedEmployees.push({
                                     name: memberName,
-                                    futureProjects
+                                    futureProjects,
+                                    delayDays: delayDays // Simpan keterlambatan spesifik individu
                                 });
                             }
                         }
                     });
                 }
 
+                if (impactedEmployees.length === 0 && globalDelayDays <= 0) {
+                    return; // Tidak ada delay sama sekali
+                }
+
                 setDominoAnalysis({
                     project,
-                    delayDays,
+                    delayDays: maxDelay,
                     impactedEmployees
                 });
             };
@@ -1296,9 +1338,15 @@
             // --- KOMPONEN TAB: KPI & EVALUASI ---
             const renderKPI = () => {
                 const leaders = resources.filter(r => r.level === 'Team Leader');
-                const staffs = resources.filter(r => r.level !== 'Team Leader');
+                const kordinators = resources.filter(r => r.level?.startsWith('Kordinator Divisi'));
+                const staffs = resources.filter(r => r.level !== 'Team Leader' && !r.level?.startsWith('Kordinator Divisi'));
 
                 const allKpiDataLeaders = leaders.map(res => {
+                    const kpi = calculateLeaderKPI(res, computedProjects);
+                    return { ...res, ...kpi };
+                });
+
+                const allKpiDataKordinators = kordinators.map(res => {
                     const kpi = calculateLeaderKPI(res, computedProjects);
                     return { ...res, ...kpi };
                 });
@@ -1331,11 +1379,15 @@
                     .filter(res => res.name.toLowerCase().includes(searchKPITab.toLowerCase()) || res.role.toLowerCase().includes(searchKPITab.toLowerCase()))
                     .sort(sortKpiData);
 
+                const kpiDataKordinators = allKpiDataKordinators
+                    .filter(res => res.name.toLowerCase().includes(searchKPITab.toLowerCase()) || res.role.toLowerCase().includes(searchKPITab.toLowerCase()))
+                    .sort(sortKpiData);
+
                 const kpiDataStaffs = allKpiDataStaffs
                     .filter(res => res.name.toLowerCase().includes(searchKPITab.toLowerCase()) || res.role.toLowerCase().includes(searchKPITab.toLowerCase()))
                     .sort(sortKpiData);
 
-                const allKpiCombined = [...allKpiDataLeaders, ...allKpiDataStaffs];
+                const allKpiCombined = [...allKpiDataLeaders, ...allKpiDataKordinators, ...allKpiDataStaffs];
                 const needsAttention = allKpiCombined.filter(k => k.score < 60 || (k.isOverloaded && k.delayed > 0));
                 const healthyCount = allKpiCombined.length - needsAttention.length;
 
@@ -1463,6 +1515,30 @@
                                     </thead>
                                     <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm">
                                         {renderTableRows(kpiDataLeaders, true)}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        {/* TABEL KORDINATOR DIVISI */}
+                        <div className="bg-white/70 dark:bg-slate-800/60 backdrop-blur-2xl rounded-2xl border border-white/60 dark:border-blue-900/30 shadow-xl shadow-slate-200/50 dark:shadow-slate-900/50 overflow-hidden flex flex-col mt-6">
+                            <div className="p-4 bg-blue-50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-900/30 flex items-center gap-2">
+                                <Icon name="target" size={20} className="text-blue-600 dark:text-blue-400" />
+                                <h3 className="font-bold text-blue-900 dark:text-blue-400">Leaderboard: Kordinator Divisi</h3>
+                            </div>
+                            <div className="p-0 overflow-x-auto min-h-[150px]">
+                                <table className="w-full text-left border-collapse min-w-[700px]">
+                                    <thead>
+                                        <tr className="bg-slate-50 dark:bg-slate-900/50 text-slate-500 dark:text-slate-400 text-xs uppercase tracking-wider">
+                                            <th className="p-4 font-semibold whitespace-nowrap">Peringkat & Personil</th>
+                                            <th className="p-4 font-semibold text-center whitespace-nowrap">Skor KPI</th>
+                                            <th className="p-4 font-semibold text-center whitespace-nowrap">Rating Manual</th>
+                                            <th className="p-4 font-semibold text-center whitespace-nowrap">Progress Makro Rata-rata</th>
+                                            <th className="p-4 font-semibold whitespace-nowrap">Rincian Masalah</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-100 dark:divide-slate-700/50 text-sm">
+                                        {renderTableRows(kpiDataKordinators, true)}
                                     </tbody>
                                 </table>
                             </div>
@@ -1775,9 +1851,16 @@
                                                         <td className="p-4 pt-5">
                                                             <p className="font-bold text-slate-800 dark:text-slate-200 text-base">{p.name}</p>
                                                             <p className="text-xs text-slate-500 mb-2">{p.client}</p>
-                                                            <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium mb-2 ${p.type?.toLowerCase().includes('perencana') ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-teal-50 text-teal-700 border border-teal-100'}`}>
-                                                                {p.type?.toLowerCase().includes('perencana') ? 'Perencanaan' : p.type?.toLowerCase().includes('pengawas') ? 'Pengawasan' : p.type}
-                                                            </span>
+                                                            <div className="flex flex-wrap gap-1.5 mb-2">
+                                                                <span className={`inline-block px-2 py-0.5 rounded text-[10px] font-medium ${p.type?.toLowerCase().includes('perencana') ? 'bg-indigo-50 text-indigo-700 border border-indigo-100' : 'bg-teal-50 text-teal-700 border border-teal-100'}`}>
+                                                                    {p.type?.toLowerCase().includes('perencana') ? 'Perencanaan' : p.type?.toLowerCase().includes('pengawas') ? 'Pengawasan' : p.type}
+                                                                </span>
+                                                                {p.type?.toLowerCase().includes('perencana') && p.divisiKontrol && (
+                                                                    <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-medium bg-blue-50 text-blue-700 border border-blue-100">
+                                                                        {p.divisiKontrol}
+                                                                    </span>
+                                                                )}
+                                                            </div>
                                                             {p.teamLeader && (
                                                                 <div className="mb-2">
                                                                     <span className="inline-flex items-center gap-1.5 px-2 py-1 bg-amber-50 text-amber-700 border border-amber-200 rounded text-xs font-semibold">
@@ -1956,7 +2039,8 @@
                         }
                         return !isIndividuallyDone;
                     } else {
-                        const microProgress = p.categoryDetails?.[empCategory]?.progress ? Number(p.categoryDetails[empCategory].progress) : 0;
+                        const effectiveCat = getEffectiveEmpCategory(p, viewingEmployee.name, viewingEmployee.role);
+                        const microProgress = p.categoryDetails?.[effectiveCat]?.progress ? Number(p.categoryDetails[effectiveCat].progress) : 0;
                         return microProgress < 100 && !isIndividuallyDone;
                     }
                 });
@@ -1973,7 +2057,8 @@
                         }
                         return isIndividuallyDone;
                     } else {
-                        const microProgress = p.categoryDetails?.[empCategory]?.progress ? Number(p.categoryDetails[empCategory].progress) : 0;
+                        const effectiveCat = getEffectiveEmpCategory(p, viewingEmployee.name, viewingEmployee.role);
+                        const microProgress = p.categoryDetails?.[effectiveCat]?.progress ? Number(p.categoryDetails[effectiveCat].progress) : 0;
                         return microProgress >= 100 || isIndividuallyDone;
                     }
                 });
@@ -2096,7 +2181,8 @@
                                                 const pengawasanDetail = p.pengawasanDetails?.[viewingEmployee.name] || {};
                                                 const mRole = pengawasanDetail.role || '-';
 
-                                                const microDetails = p.categoryDetails?.[empCategory] || {};
+                                                const effectiveCat = getEffectiveEmpCategory(p, viewingEmployee.name, viewingEmployee.role);
+                                                const microDetails = p.categoryDetails?.[effectiveCat] || {};
                                                 const mProg = microDetails.progress || 0;
                                                 const mDead = isPengawasan ? pengawasanDetail.deadline : microDetails.deadline;
                                                 const isIndividuallyDone = p.individualStatus && p.individualStatus[viewingEmployee.name] === true;
@@ -2190,7 +2276,8 @@
                                                     const pengawasanDetail = p.pengawasanDetails?.[viewingEmployee.name] || {};
                                                     const mRole = pengawasanDetail.role || '-';
 
-                                                    const microDetails = p.categoryDetails?.[empCategory] || {};
+                                                    const effectiveCat = getEffectiveEmpCategory(p, viewingEmployee.name, viewingEmployee.role);
+                                                    const microDetails = p.categoryDetails?.[effectiveCat] || {};
                                                     const mProg = microDetails.progress || 0;
                                                     const mDead = isPengawasan ? pengawasanDetail.deadline : microDetails.deadline;
 
@@ -2297,10 +2384,10 @@
                         // Khusus untuk Team Leader, abaikan deadline utama proyek. 
                         // Hanya ambil deadline dari perannya sebagai anggota Sub-Tim.
                         if (p.team && p.team.includes(res.name)) {
-                            const empCat = getCategoryFromRole(res.role);
+                            const effectiveCat = getEffectiveEmpCategory(p, res.name, res.role);
                             const isIndividuallyDone = p.individualStatus?.[res.name] === true;
-                            if (!isIndividuallyDone && p.categoryDetails?.[empCat]?.deadline) {
-                                projDeadlineStr = p.categoryDetails[empCat].deadline;
+                            if (!isIndividuallyDone && p.categoryDetails?.[effectiveCat]?.deadline) {
+                                projDeadlineStr = p.categoryDetails[effectiveCat].deadline;
                             }
                         }
 
@@ -2993,6 +3080,19 @@
                                                         <option value="Perencanaan">Perencanaan</option><option value="Pengawasan">Pengawasan</option><option value="Manajemen Konstruksi">Manajemen Konstruksi</option>
                                                     </select>
                                                 </div>
+                                                {isPerencanaanForm && (
+                                                    <div>
+                                                        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1 flex items-center gap-1 text-blue-600 dark:text-blue-400">Divisi Kontrol</label>
+                                                        <select name="divisiKontrol" value={formData.divisiKontrol || ""} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-blue-50/50 dark:bg-blue-900/20 focus:bg-white dark:focus:bg-slate-800 dark:text-slate-200">
+                                                            <option value="">-- Pilih Divisi --</option>
+                                                            <option value="Divisi Jalan">Divisi Jalan</option>
+                                                            <option value="Divisi Gedung">Divisi Gedung</option>
+                                                            <option value="Divisi SDA">Divisi SDA</option>
+                                                            <option value="Divisi Perijinan">Divisi Perijinan</option>
+                                                            <option value="Divisi Tata Ruang">Divisi Tata Ruang</option>
+                                                        </select>
+                                                    </div>
+                                                )}
                                                 <div>
                                                     <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Status Proyek (Makro)</label>
                                                     <select name="status" value={formData.status} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 dark:text-slate-200">
@@ -3378,6 +3478,7 @@
                                                     <option value="Kordinator Divisi Gedung">Kordinator Divisi Gedung</option>
                                                     <option value="Kordinator Divisi SDA">Kordinator Divisi SDA</option>
                                                     <option value="Kordinator Divisi Perijinan">Kordinator Divisi Perijinan</option>
+                                                    <option value="Kordinator Divisi Tata Ruang">Kordinator Divisi Tata Ruang</option>
                                                 </select>
                                             </div>
                                             <div>
@@ -3742,8 +3843,13 @@
                             <div className="flex justify-between items-start border-b border-gray-300 pb-2 mb-3">
                                 <div>
                                     <h3 className="text-base font-bold uppercase">{p.name}</h3>
-                                    <p className="text-xs uppercase tracking-wide mt-0.5">{normalizeProjectType(p.type)} | Klien: {p.client || '-'}</p>
-                                    {!isPengawasan && <p className="text-xs font-semibold mt-1 text-gray-800">Team Leader: {p.teamLeader || 'Belum Ditentukan'}</p>}
+                                    <p className="text-xs uppercase tracking-wide mt-0.5">
+                                        {normalizeProjectType(p.type)} {' | '}Klien: {p.client || '-'}
+                                    </p>
+                                    {p.type?.toLowerCase().includes('perencana') && p.divisiKontrol && (
+                                        <p className="text-xs font-bold mt-1 text-gray-800">Divisi Kontrol: {p.divisiKontrol}</p>
+                                    )}
+                                    {!isPengawasan && <p className="text-xs font-bold mt-1 text-gray-800">Team Leader: {p.teamLeader || 'Belum Ditentukan'}</p>}
                                 </div>
                                 <div className="text-right shrink-0 ml-4">
                                     <p className="text-xs font-bold border border-black px-2 py-1 inline-block uppercase whitespace-nowrap">Status Makro: {p.computedStatus}</p>
@@ -3947,79 +4053,118 @@
                                             {filteredResources.length === 0 ? (
                                                 <p className="text-sm italic">Tidak ada personil untuk kriteria ini.</p>
                                             ) : (
-                                                <div className="grid grid-cols-1 gap-6">
-                                                    {filteredResources.map(res => {
-                                                        const activeProjectsForRes = filteredProjects.filter(p => p.team?.includes(res.name) || p.teamLeader === res.name);
-                                                        if (printData.type === 'custom' && printData.options.projectType !== 'Semua' && activeProjectsForRes.length === 0) return null;
-                                                        return (
-                                                            <div key={res.id} className="border-2 border-black p-4" style={{ pageBreakInside: 'avoid' }}>
-                                                                <div className="flex justify-between items-center mb-2">
-                                                                    <div>
-                                                                        <h3 className="font-bold uppercase text-base">{res.name}</h3>
-                                                                        <p className="text-xs mt-0.5">{res.role} | {res.level || 'Staff'}</p>
-                                                                    </div>
-                                                                    <span className="text-xs border border-black px-2 py-1 font-bold">
-                                                                        {activeProjectsForRes.length} Proyek Aktif
-                                                                    </span>
+                                                <div className="space-y-8">
+                                                    {(() => {
+                                                        const resourcesBySubTeam = {};
+                                                        filteredResources.forEach(res => {
+                                                            const activeProjectsForRes = filteredProjects.filter(p => p.team?.includes(res.name) || p.teamLeader === res.name || p.surveyorTeam?.includes(res.name));
+                                                            if (printData.type === 'custom' && printData.options.projectType !== 'Semua' && activeProjectsForRes.length === 0) return;
+                                                            
+                                                            const subTeam = getCategoryFromRole(res.role);
+                                                            if (!resourcesBySubTeam[subTeam]) resourcesBySubTeam[subTeam] = [];
+                                                            resourcesBySubTeam[subTeam].push({ res, activeProjectsForRes });
+                                                        });
+
+                                                        const subTeamKeys = Object.keys(resourcesBySubTeam).sort();
+                                                        
+                                                        if (subTeamKeys.length === 0) {
+                                                            return <p className="text-sm italic">Tidak ada personil yang terlibat di kriteria ini.</p>;
+                                                        }
+
+                                                        return subTeamKeys.map((subTeam, index) => (
+                                                            <div key={subTeam} className="mb-6" style={{ pageBreakBefore: index === 0 ? 'auto' : 'always' }}>
+                                                                <h3 className="text-md font-bold mb-3 uppercase bg-gray-200 border-t border-b border-black py-1 px-2">Sub Bab: Tim {subTeam}</h3>
+                                                                <div className="grid grid-cols-1 gap-6">
+                                                                    {resourcesBySubTeam[subTeam].map(({ res, activeProjectsForRes }) => (
+                                                                        <div key={res.id} className="border-2 border-black p-4" style={{ pageBreakInside: 'avoid' }}>
+                                                                            <div className="flex justify-between items-center mb-2">
+                                                                                <div>
+                                                                                    <h3 className="font-bold uppercase text-base">{res.name}</h3>
+                                                                                    {res.level && res.level.startsWith('Kordinator Divisi') ? (
+                                                                                        <div className="text-xs mt-0.5 text-slate-700">
+                                                                                            <p className="font-bold">{res.level}</p>
+                                                                                            <p>{res.role}</p>
+                                                                                        </div>
+                                                                                    ) : res.level === 'Team Leader' ? (
+                                                                                        <div className="text-xs mt-0.5 text-slate-700">
+                                                                                            <p className="font-bold">Team Leader</p>
+                                                                                            <p>{res.role}</p>
+                                                                                        </div>
+                                                                                    ) : res.level === 'PIC' ? (
+                                                                                        <div className="text-xs mt-0.5 text-slate-700">
+                                                                                            <p className="font-bold">PIC</p>
+                                                                                            <p>{res.role}</p>
+                                                                                        </div>
+                                                                                    ) : (
+                                                                                        <p className="text-xs mt-0.5 text-slate-700">
+                                                                                            {res.role}
+                                                                                        </p>
+                                                                                    )}
+                                                                                </div>
+                                                                                <span className="text-xs border border-black px-2 py-1 font-bold">
+                                                                                    {activeProjectsForRes.length} Proyek Aktif
+                                                                                </span>
+                                                                            </div>
+
+                                                                            <table className="w-full text-xs border-collapse border border-black mt-3">
+                                                                                <thead>
+                                                                                    <tr className="bg-gray-100">
+                                                                                        <th className="border border-black p-1.5 text-left w-[35%]">Nama Proyek</th>
+                                                                                        <th className="border border-black p-1.5 text-left w-[20%]">Peran/Tim Lapangan</th>
+                                                                                        <th className="border border-black p-1.5 text-left w-[15%]">Man Month</th>
+                                                                                        <th className="border border-black p-1.5 text-left w-[20%]">Deadline Spesifik Tugas</th>
+                                                                                        <th className="border border-black p-1.5 text-left w-[10%]">Status Lapangan</th>
+                                                                                    </tr>
+                                                                                </thead>
+                                                                                <tbody>
+                                                                                    {activeProjectsForRes.length === 0 ? (
+                                                                                        <tr><td colSpan="5" className="border border-black p-1.5 text-center italic">Sedang tidak memegang proyek aktif (Available).</td></tr>
+                                                                                    ) : activeProjectsForRes.map(p => {
+                                                                                        const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
+                                                                                        let deadlineStr = '-';
+                                                                                        let roleStr = '-';
+                                                                                        let statusLapangan = '-';
+                                                                                        let manMonthStr = '-';
+
+                                                                                        if (p.teamLeader === res.name) {
+                                                                                            deadlineStr = p.deadline ? formatDateIndo(p.deadline) : '-';
+                                                                                            roleStr = 'Team Leader';
+                                                                                            if (isPengawasan) {
+                                                                                                const details = p.pengawasanDetails?.[res.name] || {};
+                                                                                                statusLapangan = details.statusTurun || 'Tidak Turun';
+                                                                                                manMonthStr = details.manMonth || '-';
+                                                                                            }
+                                                                                        } else if (isPengawasan) {
+                                                                                            const details = p.pengawasanDetails?.[res.name] || {};
+                                                                                            deadlineStr = details.deadline ? formatDateIndo(details.deadline) : '-';
+                                                                                            roleStr = details.role || 'Inspector';
+                                                                                            statusLapangan = details.statusTurun || 'Tidak Turun';
+                                                                                            manMonthStr = details.manMonth || '-';
+                                                                                        } else {
+                                                                                            const effectiveCat = getEffectiveEmpCategory(p, res.name, res.role);
+                                                                                            const details = p.categoryDetails?.[effectiveCat] || {};
+                                                                                            deadlineStr = details.deadline ? formatDateIndo(details.deadline) : '-';
+                                                                                            roleStr = effectiveCat === 'Surveyor' ? 'Tim Surveyor' : effectiveCat;
+                                                                                        }
+
+                                                                                        return (
+                                                                                            <tr key={p.id}>
+                                                                                                <td className="border border-black p-1.5">{p.name}</td>
+                                                                                                <td className="border border-black p-1.5">{roleStr}</td>
+                                                                                                <td className="border border-black p-1.5 text-center">{manMonthStr}</td>
+                                                                                                <td className="border border-black p-1.5 font-semibold">{deadlineStr}</td>
+                                                                                                <td className="border border-black p-1.5 font-semibold">{statusLapangan}</td>
+                                                                                            </tr>
+                                                                                        )
+                                                                                    })}
+                                                                                </tbody>
+                                                                            </table>
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
-
-                                                                <table className="w-full text-xs border-collapse border border-black mt-3">
-                                                                    <thead>
-                                                                        <tr className="bg-gray-100">
-                                                                            <th className="border border-black p-1.5 text-left w-[35%]">Nama Proyek</th>
-                                                                            <th className="border border-black p-1.5 text-left w-[20%]">Peran/Tim Lapangan</th>
-                                                                            <th className="border border-black p-1.5 text-left w-[15%]">Man Month</th>
-                                                                            <th className="border border-black p-1.5 text-left w-[20%]">Deadline Spesifik Tugas</th>
-                                                                            <th className="border border-black p-1.5 text-left w-[10%]">Status Lapangan</th>
-                                                                        </tr>
-                                                                    </thead>
-                                                                    <tbody>
-                                                                        {activeProjectsForRes.length === 0 ? (
-                                                                            <tr><td colSpan="5" className="border border-black p-1.5 text-center italic">Sedang tidak memegang proyek aktif (Available).</td></tr>
-                                                                        ) : activeProjectsForRes.map(p => {
-                                                                            const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
-                                                                            let deadlineStr = '-';
-                                                                            let roleStr = '-';
-                                                                            let statusLapangan = '-';
-                                                                            let manMonthStr = '-';
-
-                                                                            if (p.teamLeader === res.name) {
-                                                                                deadlineStr = p.deadline ? formatDateIndo(p.deadline) : '-';
-                                                                                roleStr = 'Team Leader';
-                                                                                if (isPengawasan) {
-                                                                                    const details = p.pengawasanDetails?.[res.name] || {};
-                                                                                    statusLapangan = details.statusTurun || 'Tidak Turun';
-                                                                                    manMonthStr = details.manMonth || '-';
-                                                                                }
-                                                                            } else if (isPengawasan) {
-                                                                                const details = p.pengawasanDetails?.[res.name] || {};
-                                                                                deadlineStr = details.deadline ? formatDateIndo(details.deadline) : '-';
-                                                                                roleStr = details.role || 'Inspector';
-                                                                                statusLapangan = details.statusTurun || 'Tidak Turun';
-                                                                                manMonthStr = details.manMonth || '-';
-                                                                            } else {
-                                                                                const isSurveyor = (p.surveyorTeam || []).includes(res.name);
-                                                                                const empCat = isSurveyor ? 'Surveyor' : getCategoryFromRole(res.role);
-                                                                                const details = p.categoryDetails?.[empCat] || {};
-                                                                                deadlineStr = details.deadline ? formatDateIndo(details.deadline) : '-';
-                                                                                roleStr = isSurveyor ? 'Tim Surveyor' : empCat;
-                                                                            }
-
-                                                                            return (
-                                                                                <tr key={p.id}>
-                                                                                    <td className="border border-black p-1.5">{p.name}</td>
-                                                                                    <td className="border border-black p-1.5">{roleStr}</td>
-                                                                                    <td className="border border-black p-1.5 text-center">{manMonthStr}</td>
-                                                                                    <td className="border border-black p-1.5 font-semibold">{deadlineStr}</td>
-                                                                                    <td className="border border-black p-1.5 font-semibold">{statusLapangan}</td>
-                                                                                </tr>
-                                                                            )
-                                                                        })}
-                                                                    </tbody>
-                                                                </table>
                                                             </div>
-                                                        )
-                                                    })}
+                                                        ));
+                                                    })()}
                                                 </div>
                                             )}
                                         </div>
