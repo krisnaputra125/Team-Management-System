@@ -752,6 +752,8 @@
 
             const [sidebarOpen, setSidebarOpen] = useState(false);
             const [activeTab, setActiveTab] = useState('dashboard');
+            const [activeScheduleProject, setActiveScheduleProject] = useState(null);
+            const [scheduleViewType, setScheduleViewType] = useState('timeline');
             const [projects, setProjects] = useState([]);
             const [resources, setResources] = useState([]);
             const [loading, setLoading] = useState(true);
@@ -814,6 +816,7 @@
             const [searchGanttTab, setSearchGanttTab] = useState("");
             const [projectPage, setProjectPage] = useState(1);
             const [dominoAnalysis, setDominoAnalysis] = useState(null);
+
             const projectsPerPage = 5;
 
             // State untuk melihat detail pegawai
@@ -1064,6 +1067,9 @@
                     return;
                 }
                 setActiveTab(tab);
+                if (tab !== 'schedule') {
+                    setActiveScheduleProject(null);
+                }
                 setViewingEmployee(null);
                 setSidebarOpen(false);
             };
@@ -1680,7 +1686,40 @@
 
             // --- KOMPONEN TAB: PROYEK ---
             const renderProyek = () => {
-                const statusPriority = { "Terlambat": 1, "Beresiko": 2, "On Progress": 3, "Done": 4 };
+                const getProjectSortScore = (p) => {
+                    // 6. Proyek yang sudah selesai (Perencanaan dan Pengawasan)
+                    if (p.computedStatus === "Done" || p.status === "Done" || p.progress >= 100) return 60;
+                    
+                    const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
+                    
+                    // 5. Data proyek pengawasan (Running)
+                    if (isPengawasan) return 50;
+                    
+                    // Proyek Perencanaan (Running)
+                    // 1. Terlambat dari waktu kontrak
+                    if (p.computedStatus === "Terlambat") return 10;
+                    
+                    // Calculate sub-team statuses
+                    let hasMicroTerlambat = false;
+                    let hasMicroBeresiko = false;
+                    
+                    if (p.categoryDetails) {
+                        Object.values(p.categoryDetails).forEach(cat => {
+                            const microStatus = getMicroStatus(cat.progress || 0, cat.deadline);
+                            if (microStatus === "Terlambat") hasMicroTerlambat = true;
+                            if (microStatus === "Beresiko") hasMicroBeresiko = true;
+                        });
+                    }
+
+                    // 2. Macro aman, tapi sub tim banyak yang terlambat
+                    if (hasMicroTerlambat) return 20;
+
+                    // 3. Macro aman, sub tim beresiko
+                    if (hasMicroBeresiko) return 30;
+
+                    // 4. Macro aman, sub tim aman
+                    return 40;
+                };
 
                 const filteredAndSortedProjects = computedProjects
                     .filter(p => {
@@ -1702,7 +1741,7 @@
                         }
                         return matchesSearch && matchesType;
                     })
-                    .sort((a, b) => statusPriority[a.computedStatus] - statusPriority[b.computedStatus]);
+                    .sort((a, b) => getProjectSortScore(a) - getProjectSortScore(b));
 
                 const totalPages = Math.ceil(filteredAndSortedProjects.length / projectsPerPage);
                 const currentProjects = filteredAndSortedProjects.slice(
@@ -1878,12 +1917,10 @@
                                                         </td>
                                                         <td className="p-4 pt-5">
                                                             <div className="bg-white/60 dark:bg-slate-900/50 border border-white/50 dark:border-slate-700/50 rounded-xl p-3 shadow-sm">
-                                                                {(p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi')) && (
-                                                                    <div className="mb-3 border-b border-slate-200 dark:border-slate-700/50 pb-3">
-                                                                        <p className="text-[10px] text-slate-500 font-semibold mb-0.5 uppercase tracking-wider">Tgl SPMK Proyek</p>
-                                                                        <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{p.spmk ? formatDateIndo(p.spmk) : 'Belum diatur'}</p>
-                                                                    </div>
-                                                                )}
+                                                                <div className="mb-3 border-b border-slate-200 dark:border-slate-700/50 pb-3">
+                                                                    <p className="text-[10px] text-slate-500 font-semibold mb-0.5 uppercase tracking-wider">Tgl SPMK Proyek</p>
+                                                                    <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{p.spmk ? formatDateIndo(p.spmk) : 'Belum diatur'}</p>
+                                                                </div>
                                                                 <div className="mb-3">
                                                                     <p className="text-[10px] text-slate-500 font-semibold mb-0.5 uppercase tracking-wider">Tenggat Waktu Kontrak</p>
                                                                     <p className="text-sm font-bold text-slate-800 dark:text-slate-200">{formatDateIndo(p.deadline)}</p>
@@ -1972,6 +2009,12 @@
                                                                 {p.computedStatus === 'Terlambat' && (
                                                                     <button onClick={() => handleAnalyzeDomino(p)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 text-white hover:from-orange-600 hover:to-rose-600 rounded-lg shadow-md animate-pulse hover:animate-none"><Icon name="alert-triangle" size={14} /> Cek Domino</button>
                                                                 )}
+                                                                
+                                                                {p.type?.toLowerCase().includes('perencana') && (
+                                                                    <button onClick={() => { setActiveScheduleProject(p); setActiveTab('schedule'); }} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg border border-purple-200 dark:border-purple-800/50"><Icon name="calendar" size={14} /> Time Schedule</button>
+                                                                )}
+
+
                                                                 <button onClick={() => setPrintData({ type: 'project', id: p.id })} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 hover:bg-indigo-100 dark:hover:bg-indigo-900/50 rounded-lg border border-indigo-200 dark:border-indigo-800/50"><Icon name="printer" size={14} /> Cetak PDF</button>
                                                                 <button onClick={() => openModal('project', 'edit', p)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/50 rounded-lg border border-blue-200 dark:border-blue-800/50"><Icon name="edit" size={14} /> Edit Data</button>
                                                                 <button onClick={() => handleDelete('project', p.id)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/50 rounded-lg border border-red-200 dark:border-red-800/50"><Icon name="trash" size={14} /> Hapus</button>
@@ -3107,7 +3150,37 @@
                                                 <textarea name="description" value={formData.description || ''} onChange={handleChange} rows="3" className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors resize-none dark:text-slate-200" placeholder="Tuliskan update terkini proyek ini... Cth: Sudah masuk tahap DED, menunggu approval dari klien untuk revisi arsitektur." />
                                             </div>
 
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 bg-slate-100 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                                            <div className="flex flex-col gap-4 bg-slate-100 dark:bg-slate-800/50 p-3 rounded-xl border border-slate-200 dark:border-slate-700">
+                                                {(isPengawasanForm || isPerencanaanForm) && (
+                                                    <div>
+                                                        <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Tgl SPMK Proyek</label>
+                                                        <div className="relative w-full">
+                                                            <div className="flex items-center justify-between w-full p-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 min-h-[42px] text-slate-700 dark:text-slate-200">
+                                                                <span>{formData.spmk ? formatDateIndo(formData.spmk) : 'Pilih tanggal...'}</span>
+                                                                <Icon name="calendar-clock" size={16} className="text-slate-400" />
+                                                            </div>
+                                                            <input type="date" name="spmk" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                                value={formData.spmk || ''}
+                                                                onChange={handleChange}
+                                                                onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Tenggat Waktu Kontrak Akhir</label>
+                                                    <div className="relative w-full">
+                                                        <div className="flex items-center justify-between w-full p-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 min-h-[42px] text-slate-700 dark:text-slate-200">
+                                                            <span>{formData.deadline ? formatDateIndo(formData.deadline) : 'Pilih tanggal...'}</span>
+                                                            <Icon name="calendar-clock" size={16} className="text-slate-400" />
+                                                        </div>
+                                                        <input type="date" name="deadline" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                            value={formData.deadline || ''}
+                                                            onChange={handleChange}
+                                                            onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                                                        />
+                                                    </div>
+                                                </div>
                                                 {!isPengawasanForm && (
                                                     <div>
                                                         <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Progress Keseluruhan Proyek (%)</label>
@@ -3121,38 +3194,6 @@
                                                         <p className="text-[9px] text-slate-500 mt-1">Dihitung otomatis dari rata-rata progress sub-tim.</p>
                                                     </div>
                                                 )}
-                                                <div className={isPengawasanForm ? "col-span-2 space-y-4" : ""}>
-                                                    {isPengawasanForm && (
-                                                        <div>
-                                                            <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Tgl SPMK Proyek</label>
-                                                            <div className="relative w-full">
-                                                                <div className="flex items-center justify-between w-full p-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 min-h-[42px] text-slate-700 dark:text-slate-200">
-                                                                    <span>{formData.spmk ? formatDateIndo(formData.spmk) : 'Pilih tanggal...'}</span>
-                                                                    <Icon name="calendar-clock" size={16} className="text-slate-400" />
-                                                                </div>
-                                                                <input type="date" name="spmk" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                                    value={formData.spmk || ''}
-                                                                    onChange={handleChange}
-                                                                    onClick={(e) => e.target.showPicker && e.target.showPicker()}
-                                                                />
-                                                            </div>
-                                                        </div>
-                                                    )}
-                                                    <div>
-                                                        <label className="block text-[11px] font-bold text-slate-700 dark:text-slate-300 mb-1">Tenggat Waktu Kontrak Akhir</label>
-                                                        <div className="relative w-full">
-                                                            <div className="flex items-center justify-between w-full p-2.5 border border-slate-200 dark:border-slate-600 rounded-xl text-sm bg-white dark:bg-slate-800 min-h-[42px] text-slate-700 dark:text-slate-200">
-                                                                <span>{formData.deadline ? formatDateIndo(formData.deadline) : 'Pilih tanggal...'}</span>
-                                                                <Icon name="calendar-clock" size={16} className="text-slate-400" />
-                                                            </div>
-                                                            <input type="date" name="deadline" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
-                                                                value={formData.deadline || ''}
-                                                                onChange={handleChange}
-                                                                onClick={(e) => e.target.showPicker && e.target.showPicker()}
-                                                            />
-                                                        </div>
-                                                    </div>
-                                                </div>
                                             </div>
 
                                             {/* BAGIAN PENUGASAN TIM */}
@@ -3349,13 +3390,13 @@
                                                             return (
                                                                 <div key={cat} className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 p-3 rounded-xl flex flex-col gap-3 shadow-sm">
                                                                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                                                                        <div className="w-full sm:w-1/3 sm:border-r border-slate-100 dark:border-slate-700 sm:pr-2">
+                                                                        <div className="w-full sm:w-1/4 sm:border-r border-slate-100 dark:border-slate-700 sm:pr-2">
                                                                             <h4 className="text-sm font-bold text-slate-700 dark:text-slate-200 flex items-center gap-1.5"><Icon name="target" size={14} className="text-blue-500" /> {cat}</h4>
                                                                             <p className="text-[9px] text-slate-500 truncate mt-0.5" title={catMembers.join(', ')}>
                                                                                 {catMembers.join(', ')}
                                                                             </p>
                                                                         </div>
-                                                                        <div className="w-full sm:w-1/3">
+                                                                        <div className="w-full sm:w-1/4">
                                                                             {(details.tasks || []).length > 0 ? (
                                                                                 <>
                                                                                     <label className="block text-[9px] font-bold text-slate-500 mb-1 uppercase">Progress Terkunci (%)</label>
@@ -3374,12 +3415,18 @@
                                                                                             type="number"
                                                                                             min="0"
                                                                                             max="100"
-                                                                                            value={details.progress || 0}
+                                                                                            value={details.progress !== undefined ? details.progress : ''}
                                                                                             onChange={(e) => {
-                                                                                                let val = parseInt(e.target.value) || 0;
-                                                                                                if (val > 100) val = 100;
-                                                                                                if (val < 0) val = 0;
-                                                                                                handleCategoryDetailChange(cat, 'progress', val);
+                                                                                                let val = e.target.value;
+                                                                                                if (val === '') {
+                                                                                                    handleCategoryDetailChange(cat, 'progress', '');
+                                                                                                } else {
+                                                                                                    val = parseInt(val);
+                                                                                                    if (isNaN(val)) val = 0;
+                                                                                                    if (val > 100) val = 100;
+                                                                                                    if (val < 0) val = 0;
+                                                                                                    handleCategoryDetailChange(cat, 'progress', val);
+                                                                                                }
                                                                                             }}
                                                                                             className="w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900/50 focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition-colors text-slate-700 dark:text-slate-200"
                                                                                         />
@@ -3387,7 +3434,23 @@
                                                                                 </>
                                                                             )}
                                                                         </div>
-                                                                        <div className="w-full sm:w-1/3">
+                                                                        {!isPerencanaanForm && (
+                                                                            <div className="w-full sm:w-1/4 sm:border-r border-slate-100 dark:border-slate-700 sm:pr-2">
+                                                                                <label className="block text-[9px] font-bold text-slate-500 mb-1 uppercase">Tanggal Mulai</label>
+                                                                                <div className="relative w-full">
+                                                                                    <div className="flex items-center justify-between w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900/50 focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition-colors min-h-[34px] text-slate-700 dark:text-slate-200">
+                                                                                        <span>{details.startDate ? formatDateIndo(details.startDate) : 'Pilih...'}</span>
+                                                                                        <Icon name="calendar-clock" size={14} className="text-slate-400" />
+                                                                                    </div>
+                                                                                    <input type="date" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer"
+                                                                                        value={details.startDate || ''}
+                                                                                        onChange={(e) => handleCategoryDetailChange(cat, 'startDate', e.target.value)}
+                                                                                        onClick={(e) => e.target.showPicker && e.target.showPicker()}
+                                                                                    />
+                                                                                </div>
+                                                                            </div>
+                                                                        )}
+                                                                        <div className="w-full sm:w-1/4">
                                                                             <label className="block text-[9px] font-bold text-slate-500 mb-1 uppercase">Deadline Tim</label>
                                                                             <div className="relative w-full">
                                                                                 <div className="flex items-center justify-between w-full p-2 border border-slate-200 dark:border-slate-700 rounded-lg text-xs bg-slate-50 dark:bg-slate-900/50 focus-within:border-blue-500 focus-within:bg-white dark:focus-within:bg-slate-800 transition-colors min-h-[34px] text-slate-700 dark:text-slate-200">
@@ -3630,6 +3693,7 @@
                 );
             };
 
+
             const renderDominoModal = () => {
                 if (!dominoAnalysis) return null;
                 const { project, delayDays, impactedEmployees } = dominoAnalysis;
@@ -3711,6 +3775,7 @@
                     </div>
                 );
             };
+
 
             const renderKPIInfoModal = () => {
                 if (!showKPIInfoModal) return null;
@@ -3853,7 +3918,8 @@
                                 </div>
                                 <div className="text-right shrink-0 ml-4">
                                     <p className="text-xs font-bold border border-black px-2 py-1 inline-block uppercase whitespace-nowrap">Status Makro: {p.computedStatus}</p>
-                                    {isPengawasan && <p className="text-xs mt-1 whitespace-nowrap font-semibold text-gray-800">Tanggal SPMK: {p.spmk ? formatDateIndo(p.spmk) : '-'}</p>}
+
+                                    {(isPengawasan || p.type?.toLowerCase().includes('perencana')) && <p className="text-xs mt-1 whitespace-nowrap font-semibold text-gray-800">Tanggal SPMK: {p.spmk ? formatDateIndo(p.spmk) : '-'}</p>}
                                     <p className="text-xs mt-1 whitespace-nowrap">Tenggat Kontrak: {p.deadline ? formatDateIndo(p.deadline) : '-'}</p>
                                 </div>
                             </div>
@@ -3901,7 +3967,7 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            {['Arsitektur', 'Struktur', 'MEP', 'QS', 'Estimator', 'Tata Ruang', 'Lainnya', 'Surveyor'].map(cat => {
+                                            {['Arsitek', 'Struktur', 'MEP', 'QS', 'Tata Ruang', 'Lainnya', 'Surveyor'].map(cat => {
                                                 let catMembers = [];
                                                 if (cat === 'Surveyor') {
                                                     catMembers = p.surveyorTeam || [];
@@ -3912,10 +3978,10 @@
                                                         const r = resources.find(res => res.name === m);
 
                                                         if (cat === 'Lainnya') {
-                                                            const matchesOther = ['Arsitektur', 'Struktur', 'MEP', 'QS', 'Estimator', 'Tata Ruang'].some(other => r?.role?.includes(other) || getCategoryFromRole(r?.role) === other || (other === 'Arsitektur' && getCategoryFromRole(r?.role) === 'Arsitek'));
+                                                            const matchesOther = ['Arsitek', 'Struktur', 'MEP', 'QS', 'Tata Ruang'].some(other => getCategoryFromRole(r?.role) === other);
                                                             return !matchesOther;
                                                         } else {
-                                                            return r?.role?.includes(cat) || getCategoryFromRole(r?.role) === cat || (cat === 'Arsitektur' && getCategoryFromRole(r?.role) === 'Arsitek');
+                                                            return getCategoryFromRole(r?.role) === cat;
                                                         }
                                                     });
                                                 }
@@ -3947,6 +4013,157 @@
                     );
                 };
 
+                const renderPrintTimeSchedule = (p) => {
+                    if (!p.type?.toLowerCase().includes('perencana')) return null;
+
+                    const phases = [];
+                    const possibleCats = ['Arsitek', 'Struktur', 'MEP', 'Tata Ruang', 'QS', 'Surveyor', 'Lainnya'];
+                    
+                    let globalMinDate = null;
+                    let globalMaxDate = null;
+                    
+                    possibleCats.forEach(cat => {
+                        const detail = p.categoryDetails?.[cat];
+                        const hasData = detail && (detail.startDate || detail.deadline || (detail.progress !== undefined && detail.progress !== ""));
+                        const hasSpmkData = p.spmk && detail && (detail.deadline || (detail.progress !== undefined && detail.progress !== ""));
+                        
+                        if (hasData || hasSpmkData) {
+                            const rawStartDate = p.spmk ? p.spmk : detail.startDate;
+                            let sd = rawStartDate ? new Date(rawStartDate) : null;
+                            let ed = detail.deadline ? new Date(detail.deadline) : null;
+                            
+                            if (sd && (!globalMinDate || sd < globalMinDate)) globalMinDate = new Date(sd);
+                            if (ed && (!globalMaxDate || ed > globalMaxDate)) globalMaxDate = new Date(ed);
+                            if (sd && !globalMaxDate) globalMaxDate = new Date(sd);
+                            if (ed && !globalMinDate) globalMinDate = new Date(ed);
+                            
+                            phases.push({
+                                id: cat,
+                                name: cat,
+                                startDate: sd,
+                                endDate: ed,
+                                progress: detail.progress || 0,
+                                isSubTask: false
+                            });
+
+                            if (detail.tasks && detail.tasks.length > 0) {
+                                detail.tasks.forEach((task, tIdx) => {
+                                    const isTaskCompleted = (detail.completedTasks || []).includes(task);
+                                    phases.push({
+                                        id: `${cat}-task-${tIdx}`,
+                                        name: task,
+                                        startDate: null,
+                                        endDate: null,
+                                        progress: isTaskCompleted ? 100 : 0,
+                                        isSubTask: true
+                                    });
+                                });
+                            }
+                        }
+                    });
+
+                    if (phases.length === 0) return null;
+
+                    if (!globalMinDate) globalMinDate = new Date();
+                    if (!globalMaxDate) {
+                        globalMaxDate = new Date();
+                        globalMaxDate.setMonth(globalMaxDate.getMonth() + 3);
+                    }
+
+                    const chartStart = new Date(globalMinDate);
+                    chartStart.setDate(1);
+                    
+                    const chartEnd = new Date(globalMaxDate);
+                    chartEnd.setMonth(chartEnd.getMonth() + 2);
+                    chartEnd.setDate(0);
+
+                    const months = [];
+                    let curr = new Date(chartStart);
+                    while (curr <= chartEnd) {
+                        months.push(new Date(curr));
+                        curr.setMonth(curr.getMonth() + 1);
+                    }
+                    const totalDays = Math.round((chartEnd - chartStart) / (1000 * 60 * 60 * 24)) + 1;
+
+                    return (
+                        <div className="print-landscape mt-10">
+                            <h2 className="text-lg font-bold uppercase border-b border-gray-400 pb-2 mb-4">Laporan Time Schedule: {p.name}</h2>
+                            <table className="w-full text-[10px] border-collapse border border-black table-fixed bg-white relative">
+                                <thead>
+                                    <tr className="bg-gray-200">
+                                        <th className="border border-black p-1 w-[150px] text-left">Tasks / Kegiatan</th>
+                                        <th className="border border-black p-1 w-[70px] text-center">Durasi</th>
+                                        <th className="border border-black p-1 w-[105px] text-center">Selesai</th>
+                                        <th className="border border-black p-1 w-[40px] text-center">Prog.</th>
+                                        {months.map((m, i) => (
+                                            <th key={i} className="border border-black p-1 text-center font-bold">
+                                                {m.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' })}
+                                            </th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {phases.map((phase) => {
+                                        const hasBar = phase.startDate && phase.endDate;
+                                        let leftPerc = 0;
+                                        let widthPerc = 0;
+                                        let manMonthStr = '-';
+                                        
+                                        if (hasBar) {
+                                            let s = new Date(phase.startDate);
+                                            let e = new Date(phase.endDate);
+                                            
+                                            // Calculate Duration based on actual dates
+                                            const daysTotal = Math.round((e - s) / (1000 * 60 * 60 * 24));
+                                            if (daysTotal >= 0) {
+                                                manMonthStr = daysTotal + ' Hari';
+                                            }
+
+                                            // Bounding for chart bar
+                                            if (s < chartStart) s = chartStart;
+                                            if (e > chartEnd) e = chartEnd;
+                                            
+                                            const offsetDays = Math.round((s - chartStart) / (1000 * 60 * 60 * 24));
+                                            const durationDays = Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1;
+                                            
+                                            leftPerc = (offsetDays / totalDays) * 100;
+                                            widthPerc = (durationDays / totalDays) * 100;
+                                        }
+
+                                        return (
+                                            <tr key={phase.id} className={phase.isSubTask ? "bg-white" : "bg-gray-50 font-semibold"}>
+                                                <td className={`border border-black p-1.5 truncate ${phase.isSubTask ? 'pl-4 text-gray-700' : ''}`}>
+                                                    {phase.isSubTask ? `└ ${phase.name}` : phase.name}
+                                                </td>
+                                                <td className="border border-black p-1 text-center font-bold whitespace-nowrap">{manMonthStr}</td>
+                                                <td className="border border-black p-1 text-center whitespace-nowrap">{phase.endDate ? formatDateIndo(new Date(phase.endDate).toISOString().split('T')[0]) : '-'}</td>
+                                                <td className="border border-black p-1 text-center">{phase.progress}%</td>
+                                                <td colSpan={months.length} className="border border-black relative p-0 h-6">
+                                                    <div className="absolute inset-0 flex z-0">
+                                                        {months.map((m, i) => (
+                                                            <div key={i} className="flex-1 border-l border-gray-300 border-dashed first:border-l-0"></div>
+                                                        ))}
+                                                    </div>
+                                                    {hasBar && (
+                                                        <div 
+                                                            className="absolute top-[4px] bottom-[4px] bg-black border border-black z-10"
+                                                            style={{ left: `${leftPerc}%`, width: `${widthPerc}%`, printColorAdjust: 'exact' }}
+                                                        ></div>
+                                                    )}
+                                                </td>
+                                            </tr>
+                                        )
+                                    })}
+                                </tbody>
+                            </table>
+                            <div className="mt-4 text-xs italic text-gray-600">
+                                Catatan: Bar berwarna solid hitam menunjukkan rentang waktu pelaksanaan tugas secara proporsional. <br/>
+                                <strong>Tanggal Mulai (awal garis bar) pada chart ini disesuaikan dengan Tanggal SPMK Proyek.</strong>
+                            </div>
+                        </div>
+                    );
+                };
+
                 return (
                     <div className="hidden print:block text-black bg-white w-full h-auto min-h-screen font-sans relative">
                         <style type="text/css">
@@ -3971,6 +4188,14 @@
                                     font-style: italic;
                                     font-weight: 600;
                                     z-index: 1000;
+                                }
+                                @page landscapePage {
+                                    size: landscape;
+                                    margin: 10mm;
+                                }
+                                .print-landscape {
+                                    page: landscapePage;
+                                    page-break-before: always;
                                 }
                             }
                             `}
@@ -4032,13 +4257,23 @@
                                                             <div key={catData.kategoriTipe} className="mb-6" style={{ pageBreakBefore: index === 0 ? 'auto' : 'always' }}>
                                                                 <h3 className="text-md font-bold mb-3 uppercase bg-gray-200 border-t border-b border-black py-1 px-2">Sub Bab: {catData.kategoriTipe}</h3>
                                                                 <div className="space-y-6">
-                                                                    {catData.proyeksInKategori.map(p => renderProjectPrintCard(p))}
+                                                                    {catData.proyeksInKategori.map(p => (
+                                                                        <div key={p.id}>
+                                                                            {renderProjectPrintCard(p)}
+                                                                            {printData.type === 'project' && p.type?.toLowerCase().includes('perencana') && renderPrintTimeSchedule(p)}
+                                                                        </div>
+                                                                    ))}
                                                                 </div>
                                                             </div>
                                                         ));
                                                     })() : (
                                                         <div className="space-y-6">
-                                                            {filteredProjects.map(p => renderProjectPrintCard(p))}
+                                                            {filteredProjects.map(p => (
+                                                                <div key={p.id}>
+                                                                    {renderProjectPrintCard(p)}
+                                                                    {printData.type === 'project' && p.type?.toLowerCase().includes('perencana') && renderPrintTimeSchedule(p)}
+                                                                </div>
+                                                            ))}
                                                         </div>
                                                     )}
                                                 </div>
@@ -4127,12 +4362,45 @@
                                                                                         let manMonthStr = '-';
 
                                                                                         if (p.teamLeader === res.name) {
-                                                                                            deadlineStr = p.deadline ? formatDateIndo(p.deadline) : '-';
                                                                                             roleStr = 'Team Leader';
                                                                                             if (isPengawasan) {
+                                                                                                deadlineStr = p.deadline ? formatDateIndo(p.deadline) : '-';
                                                                                                 const details = p.pengawasanDetails?.[res.name] || {};
                                                                                                 statusLapangan = details.statusTurun || 'Tidak Turun';
                                                                                                 manMonthStr = details.manMonth || '-';
+                                                                                            } else {
+                                                                                                statusLapangan = p.computedStatus || '-';
+                                                                                                
+                                                                                                // Kalkulasi Man Month Team Leader Perencanaan
+                                                                                                const cats = ['Arsitek', 'QS', 'Struktur', 'MEP', 'Tata Ruang', 'Surveyor', 'Lainnya'];
+                                                                                                let minDate = null;
+                                                                                                let maxDate = null;
+                                                                                                
+                                                                                                cats.forEach(cat => {
+                                                                                                    const d = p.categoryDetails?.[cat];
+                                                                                                    if (d) {
+                                                                                                        const startDateSource = (p.type?.toLowerCase().includes('perencana') && p.spmk) ? p.spmk : d.startDate;
+                                                                                                        if (startDateSource) {
+                                                                                                            const sd = new Date(startDateSource);
+                                                                                                            if (!minDate || sd < minDate) minDate = sd;
+                                                                                                        }
+                                                                                                        if (d.deadline) {
+                                                                                                            const ed = new Date(d.deadline);
+                                                                                                            if (!maxDate || ed > maxDate) maxDate = ed;
+                                                                                                        }
+                                                                                                    }
+                                                                                                });
+                                                                                                
+                                                                                                if (minDate && maxDate) {
+                                                                                                    minDate.setHours(0,0,0,0);
+                                                                                                    maxDate.setHours(0,0,0,0);
+                                                                                                    const diffDays = Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24));
+                                                                                                    if (diffDays > 0) {
+                                                                                                        manMonthStr = parseFloat((diffDays / 30).toFixed(1)).toString();
+                                                                                                    }
+                                                                                                }
+                                                                                                
+                                                                                                deadlineStr = maxDate ? formatDateIndo(maxDate.toISOString().split('T')[0]) : (p.deadline ? formatDateIndo(p.deadline) : '-');
                                                                                             }
                                                                                         } else if (isPengawasan) {
                                                                                             const details = p.pengawasanDetails?.[res.name] || {};
@@ -4145,6 +4413,22 @@
                                                                                             const details = p.categoryDetails?.[effectiveCat] || {};
                                                                                             deadlineStr = details.deadline ? formatDateIndo(details.deadline) : '-';
                                                                                             roleStr = effectiveCat === 'Surveyor' ? 'Tim Surveyor' : effectiveCat;
+                                                                                            
+                                                                                            // Kalkulasi Man Month dari startDate ke deadline tim
+                                                                                            const startDateSource = (p.type?.toLowerCase().includes('perencana') && p.spmk) ? p.spmk : details.startDate;
+                                                                                            if (startDateSource && details.deadline) {
+                                                                                                const startD = new Date(startDateSource);
+                                                                                                const endD = new Date(details.deadline);
+                                                                                                startD.setHours(0,0,0,0);
+                                                                                                endD.setHours(0,0,0,0);
+                                                                                                const diffDays = Math.ceil((endD.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24));
+                                                                                                if (diffDays > 0) {
+                                                                                                    manMonthStr = parseFloat((diffDays / 30).toFixed(1)).toString();
+                                                                                                }
+                                                                                            }
+                                                                                            
+                                                                                            // Status Lapangan diambil dari status sub tim
+                                                                                            statusLapangan = getMicroStatus(details.progress || 0, details.deadline);
                                                                                         }
 
                                                                                         return (
@@ -4192,6 +4476,290 @@
                     </div>
                 );
             };
+            // --- KOMPONEN TAB: TIME SCHEDULE (GANTT CHART) ---
+            const renderTimeSchedule = () => {
+                if (!activeScheduleProject) return null;
+                const p = activeScheduleProject;
+
+                // 1. Ekstrak Fase/Tim yang aktif di proyek ini
+                const phases = [];
+                const possibleCats = ['Arsitek', 'Struktur', 'MEP', 'Tata Ruang', 'QS', 'Surveyor', 'Lainnya'];
+                
+                let globalMinDate = null;
+                let globalMaxDate = null;
+                
+                const isPerencanaan = p.type?.toLowerCase().includes('perencana');
+                
+                possibleCats.forEach(cat => {
+                    const detail = p.categoryDetails?.[cat];
+                    const hasData = detail && (detail.startDate || detail.deadline || (detail.progress !== undefined && detail.progress !== ""));
+                    const hasSpmkData = isPerencanaan && p.spmk && detail && (detail.deadline || (detail.progress !== undefined && detail.progress !== ""));
+                    
+                    // Tampilkan jika punya startDate/deadline atau progress > 0
+                    if (hasData || hasSpmkData) {
+                        const rawStartDate = (isPerencanaan && p.spmk) ? p.spmk : detail.startDate;
+                        let sd = rawStartDate ? new Date(rawStartDate) : null;
+                        let ed = detail.deadline ? new Date(detail.deadline) : null;
+                        
+                        if (sd && (!globalMinDate || sd < globalMinDate)) globalMinDate = new Date(sd);
+                        if (ed && (!globalMaxDate || ed > globalMaxDate)) globalMaxDate = new Date(ed);
+                        if (sd && !globalMaxDate) globalMaxDate = new Date(sd);
+                        if (ed && !globalMinDate) globalMinDate = new Date(ed);
+                        
+                        // Cari assignees (orang yang perannya masuk ke kategori ini dan ada di p.team)
+                        const assignees = p.team ? p.team.filter(mName => {
+                            const res = resources.find(r => r.name === mName);
+                            if (res) {
+                                return getEffectiveEmpCategory(p, mName, res.role) === cat;
+                            }
+                            return false;
+                        }) : [];
+                        
+                        if (cat === 'Surveyor' && p.surveyorTeam && p.surveyorTeam.length > 0) {
+                            p.surveyorTeam.forEach(st => { if (!assignees.includes(st)) assignees.push(st); });
+                        }
+
+                        phases.push({
+                            id: cat,
+                            name: cat,
+                            startDate: sd,
+                            endDate: ed,
+                            progress: detail.progress || 0,
+                            assignees: assignees,
+                            isSubTask: false
+                        });
+
+                        if (detail.tasks && detail.tasks.length > 0) {
+                            detail.tasks.forEach((task, tIdx) => {
+                                const isTaskCompleted = (detail.completedTasks || []).includes(task);
+                                phases.push({
+                                    id: `${cat}-task-${tIdx}`,
+                                    name: task,
+                                    startDate: null,
+                                    endDate: null,
+                                    progress: isTaskCompleted ? 100 : 0,
+                                    assignees: [],
+                                    isSubTask: true
+                                });
+                            });
+                        }
+                    }
+                });
+
+                // Jika tidak ada data tanggal sama sekali, gunakan hari ini sebagai default
+                if (!globalMinDate) globalMinDate = new Date();
+                if (!globalMaxDate) {
+                    globalMaxDate = new Date();
+                    globalMaxDate.setMonth(globalMaxDate.getMonth() + 3); // Default span 3 bulan
+                }
+
+                // Beri padding 1 bulan ke belakang dan 2 bulan ke depan untuk visual
+                const chartStart = new Date(globalMinDate);
+                chartStart.setDate(1);
+                
+                const chartEnd = new Date(globalMaxDate);
+                chartEnd.setMonth(chartEnd.getMonth() + 2);
+                chartEnd.setDate(0); // Akhir bulan
+
+                // Generate array of months for the header
+                const months = [];
+                let curr = new Date(chartStart);
+                while (curr <= chartEnd) {
+                    months.push(new Date(curr));
+                    curr.setMonth(curr.getMonth() + 1);
+                }
+
+                const totalDays = Math.round((chartEnd - chartStart) / (1000 * 60 * 60 * 24)) + 1;
+
+                // Warna ditentukan secara dinamis berdasarkan status fase (Selesai, Beresiko, Terlambat, On Progress)
+
+                return (
+                    <div className="flex flex-col h-full fade-in bg-white dark:bg-slate-950 absolute inset-0 z-20 overflow-hidden">
+                        {/* Header Area */}
+                        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white/80 dark:bg-slate-900/80 backdrop-blur-md shrink-0">
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => { setActiveTab('proyek'); setActiveScheduleProject(null); }} className="p-2 rounded-full hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors text-slate-500">
+                                    <Icon name="arrow-left" size={20} />
+                                </button>
+                                <div className="flex items-center gap-2 text-sm">
+                                    <span className="text-slate-500 font-medium cursor-pointer hover:text-slate-800 dark:hover:text-slate-300" onClick={() => { setActiveTab('proyek'); setActiveScheduleProject(null); }}>Projects</span>
+                                    <span className="text-slate-400">/</span>
+                                    <span className="text-slate-500 font-medium">Perencanaan</span>
+                                    <span className="text-slate-400">/</span>
+                                    <span className="text-slate-800 dark:text-slate-200 font-bold">{p.name}</span>
+                                </div>
+                            </div>
+                            
+                        </div>
+
+                        {/* Sub Header (Timeline Span & Members) */}
+                        <div className="px-6 py-3 border-b border-slate-100 dark:border-slate-800/50 flex justify-between items-center bg-slate-50/50 dark:bg-slate-900/30 shrink-0">
+                            <div className="flex items-center gap-3 text-xs">
+                                <span className="font-semibold text-slate-500">Team Leader: <span className="text-slate-800 dark:text-slate-200 font-bold">{p.teamLeader || "Belum ditugaskan"}</span></span>
+                                <span className="w-1 h-1 rounded-full bg-slate-300"></span>
+                                <span className="font-semibold text-slate-500">Timeline: </span>
+                                <span className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 px-3 py-1 rounded-full text-slate-700 dark:text-slate-300 font-medium shadow-sm flex items-center gap-2">
+                                    {formatDateIndo(globalMinDate.toISOString().split('T')[0])} to {formatDateIndo(globalMaxDate.toISOString().split('T')[0])}
+                                    <Icon name="chevrons-up-down" size={12} className="text-slate-400" />
+                                </span>
+                            </div>
+                        </div>
+
+                        {/* Gantt Area */}
+                        <div className="flex-1 overflow-auto flex bg-white dark:bg-slate-950">
+                            
+                            {/* Left Column: Items Table */}
+                            <div className="w-72 sm:w-80 border-r border-slate-200 dark:border-slate-800 shrink-0 flex flex-col bg-white dark:bg-slate-950 z-10 sticky left-0 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.05)] dark:shadow-none">
+                                <div className="h-10 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 shrink-0 bg-slate-50 dark:bg-slate-900/50">
+                                    <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tasks</span>
+                                </div>
+                                
+                                <div className="flex-1 overflow-y-auto">
+                                    {phases.length === 0 ? (
+                                        <div className="p-4 text-xs text-slate-400 italic">Tidak ada data fase / jadwal untuk proyek ini.</div>
+                                    ) : (
+                                        phases.map((phase, idx) => {
+                                            const isDone = phase.progress >= 100;
+                                            return (
+                                                <div key={phase.id} className={`h-12 border-b border-slate-100 dark:border-slate-800/50 flex items-center px-4 gap-2 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors group ${phase.isSubTask ? 'pl-10 bg-slate-50/30 dark:bg-slate-900/10' : ''}`}>
+                                                    {!phase.isSubTask ? (
+                                                        <button className="text-slate-400 hover:text-indigo-500">
+                                                            <Icon name="chevron-down" size={14} />
+                                                        </button>
+                                                    ) : (
+                                                        <div className="w-3 border-b-2 border-l-2 border-slate-300 dark:border-slate-600 h-3 rounded-bl -mt-2 ml-1 opacity-50 shrink-0"></div>
+                                                    )}
+                                                    <div className={`w-4 h-4 rounded shadow-sm border flex items-center justify-center shrink-0 ${isDone ? 'bg-emerald-500 border-emerald-600' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}>
+                                                        {isDone && <Icon name="check" size={10} className="text-white" strokeWidth={3} />}
+                                                    </div>
+                                                    <span className={`${phase.isSubTask ? 'text-xs' : 'text-sm'} font-semibold truncate ${isDone ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-300'}`} title={phase.name}>{phase.name}</span>
+                                                    {isDone && <Icon name="check-circle-2" size={14} className="text-emerald-500 ml-auto shrink-0" />}
+                                                </div>
+                                            )
+                                        })
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Right Column: Timeline Grid */}
+                            <div className="flex-1 flex flex-col relative min-w-[600px] overflow-x-auto">
+                                {/* Months Header */}
+                                <div className="h-10 border-b border-slate-200 dark:border-slate-800 flex relative shrink-0 bg-slate-50 dark:bg-slate-900/50 sticky top-0 z-10 w-full" style={{ minWidth: '100%' }}>
+                                    {months.map((m, i) => (
+                                        <div key={i} className="flex-1 flex items-center justify-center border-l border-slate-200/50 dark:border-slate-800/50 text-[11px] font-bold text-slate-500 uppercase tracking-widest first:border-l-0" style={{ minWidth: '120px' }}>
+                                            {m.toLocaleDateString('en-US', { month: 'short' })}
+                                        </div>
+                                    ))}
+                                </div>
+
+                                {/* Grid Background Lines */}
+                                <div className="absolute top-10 bottom-0 left-0 right-0 flex pointer-events-none z-0">
+                                    {months.map((m, i) => (
+                                        <div key={`grid-${i}`} className="flex-1 border-l border-slate-100 dark:border-slate-800/30 first:border-l-0 border-dashed" style={{ minWidth: '120px' }}></div>
+                                    ))}
+                                </div>
+
+                                {/* Bars Area */}
+                                <div className="flex-1 w-full relative z-10">
+                                    {phases.map((phase, idx) => {
+                                        let hasBar = false;
+                                        let leftPercent = 0;
+                                        let widthPercent = 0;
+                                        let isLate = false;
+                                        let phaseStatus = "On Progress";
+
+                                        if (phase.startDate && phase.endDate) {
+                                            hasBar = true;
+                                            const startOffset = Math.max(0, (phase.startDate - chartStart) / (1000 * 60 * 60 * 24));
+                                            const duration = (phase.endDate - phase.startDate) / (1000 * 60 * 60 * 24);
+                                            leftPercent = (startOffset / totalDays) * 100;
+                                            widthPercent = Math.max(1, (duration / totalDays) * 100);
+                                            
+                                            // Get precise micro status
+                                            phaseStatus = getMicroStatus(phase.progress, phase.endDate);
+                                            if (phaseStatus === "Terlambat") {
+                                                isLate = true;
+                                            }
+                                        } else if (phase.progress >= 100) {
+                                            phaseStatus = "Done";
+                                        }
+
+                                        let colorClass = "bg-blue-500 border-blue-600 text-white"; // On Progress (Biru)
+                                        if (phaseStatus === "Done") {
+                                            colorClass = "bg-emerald-500 border-emerald-600 text-white"; // Hijau
+                                        } else if (phaseStatus === "Terlambat") {
+                                            colorClass = "bg-red-500 border-red-600 text-white"; // Merah
+                                        } else if (phaseStatus === "Beresiko") {
+                                            colorClass = "bg-yellow-400 border-yellow-500 text-slate-800"; // Kuning
+                                        }
+
+                                        return (
+                                            <div key={`bar-${phase.id}`} className="h-12 border-b border-slate-100/50 dark:border-slate-800/30 flex items-center relative hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors w-full">
+                                                {hasBar && (
+                                                    <div 
+                                                        className={`absolute h-6 rounded-md border flex items-center shadow-sm group cursor-pointer hover:shadow-md transition-shadow hover:z-50 ${colorClass}`}
+                                                        style={{ left: `${leftPercent}%`, width: `${widthPercent}%`, minWidth: '40px' }}
+                                                    >
+                                                        {/* Progress fill container */}
+                                                        <div className="absolute inset-0 overflow-hidden rounded-md pointer-events-none">
+                                                            <div className={`absolute top-0 bottom-0 left-0 opacity-20 ${isLate ? 'bg-black' : 'bg-current'}`} style={{ width: `${phase.progress}%` }}></div>
+                                                        </div>
+                                                        
+                                                        {/* Label and expanded details inside bar */}
+                                                        <div className="px-2 flex items-center gap-1.5 z-10 w-full h-full text-[10px] font-bold pointer-events-none">
+                                                            {isLate && <Icon name="alert-triangle" size={10} className="text-white shrink-0" />}
+                                                            {phase.progress === 100 && <Icon name="check-circle-2" size={10} className="shrink-0" />}
+                                                        </div>
+                                                        
+                                                        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap absolute drop-shadow-[0_1px_2px_rgba(0,0,0,0.8)] dark:drop-shadow-[0_1px_2px_rgba(0,0,0,1)]" style={{ left: (isLate || phase.progress === 100) ? '24px' : '8px', zIndex: 60, textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+                                                            <span className="text-[10px] font-bold">{phase.name} ({phase.progress}%)</span>
+                                                            <span className="text-[10px] font-normal flex items-center gap-1">
+                                                                <Icon name="calendar" size={10} />
+                                                                {formatDateIndo(phase.startDate.toISOString().split('T')[0])} - {formatDateIndo(phase.endDate.toISOString().split('T')[0])}
+                                                            </span>
+                                                            {phase.assignees && phase.assignees.length > 0 && (
+                                                                <>
+                                                                    <span className="text-[10px] opacity-50">|</span>
+                                                                    <span className="text-[10px] font-normal flex items-center gap-1">
+                                                                        <Icon name="users" size={10} />
+                                                                        {phase.assignees.join(', ')}
+                                                                    </span>
+                                                                </>
+                                                            )}
+                                                        </div>
+
+                                                        {/* Dependencies connecting lines placeholder (Visual only for now) */}
+                                                        <div className="absolute -right-3 top-1/2 w-3 border-t-2 border-slate-300 dark:border-slate-600 border-dotted hidden group-hover:block pointer-events-none"></div>
+                                                    </div>
+                                                )}
+                                            </div>
+                                        )
+                                    })}
+
+                                    {/* Today Line */}
+                                    {(() => {
+                                        const today = new Date();
+                                        if (today >= chartStart && today <= chartEnd) {
+                                            const todayOffset = (today - chartStart) / (1000 * 60 * 60 * 24);
+                                            const todayPercent = (todayOffset / totalDays) * 100;
+                                            return (
+                                                <div 
+                                                    className="absolute top-0 bottom-0 border-l-2 border-rose-500 border-dashed z-20 pointer-events-none"
+                                                    style={{ left: `${todayPercent}%` }}
+                                                >
+                                                    <div className="bg-rose-500 text-white text-[8px] font-bold px-1.5 py-0.5 rounded-full absolute -top-3 -left-3 shadow-sm whitespace-nowrap">Today</div>
+                                                </div>
+                                            );
+                                        }
+                                        return null;
+                                    })()}
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
 
             return (
                 <>
@@ -4208,6 +4776,7 @@
                             {renderFuturisticConfirm()}
                             {renderDeveloperPromptModal()}
                             {renderDominoModal()}
+
                             {renderKPIInfoModal()}
                             {showProjectTypeModal && (
                                 <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
@@ -4362,6 +4931,7 @@
                                         {activeTab === 'gantt' && renderGantt()}
                                         {activeTab === 'timesheet' && renderTimesheet()}
                                         {activeTab === 'kpi' && renderKPI()}
+                                        {activeTab === 'schedule' && renderTimeSchedule()}
                                     </div>
                                 </div>
                             </main>
