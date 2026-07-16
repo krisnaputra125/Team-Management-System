@@ -266,8 +266,10 @@
                 "sun": '<circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/>',
                 "moon": '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
                 "hexagon": '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/>',
+                "box": '<path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"/><polyline points="3.27 6.96 12 12.01 20.73 6.96"/><line x1="12" y1="22.08" x2="12" y2="12"/>',
                 "info": '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
                 "printer": '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
+                "shopping-cart": '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',
                 "play": '<polygon points="5 3 19 12 5 21 5 3"/>',
                 "pause": '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'
             };
@@ -775,6 +777,8 @@
             const [scheduleViewType, setScheduleViewType] = useState('timeline');
             const [projects, setProjects] = useState([]);
             const [resources, setResources] = useState([]);
+            const [inventory, setInventory] = useState([]);
+            const [borrowCart, setBorrowCart] = useState([]);
             const [loading, setLoading] = useState(true);
             const [errorMsg, setErrorMsg] = useState("");
             const [isLive, setIsLive] = useState(false);
@@ -833,6 +837,7 @@
             const [devPassword, setDevPassword] = useState("");
             const [devAuthError, setDevAuthError] = useState("");
             const [isDeveloper, setIsDeveloper] = useState(false);
+            const [pendingTabAttempt, setPendingTabAttempt] = useState(null);
             const [showKPIInfoModal, setShowKPIInfoModal] = useState(false);
             const [showProjectTypeModal, setShowProjectTypeModal] = useState(false);
 
@@ -842,6 +847,7 @@
             const [filterProjectType, setFilterProjectType] = useState("Semua Tipe");
             const [searchKPITab, setSearchKPITab] = useState("");
             const [searchGanttTab, setSearchGanttTab] = useState("");
+            const [searchInvTab, setSearchInvTab] = useState("");
             const [projectPage, setProjectPage] = useState(1);
             const [dominoAnalysis, setDominoAnalysis] = useState(null);
 
@@ -977,7 +983,8 @@
                             // Transformasi awal saat migrasi
                             const initialData = {
                                 projects: data.projects || [],
-                                resources: data.resources || []
+                                resources: data.resources || [],
+                                inventory: data.inventory || []
                             };
 
                             await firebaseDbRef.set(initialData);
@@ -989,7 +996,7 @@
 
                     // Pasang Listener Real-time
                     firebaseDbRef.on('value', (snap) => {
-                        const data = snap.val() || { projects: [], resources: [] };
+                        const data = snap.val() || { projects: [], resources: [], inventory: [] };
 
                         // DEKODE TRIK JSON UNTUK DETAIL TIM
                         const processedProjects = (data.projects || []).filter(Boolean).map(p => {
@@ -1070,6 +1077,7 @@
 
                         setProjects(healedProjects);
                         setResources(processedResources);
+                        setInventory((data.inventory || []).filter(Boolean));
                         setIsLive(true);
                         setLoading(false);
                     }, (error) => {
@@ -1100,8 +1108,9 @@
 
             // Mengganti Tab dan me-reset view
             const handleTabChange = (tab) => {
-                if (tab === 'kpi' && !isDeveloper) {
+                if ((tab === 'kpi' || tab === 'inventaris') && !isDeveloper) {
                     setShowDevPrompt(true);
+                    setPendingTabAttempt(tab);
                     setDevPassword("");
                     setDevAuthError("");
                     setSidebarOpen(false);
@@ -1119,7 +1128,8 @@
                 if (devPassword === "Batanghari15") {
                     setIsDeveloper(true);
                     setShowDevPrompt(false);
-                    setActiveTab('kpi');
+                    setActiveTab(pendingTabAttempt || 'kpi');
+                    setPendingTabAttempt(null);
                 } else {
                     setDevAuthError("Password salah! Akses ditolak.");
                 }
@@ -1258,6 +1268,39 @@
                 handleCrudAction('edit', 'project', updatedProject);
                 setShowResumeModal(false);
                 setResumeProjectData(null);
+            };
+
+            // CRUD ACTION INVENTORY
+            const handleInventoryAction = async (action, payload) => {
+                setLoading(true);
+                setErrorMsg("");
+                try {
+                    let newData = [...inventory];
+                    
+                    if (action === 'add') {
+                        newData.push(payload);
+                    } else if (action === 'borrow-cart') {
+                        newData = newData.map(item => {
+                            if (payload.selectedIds.includes(item.id)) {
+                                return { ...item, status: 'Dipinjam', ...payload.data };
+                            }
+                            return item;
+                        });
+                        setBorrowCart([]);
+                    } else if (action === 'edit' || action === 'borrow' || action === 'return' || action === 'extend') {
+                        newData = newData.map(item => item.id === payload.id ? payload : item);
+                    } else if (action === 'delete') {
+                        newData = newData.filter(item => item.id !== payload.id);
+                    }
+                    
+                    await firebaseDbRef.child('inventory').set(newData);
+                    setInventory(newData);
+                    setModalConfig({ isOpen: false, type: null, mode: 'add', data: null });
+                } catch (error) {
+                    console.error("Firebase Inventory Write Error:", error);
+                    setErrorMsg("Gagal menyimpan data inventaris.");
+                }
+                setLoading(false);
             };
 
             // CRUD ACTION FIREBASE REALTIME
@@ -2808,6 +2851,194 @@
                 );
             };
 
+            // --- KOMPONEN TAB: INVENTARIS ---
+            const renderInventory = () => {
+                const filteredInv = inventory.filter(item => item.name?.toLowerCase().includes(searchInvTab.toLowerCase()) || item.type?.toLowerCase().includes(searchInvTab.toLowerCase()));
+
+                return (
+                    <div className="space-y-6 fade-in">
+                        <div className="flex flex-col sm:flex-row justify-between gap-4">
+                            <div className="relative flex-1">
+                                <Icon name="search" className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" size={18} />
+                                <input
+                                    type="text"
+                                    placeholder="Cari alat (nama atau kategori)..."
+                                    value={searchInvTab}
+                                    onChange={(e) => setSearchInvTab(e.target.value)}
+                                    className="w-full pl-10 pr-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm"
+                                />
+                            </div>
+                            <div className="flex gap-2">
+                                {borrowCart.length > 0 && (
+                                    <button
+                                        onClick={() => setModalConfig({ isOpen: true, type: 'inventory-cart', mode: 'borrow-cart', data: null })}
+                                        className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white font-medium rounded-xl transition-colors shadow-sm text-sm"
+                                    >
+                                        <Icon name="shopping-cart" size={18} /> Pinjam {borrowCart.length} Alat
+                                    </button>
+                                )}
+                                <button
+                                    onClick={() => setModalConfig({ isOpen: true, type: 'inventory', mode: 'add', data: null })}
+                                    className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors shadow-sm text-sm"
+                                >
+                                    <Icon name="plus" size={18} /> Tambah Alat
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="bg-white dark:bg-slate-800 rounded-2xl border border-slate-200 dark:border-slate-700 overflow-hidden shadow-sm">
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-sm text-left">
+                                    <thead className="text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 uppercase border-b border-slate-200 dark:border-slate-700">
+                                        <tr>
+                                            <th className="px-6 py-4 w-12 text-center">
+                                                <input 
+                                                    type="checkbox" 
+                                                    className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                                                    checked={filteredInv.filter(i => i.status === 'Tersedia' && i.condition !== 'Rusak Berat').length > 0 && borrowCart.length === filteredInv.filter(i => i.status === 'Tersedia' && i.condition !== 'Rusak Berat').length}
+                                                    onChange={(e) => {
+                                                        if (e.target.checked) {
+                                                            const availableIds = filteredInv.filter(i => i.status === 'Tersedia' && i.condition !== 'Rusak Berat').map(i => i.id);
+                                                            setBorrowCart(availableIds);
+                                                        } else {
+                                                            setBorrowCart([]);
+                                                        }
+                                                    }}
+                                                />
+                                            </th>
+                                            <th className="px-6 py-4 font-semibold">Nama Alat & ID</th>
+                                            <th className="px-6 py-4 font-semibold">Kategori</th>
+                                            <th className="px-6 py-4 font-semibold text-center">Kondisi</th>
+                                            <th className="px-6 py-4 font-semibold text-center">Status</th>
+                                            <th className="px-6 py-4 font-semibold text-right">Aksi</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
+                                        {filteredInv.map((item) => {
+                                            const isOverdue = item.status === 'Dipinjam' && item.returnDate && new Date(item.returnDate).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
+                                            return (
+                                            <tr key={item.id} className={`transition-colors ${borrowCart.includes(item.id) ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                                                <td className="px-6 py-4 text-center">
+                                                    <input 
+                                                        type="checkbox" 
+                                                        className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                        disabled={item.status !== 'Tersedia' || item.condition === 'Rusak Berat'}
+                                                        checked={borrowCart.includes(item.id)}
+                                                        onChange={(e) => {
+                                                            if (e.target.checked) {
+                                                                setBorrowCart([...borrowCart, item.id]);
+                                                            } else {
+                                                                setBorrowCart(borrowCart.filter(id => id !== item.id));
+                                                            }
+                                                        }}
+                                                    />
+                                                </td>
+                                                <td className="px-6 py-4">
+                                                    <div className="font-semibold text-slate-900 dark:text-white">{item.name}</div>
+                                                    <div className="text-xs text-slate-500 mt-1">{item.id}</div>
+                                                </td>
+                                                <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{item.type}</td>
+                                                <td className="px-6 py-4 text-center">
+                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${item.condition === 'Baik' ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                                        {item.condition}
+                                                    </span>
+                                                </td>
+                                                <td className="px-6 py-4 text-center">
+                                                    {item.status === 'Dipinjam' ? (
+                                                        <div className="flex flex-col items-center">
+                                                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${isOverdue ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 shadow-sm border border-red-100 dark:border-red-800' : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                                                {isOverdue ? 'Masa pinjam sudah habis' : 'Dipinjam'}
+                                                            </span>
+                                                            <div className={`text-[11px] mt-2 text-center whitespace-nowrap ${isOverdue ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-slate-500'}`}>
+                                                                Oleh: <strong>{item.borrower}</strong><br/>
+                                                                {item.borrowDate ? `${formatDateIndo(item.borrowDate)} s/d ` : ''}{item.returnDate ? formatDateIndo(item.returnDate) : '-'}
+                                                            </div>
+                                                        </div>
+                                                    ) : (
+                                                        <div className="flex flex-col items-center">
+                                                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                                Tersedia
+                                                            </span>
+                                                            {item.lastBorrower && (
+                                                                <div className="text-[10px] text-slate-400 mt-2 text-center whitespace-nowrap">
+                                                                    Peminjam Terakhir:<br/><strong>{item.lastBorrower}</strong>
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    )}
+                                                </td>
+                                                <td className="px-6 py-4 text-right">
+                                                    <div className="flex items-center justify-end gap-2">
+                                                        {item.status === 'Tersedia' ? (
+                                                            <button 
+                                                                onClick={() => setModalConfig({ isOpen: true, type: 'inventory-borrow', mode: 'borrow', data: item })}
+                                                                disabled={item.condition === 'Rusak Berat'}
+                                                                title={item.condition === 'Rusak Berat' ? "Alat rusak, tidak dapat dipinjam." : "Pinjam"}
+                                                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border ${item.condition === 'Rusak Berat' ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'}`}
+                                                            >
+                                                                Pinjam
+                                                            </button>
+                                                        ) : (
+                                                            <>
+                                                                <button 
+                                                                    onClick={() => setModalConfig({ isOpen: true, type: 'inventory-extend', mode: 'extend', data: item })}
+                                                                    className="px-3 py-1.5 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 rounded-lg transition-colors border border-amber-200 dark:border-amber-800"
+                                                                >
+                                                                    Perpanjang
+                                                                </button>
+                                                                <button 
+                                                                    onClick={() => setModalConfig({ isOpen: true, type: 'inventory-return', mode: 'return', data: item })}
+                                                                    className="px-3 py-1.5 text-xs font-medium bg-white text-slate-700 hover:bg-slate-50 border border-slate-300 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 rounded-lg transition-colors"
+                                                                >
+                                                                    Kembalikan
+                                                                </button>
+                                                            </>
+                                                        )}
+                                                        <button 
+                                                            onClick={() => setModalConfig({ isOpen: true, type: 'inventory', mode: 'edit', data: item })}
+                                                            className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
+                                                            title="Edit Alat"
+                                                        >
+                                                            <Icon name="edit" size={16} />
+                                                        </button>
+                                                        <button 
+                                                            onClick={() => {
+                                                                setConfirmDialog({
+                                                                    isOpen: true,
+                                                                    title: 'Hapus Alat',
+                                                                    message: `Yakin ingin menghapus ${item.name}? Data yang dihapus tidak dapat dikembalikan.`,
+                                                                    type: 'danger',
+                                                                    onConfirm: () => handleInventoryAction('delete', item)
+                                                                });
+                                                            }}
+                                                            className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
+                                                            title="Hapus Alat"
+                                                        >
+                                                            <Icon name="trash" size={16} />
+                                                        </button>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                            );
+                                        })}
+                                        {filteredInv.length === 0 && (
+                                            <tr>
+                                                <td colSpan="5" className="px-6 py-12 text-center">
+                                                    <div className="flex flex-col items-center justify-center text-slate-400 dark:text-slate-500">
+                                                        <Icon name="box" size={48} className="mb-4 opacity-50" />
+                                                        <p className="text-sm">Tidak ada data alat/inventaris ditemukan.</p>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        )}
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
             // --- KOMPONEN TAB: TIMESHEET ---
             const renderTimesheet = () => (
                 <div className="flex flex-col items-center justify-center h-[60vh] text-center fade-in">
@@ -2824,18 +3055,24 @@
                 if (!modalConfig.isOpen) return null;
 
                 const isProject = modalConfig.type === 'project';
+                const isInventory = modalConfig.type === 'inventory' || modalConfig.type === 'inventory-borrow' || modalConfig.type === 'inventory-return' || modalConfig.type === 'inventory-extend' || modalConfig.type === 'inventory-cart';
 
                 const [formData, setFormData] = useState(() => {
+                    const offset = new Date().getTimezoneOffset() * 60000;
+                    const defaultBorrowDate = new Date(Date.now() - offset).toISOString().split('T')[0];
                     if (modalConfig.data) {
                         const data = { ...modalConfig.data, adjustmentInput: 0 };
+                        if (modalConfig.mode === 'borrow' && !data.borrowDate) {
+                            data.borrowDate = defaultBorrowDate;
+                        }
                         if (modalConfig.type === 'project' && data.type === 'Perencanaan' && data.surveyorTeam && data.surveyorTeam.length > 0) {
                             data.team = (data.team || []).filter(m => !data.surveyorTeam.includes(m));
                         }
                         return data;
                     }
-                    return isProject
-                        ? { name: '', client: '', type: 'Perencanaan', status: 'On Progress', progress: 0, deadline: '', spmk: '', description: '', descriptionUpdatedAt: '', team: [], surveyorTeam: [], categoryDetails: {}, teamLeader: '', pengawasanDetails: {} }
-                        : { name: '', role: 'Arsitek', level: 'Staff', rating: 3, manualPoints: 0, adjustmentInput: 0 };
+                    if (isProject) return { name: '', client: '', type: 'Perencanaan', status: 'On Progress', progress: 0, deadline: '', spmk: '', description: '', descriptionUpdatedAt: '', team: [], surveyorTeam: [], categoryDetails: {}, teamLeader: '', pengawasanDetails: {} };
+                    if (isInventory) return { id: '', name: '', type: 'Alat Ukur', condition: 'Baik', status: 'Tersedia', borrower: '', borrowDate: modalConfig.mode === 'borrow-cart' ? defaultBorrowDate : '', returnDate: '', projectAssigned: '' };
+                    return { name: '', role: 'Arsitek', level: 'Staff', rating: 3, manualPoints: 0, adjustmentInput: 0 };
                 });
 
                 const [searchTeam, setSearchTeam] = useState("");
@@ -3142,6 +3379,34 @@
                 const handleSubmit = (e) => {
                     e.preventDefault();
                     let finalPayload = { ...formData };
+
+                    if (isInventory) {
+                        if (modalConfig.mode === 'borrow-cart') {
+                            handleInventoryAction('borrow-cart', {
+                                selectedIds: borrowCart,
+                                data: {
+                                    borrower: finalPayload.borrower,
+                                    borrowDate: finalPayload.borrowDate || new Date().toISOString().split('T')[0],
+                                    returnDate: finalPayload.returnDate,
+                                    projectAssigned: finalPayload.projectAssigned
+                                }
+                            });
+                            return;
+                        } else if (modalConfig.mode === 'borrow') {
+                            finalPayload.status = 'Dipinjam';
+                            if (!finalPayload.borrowDate) finalPayload.borrowDate = new Date().toISOString().split('T')[0];
+                        } else if (modalConfig.mode === 'return') {
+                            finalPayload.status = 'Tersedia';
+                            finalPayload.lastBorrower = finalPayload.borrower;
+                            finalPayload.borrower = null;
+                            finalPayload.borrowDate = null;
+                            finalPayload.returnDate = null;
+                            finalPayload.projectAssigned = null;
+                        }
+                        handleInventoryAction(modalConfig.mode, finalPayload);
+                        return;
+                    }
+
                     if (isProject) {
                         // OTOMATISASI PROGRESS PROJECT (TIDAK LAGI MANUAL)
                         finalPayload.progress = computedTotalProgress;
@@ -3203,8 +3468,8 @@
                         <div className={`bg-white dark:bg-slate-800 rounded-t-3xl sm:rounded-3xl shadow-xl border border-transparent dark:border-slate-700/50 w-full ${isProject ? 'sm:max-w-4xl' : 'sm:max-w-2xl'} overflow-hidden flex flex-col max-h-[90vh] sm:max-h-[95vh] pb-4 sm:pb-0`}>
                             <div className="p-5 border-b border-slate-100 dark:border-slate-700/50 flex justify-between items-center bg-slate-50 dark:bg-slate-900/50 shrink-0">
                                 <h3 className="font-bold text-lg text-slate-800 dark:text-slate-100">
-                                    {modalConfig.mode === 'add' ? 'Tambah ' : 'Edit '}
-                                    {isProject ? 'Data Proyek Terpadu' : 'Data Personil'}
+                                    {modalConfig.mode === 'add' ? 'Tambah ' : modalConfig.mode === 'borrow' ? 'Pinjam ' : 'Edit '}
+                                    {isProject ? 'Data Proyek Terpadu' : isInventory ? 'Data Inventaris' : 'Data Personil'}
                                 </h3>
                                 <button onClick={closeModal} className="text-slate-400 hover:text-red-500 transition-colors"><Icon name="x" size={20} /></button>
                             </div>
@@ -3623,6 +3888,119 @@
                                                 </div>
                                             )}
                                         </>
+                                    ) : isInventory ? (
+                                        modalConfig.mode === 'borrow' ? (
+                                            <div className="grid grid-cols-1 gap-4">
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Peminjam (Team Leader)</label>
+                                                    <select required name="borrower" value={formData.borrower} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200">
+                                                        <option value="">-- Pilih Team Leader --</option>
+                                                        {resources.filter(r => r.level === 'Team Leader').map(r => (
+                                                            <option key={r.name} value={r.name}>{r.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tanggal Dipinjam</label>
+                                                    <input type="date" required name="borrowDate" value={formData.borrowDate} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tanggal Pengembalian</label>
+                                                    <input type="date" required name="returnDate" value={formData.returnDate} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Proyek (Opsional)</label>
+                                                    <input name="projectAssigned" value={formData.projectAssigned} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200" placeholder="Cth: Perencanaan RSUD" />
+                                                </div>
+                                            </div>
+                                        ) : modalConfig.mode === 'borrow-cart' ? (
+                                            <div className="grid grid-cols-1 gap-4">
+                                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-xl mb-2">
+                                                    <p className="text-xs text-indigo-800 dark:text-indigo-300">
+                                                        Anda akan meminjam <strong className="font-bold">{borrowCart.length} alat sekaligus</strong>. Data formulir ini akan diaplikasikan ke semua alat yang Anda pilih.
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Peminjam (Team Leader)</label>
+                                                    <select required name="borrower" value={formData.borrower} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200">
+                                                        <option value="">-- Pilih Team Leader --</option>
+                                                        {resources.filter(r => r.level === 'Team Leader').map(r => (
+                                                            <option key={r.name} value={r.name}>{r.name}</option>
+                                                        ))}
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tanggal Dipinjam</label>
+                                                    <input type="date" required name="borrowDate" value={formData.borrowDate} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tanggal Pengembalian</label>
+                                                    <input type="date" required name="returnDate" value={formData.returnDate} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Proyek (Opsional)</label>
+                                                    <input name="projectAssigned" value={formData.projectAssigned} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200" placeholder="Cth: Perencanaan RSUD" />
+                                                </div>
+                                            </div>
+                                        ) : modalConfig.mode === 'extend' ? (
+                                            <div className="grid grid-cols-1 gap-4">
+                                                <div className="p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-100 dark:border-amber-800/50 rounded-xl mb-2">
+                                                    <p className="text-xs text-amber-800 dark:text-amber-300">
+                                                        Perpanjang masa pinjam untuk alat <strong className="font-bold">{formData.name}</strong> yang sedang dipinjam oleh <strong className="font-bold">{formData.borrower}</strong>.
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Tanggal Pengembalian Baru</label>
+                                                    <input type="date" required name="returnDate" value={formData.returnDate} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200" />
+                                                </div>
+                                            </div>
+                                        ) : modalConfig.mode === 'return' ? (
+                                            <div className="grid grid-cols-1 gap-4">
+                                                <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-xl mb-2">
+                                                    <p className="text-xs text-indigo-800 dark:text-indigo-300">
+                                                        Anda akan mengembalikan alat <strong className="font-bold">{formData.name}</strong> yang dipinjam oleh <strong className="font-bold">{formData.borrower}</strong>. Silakan perbarui kondisi terakhir alat ini.
+                                                    </p>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Kondisi Alat Saat Dikembalikan</label>
+                                                    <select name="condition" value={formData.condition} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200">
+                                                        <option value="Baik">Baik</option>
+                                                        <option value="Rusak Ringan">Rusak Ringan</option>
+                                                        <option value="Rusak Berat">Rusak Berat</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                                {modalConfig.mode !== 'edit' && (
+                                                    <div className="col-span-2 sm:col-span-1">
+                                                        <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">ID / Kode Alat</label>
+                                                        <input required name="id" value={formData.id} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200" placeholder="Cth: INV-2023-001" />
+                                                    </div>
+                                                )}
+                                                <div className={`col-span-2 ${modalConfig.mode !== 'edit' ? 'sm:col-span-1' : ''}`}>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nama Alat</label>
+                                                    <input required name="name" value={formData.name} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200" placeholder="Cth: Drone DJI Mavic" />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Kategori</label>
+                                                    <select name="type" value={formData.type} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200">
+                                                        <option value="Alat Ukur">Alat Ukur</option>
+                                                        <option value="Kendaraan">Kendaraan</option>
+                                                        <option value="Elektronik">Elektronik</option>
+                                                        <option value="Lainnya">Lainnya</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Kondisi</label>
+                                                    <select name="condition" value={formData.condition} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200">
+                                                        <option value="Baik">Baik</option>
+                                                        <option value="Rusak Ringan">Rusak Ringan</option>
+                                                        <option value="Rusak Berat">Rusak Berat</option>
+                                                    </select>
+                                                </div>
+                                            </div>
+                                        )
                                     ) : (
                                         <>
                                             <div><label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">Nama Personil</label><input required name="name" value={formData.name} onChange={handleChange} className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200" placeholder="Cth: Ir. Budi Santoso" /></div>
@@ -3774,7 +4152,7 @@
                                     <Icon name="alert-triangle" size={32} />
                                 </div>
                                 <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Akses Terbatas (BETA)</h3>
-                                <p className="text-sm text-slate-500 mb-6 leading-relaxed">Menu Evaluasi & KPI masih dalam tahap uji coba (BETA) dan sedang dalam tahap pengembangan sementara hanya dapat diakses oleh Developer (Krisna).</p>
+                                <p className="text-sm text-slate-500 mb-6 leading-relaxed">Menu {pendingTabAttempt === 'inventaris' ? 'Logistik & Inventaris' : 'Evaluasi & KPI'} masih dalam tahap uji coba (BETA) dan sedang dalam tahap pengembangan sementara hanya dapat diakses oleh Developer (Krisna).</p>
 
                                 <input
                                     type="password"
@@ -5400,6 +5778,7 @@
                                     <SidebarItem icon={<Icon name="calendar" size={20} />} label="Master Schedule" isActive={activeTab === 'master-schedule'} onClick={() => handleTabChange('master-schedule')} />
                                     <SidebarItem icon={<Icon name="users" size={20} />} label="Alokasi Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
                                     <SidebarItem icon={<Icon name="calendar-days" size={20} />} label="Ploting Jadwal" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
+                                    <SidebarItem icon={<Icon name="box" size={20} />} label="Logistik & Inventaris" isActive={activeTab === 'inventaris'} onClick={() => handleTabChange('inventaris')} />
                                     <SidebarItem icon={<Icon name="bar-chart" size={20} />} label="Evaluasi & KPI (BETA)" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
                                 </nav>
                             </aside>
@@ -5415,6 +5794,7 @@
                                                 {activeTab === 'tim' && 'Alokasi Tim'}
                                                 {activeTab === 'gantt' && 'Ploting Jadwal & Timeline'}
                                                 {activeTab === 'timesheet' && 'Timesheet Harian'}
+                                                {activeTab === 'inventaris' && 'Logistik & Inventaris Alat'}
                                                 {activeTab === 'kpi' && 'Evaluasi Tim & KPI'}
                                                 {activeTab === 'schedule' && activeScheduleProject && `Time Schedule: ${activeScheduleProject.name}`}
                                             </h2>
@@ -5461,6 +5841,7 @@
                                         {activeTab === 'tim' && renderTim()}
                                         {activeTab === 'gantt' && renderGantt()}
                                         {activeTab === 'timesheet' && renderTimesheet()}
+                                        {activeTab === 'inventaris' && renderInventory()}
                                         {activeTab === 'kpi' && renderKPI()}
                                         {activeTab === 'schedule' && renderTimeSchedule()}
                                     </div>
@@ -5585,6 +5966,7 @@
                                 <BottomNavItem icon={<Icon name="briefcase" size={22} />} label="Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
                                 <BottomNavItem icon={<Icon name="users" size={22} />} label="Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
                                 <BottomNavItem icon={<Icon name="calendar" size={22} />} label="Ploting" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
+                                <BottomNavItem icon={<Icon name="box" size={22} />} label="Inventaris" isActive={activeTab === 'inventaris'} onClick={() => handleTabChange('inventaris')} />
                                 <BottomNavItem icon={<Icon name="bar-chart" size={22} />} label="KPI" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
                             </nav>
                         </div>
