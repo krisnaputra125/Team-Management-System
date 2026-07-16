@@ -4216,7 +4216,7 @@
                                             <tr className="bg-gray-200">
                                                 <th rowSpan={2} className="border border-black p-1 w-[150px] text-left">Tasks / Kegiatan</th>
                                                 <th rowSpan={2} className="border border-black p-1 w-[70px] text-center">Durasi</th>
-                                                <th rowSpan={2} className="border border-black p-1 w-[105px] text-center">Selesai</th>
+                                                <th rowSpan={2} className="border border-black p-1 w-[105px] text-center">Status Target</th>
                                                 <th rowSpan={2} className="border border-black p-1 w-[40px] text-center">Prog.</th>
                                                 {(() => {
                                                     const monthGroups = [];
@@ -4244,7 +4244,7 @@
                                         <tr className="bg-gray-200">
                                             <th className="border border-black p-1 w-[150px] text-left">Tasks / Kegiatan</th>
                                             <th className="border border-black p-1 w-[70px] text-center">Durasi</th>
-                                            <th className="border border-black p-1 w-[105px] text-center">Selesai</th>
+                                            <th className="border border-black p-1 w-[105px] text-center">Status Target</th>
                                             <th className="border border-black p-1 w-[40px] text-center">Prog.</th>
                                             {timeUnits.map((u, i) => (
                                                 <th key={i} className="border border-black p-1 text-center font-bold">
@@ -4288,7 +4288,7 @@
                                             {phase.isSubTask ? `└ ${phase.name}` : phase.name}
                                                 </td>
                                                 <td className="border border-black p-1 text-center font-bold whitespace-nowrap">{manMonthStr}</td>
-                                                <td className="border border-black p-1 text-center whitespace-nowrap">{phase.endDate ? formatDateIndo(new Date(phase.endDate).toISOString().split('T')[0]) : '-'}</td>
+                                                <td className="border border-black p-1 text-center font-bold uppercase">{getMicroStatus(phase.progress, phase.endDate)}</td>
                                                 <td className="border border-black p-1 text-center">{phase.progress}%</td>
                                                 <td colSpan={timeUnits.length} className="border border-black relative p-0 h-6">
                                                     <div className="absolute inset-0 flex z-0">
@@ -4298,9 +4298,12 @@
                                                     </div>
                                                     {hasBar && (
                                                         <div 
-                                                            className="absolute top-[4px] bottom-[4px] bg-black border border-black z-10"
+                                                            className="absolute top-[4px] bottom-[4px] bg-black border border-black z-10 flex items-center justify-between px-1 text-[7px] text-white overflow-hidden whitespace-nowrap"
                                                             style={{ left: `${leftPerc}%`, width: `${widthPerc}%`, printColorAdjust: 'exact' }}
-                                                        ></div>
+                                                        >
+                                                            <span>{formatDateIndo(new Date(phase.startDate).toISOString().split('T')[0])}</span>
+                                                            <span>{formatDateIndo(new Date(phase.endDate).toISOString().split('T')[0])}</span>
+                                                        </div>
                                                     )}
                                                 </td>
                                             </tr>
@@ -4310,7 +4313,7 @@
                             </table>
                             <div className="mt-4 text-xs italic text-gray-600">
                                 Catatan: Bar berwarna solid hitam menunjukkan rentang waktu pelaksanaan tugas secara proporsional. <br/>
-                                <strong>Tanggal Mulai (awal garis bar) pada chart ini disesuaikan dengan Tanggal SPMK Proyek.</strong>
+                                <strong>Tanggal Mulai (awal garis bar) pada chart ini disesuaikan dengan Tanggal Mulai masing-masing sub-tim.</strong>
                             </div>
                         </div>
                     );
