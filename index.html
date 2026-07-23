@@ -1504,52 +1504,6 @@
                 reader.readAsBinaryString(file);
             };
 
-            const handleCleanDuplicates = async () => {
-                if (!confirm("Yakin ingin membersihkan duplikat tenaga ahli? Aksi ini akan menggabungkan sertifikat dan menghapus entri ganda.")) return;
-                setLoading(true);
-                try {
-                    const expertsMap = new Map();
-                    experts.forEach(exp => {
-                        const key = (exp.name || '').trim().toLowerCase();
-                        if (expertsMap.has(key)) {
-                            const existing = expertsMap.get(key);
-                            if (exp.certificates && exp.certificates.length > 0) {
-                                if (!existing.certificates) existing.certificates = [];
-                                exp.certificates.forEach(c => {
-                                    const isDuplicateCert = existing.certificates.some(ec => 
-                                        ec.certName === c.certName && ec.certLevel === c.certLevel
-                                    );
-                                    if (!isDuplicateCert) existing.certificates.push(c);
-                                });
-                            }
-                            if (exp.tenders && exp.tenders.length > 0) {
-                                if (!existing.tenders) existing.tenders = [];
-                                exp.tenders.forEach(t => {
-                                    const isDuplicateTender = existing.tenders.some(et => 
-                                        et.lpseName === t.lpseName && et.projectName === t.projectName
-                                    );
-                                    if (!isDuplicateTender) existing.tenders.push(t);
-                                });
-                            }
-                            if (!existing.phone && exp.phone) existing.phone = exp.phone;
-                            if (!existing.bidangIlmu && exp.bidangIlmu) existing.bidangIlmu = exp.bidangIlmu;
-                            if (!existing.perusahaan && exp.perusahaan) existing.perusahaan = exp.perusahaan;
-                        } else {
-                            expertsMap.set(key, exp);
-                        }
-                    });
-                    
-                    const cleanedExperts = Array.from(expertsMap.values());
-                    await firebase.database().ref('pmc_experts').set(cleanedExperts);
-                    setExperts(cleanedExperts);
-                    alert(`Berhasil! Membuang ${experts.length - cleanedExperts.length} entri duplikat.`);
-                } catch (error) {
-                    console.error("Firebase Clean Duplicate Error:", error);
-                    alert("Gagal membersihkan duplikat.");
-                }
-                setLoading(false);
-            };
-
             // CRUD ACTION EXPERTS
             const handleExpertAction = async (action, payload) => {
                 setLoading(true);
@@ -3757,7 +3711,7 @@
                                         </div>
                                         <div className="grid grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Start (Tanggal)</label>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">SPMK (Tanggal)</label>
                                                 <input type="date" required value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
                                             </div>
                                             <div>
@@ -6587,9 +6541,19 @@
                 const filteredExperts = experts.filter(e => {
                     const search = searchExpertTab.toLowerCase();
                     const matchName = e.name?.toLowerCase().includes(search);
+                    const matchBidangIlmu = e.bidangIlmu?.toLowerCase().includes(search);
                     const matchCert = e.certificates?.some(c => c.certName?.toLowerCase().includes(search));
-                    return matchName || matchCert;
+                    return matchName || matchBidangIlmu || matchCert;
                 });
+
+                const assignedExpertIds = new Set();
+                assignments.forEach(asg => {
+                    if (asg.experts) {
+                        asg.experts.forEach(ex => assignedExpertIds.add(ex.expertId));
+                    }
+                });
+                const assignedCount = experts.filter(e => assignedExpertIds.has(e.id)).length;
+                const unassignedCount = experts.length - assignedCount;
 
                 return (
                     <div className="space-y-6 fade-in pb-12">
@@ -6615,10 +6579,13 @@
                                     <Icon name="file-text" size={18} /> Import Excel
                                     <input type="file" accept=".xlsx, .xls" onChange={handleImportExcel} className="hidden" />
                                 </label>
-                                <button onClick={handleCleanDuplicates} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-md transition-all font-semibold flex items-center gap-2 text-sm shrink-0" title="Bersihkan Duplikat">
-                                    <Icon name="trash-2" size={18} /> Bersihkan Duplikat
-                                </button>
                             </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
+                            <MetricCard title="Total Tenaga Ahli" value={experts.length} trend="Terdaftar" trendUp={true} icon={<div className="text-blue-600"><Icon name="users" size={24} /></div>} color="bg-blue-50" />
+                            <MetricCard title="Aktif Penugasan" value={assignedCount} trend="Ditugaskan LPSE" trendUp={true} icon={<div className="text-emerald-600"><Icon name="briefcase" size={24} /></div>} color="bg-emerald-50" />
+                            <MetricCard title="Belum Ditugaskan" value={unassignedCount} trend="Tersedia" trendUp={true} icon={<div className="text-amber-600"><Icon name="clock" size={24} /></div>} color="bg-amber-50" />
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
