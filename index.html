@@ -41,6 +41,8 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
     <!-- Babel -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+    <!-- SheetJS for Excel Import -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
     <style>
         .btn-clean-check {
             width: 36px;
@@ -248,6 +250,12 @@
                 "alert-triangle": '<path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
                 "file-text": '<path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><line x1="10" y1="9" x2="8" y2="9"/>',
                 "check-circle-2": '<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/><polyline points="22 4 12 14.01 9 11.01"/>',
+                "award": '<circle cx="12" cy="8" r="6"/><path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11"/>',
+                "shield": '<path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>',
+                "edit-3": '<path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>',
+                "edit-2": '<path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"/>',
+                "phone": '<path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"/>',
+                "trash-2": '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><line x1="10" y1="11" x2="10" y2="17"/><line x1="14" y1="11" x2="14" y2="17"/>',
                 "clock": '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
                 "folder-open": '<path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/>',
                 "plus": '<path d="M5 12h14"/><path d="M12 5v14"/>',
@@ -271,9 +279,10 @@
                 "printer": '<polyline points="6 9 6 2 18 2 18 9"/><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"/><rect width="12" height="8" x="6" y="14"/>',
                 "shopping-cart": '<circle cx="9" cy="21" r="1"/><circle cx="20" cy="21" r="1"/><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"/>',
                 "play": '<polygon points="5 3 19 12 5 21 5 3"/>',
-                "pause": '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>'
+                "pause": '<rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>',
+                "settings": '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/>'
             };
-            return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} dangerouslySetInnerHTML={{ __html: paths[name] }} />;
+            return <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className} dangerouslySetInnerHTML={{ __html: paths[name] || '' }} />;
         };
 
         // --- HELPER FUNCTION: FORMAT TANGGAL & HITUNG STATUS ---
@@ -778,6 +787,7 @@
             const [projects, setProjects] = useState([]);
             const [resources, setResources] = useState([]);
             const [inventory, setInventory] = useState([]);
+            const [experts, setExperts] = useState([]);
             const [borrowCart, setBorrowCart] = useState([]);
             const [loading, setLoading] = useState(true);
             const [errorMsg, setErrorMsg] = useState("");
@@ -796,6 +806,9 @@
             // Resume Modal States
             const [showResumeModal, setShowResumeModal] = useState(false);
             const [resumeProjectData, setResumeProjectData] = useState(null);
+            
+            // Alert Modal States
+            const [alertModal, setAlertModal] = useState({ isOpen: false, title: 'Perhatian', message: '' });
             React.useEffect(() => {
                 if (printData) {
                     setTimeout(() => {
@@ -831,6 +844,21 @@
             const GOOGLE_SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyEt5puRB26FO6mGfnxVvofBJaDwLtH3O0yd-Ugsugn2D2KezKpi_ynGz7hw24kpLIpRQ/exec';
             const [modalConfig, setModalConfig] = useState({ isOpen: false, type: null, mode: 'add', data: null });
             const [confirmDialog, setConfirmDialog] = useState({ isOpen: false, title: '', message: '', type: 'info', onConfirm: null });
+            const [lpseList, setLpseList] = useState([]);
+            const [showLpseManager, setShowLpseManager] = useState(false);
+            const [assignments, setAssignments] = useState([]);
+            
+            const handleUpdateLpseList = (newList) => {
+                firebase.database().ref('pmc_lpse_list').set(newList);
+                setLpseList(newList);
+            };
+
+            const [certList, setCertList] = useState([]);
+            const [showCertManager, setShowCertManager] = useState(false);
+            const handleUpdateCertList = (newList) => {
+                firebase.database().ref('pmc_cert_list').set(newList);
+                setCertList(newList);
+            };
 
             // State Developer Auth (BETA)
             const [showDevPrompt, setShowDevPrompt] = useState(false);
@@ -848,6 +876,8 @@
             const [searchKPITab, setSearchKPITab] = useState("");
             const [searchGanttTab, setSearchGanttTab] = useState("");
             const [searchInvTab, setSearchInvTab] = useState("");
+            const [searchExpertTab, setSearchExpertTab] = useState("");
+            const [searchAssignmentTab, setSearchAssignmentTab] = useState("");
             const [projectPage, setProjectPage] = useState(1);
             const [dominoAnalysis, setDominoAnalysis] = useState(null);
 
@@ -921,6 +951,7 @@
                     const empCat = getCategoryFromRole(res.role);
 
                     computedProjects.forEach(p => {
+                        if (p.notStarted) return;
                         if (p.computedStatus !== 'Done') {
                             const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
                             
@@ -994,7 +1025,64 @@
                         }
                     }
 
+                    // Pasang Listener Khusus untuk Inventaris (dipisah dari pmc_data agar tidak tertimpa sync)
+                    firebase.database().ref('pmc_inventory').on('value', (snap) => {
+                        const invData = snap.val() || [];
+                        setInventory(invData.filter(Boolean));
+                    });
+
+                    // Listener Khusus untuk Tenaga Ahli (dipisah dari pmc_data)
+                    firebase.database().ref('pmc_experts').on('value', (snap) => {
+                        const expData = snap.val() || [];
+                        setExperts(expData.filter(Boolean));
+                    });
+                    
+                    // Listener Khusus untuk Penugasan Tenaga Ahli
+                    firebase.database().ref('pmc_assignments').on('value', (snap) => {
+                        const asgData = snap.val() || [];
+                        setAssignments(asgData.filter(Boolean));
+                    });
+                    
+                    // Listener Khusus untuk LPSE List
+                    firebase.database().ref('pmc_lpse_list').on('value', (snap) => {
+                        const lpseData = snap.val();
+                        if (lpseData && Array.isArray(lpseData)) {
+                            setLpseList(lpseData);
+                        } else {
+                            // default list dari user request
+                            const defaultLpse = [
+                                "Kabupaten Badung", "Kabupaten Bangli", "Kabupaten Buleleng",
+                                "Kabupaten Gianyar", "Kabupaten Jembrana", "Kabupaten Karangasem",
+                                "Kabupaten Klungkung", "Kabupaten Tabanan", "Kota Denpasar",
+                                "LPSE Kemen PU", "LPSE ATR", "LPSE Kemenpar", "LPSE Kemendikbud",
+                                "LPSE Kemenkumham", "LPSE Kemendag", "LPSE Kemen LHK", "LPSE Kemenkeu",
+                                "LPSE Polri", "LPSE BPOM", "LPSE Mah-Agung", "LPSE Kemen Perhubungan",
+                                "LPSE INAPROC Nasional", "Kantor Desa Dauh Puri Kangin", 
+                                "Kantor Desa Dauh Puri Kelod", "Kantor Desa Saba Blahbatuh", 
+                                "Bank BPD", "Bank Mandiri", "LPSE Provinsi Bali"
+                            ];
+                            setLpseList(defaultLpse);
+                            // Set ke firebase jika belum ada
+                            firebase.database().ref('pmc_lpse_list').set(defaultLpse);
+                        }
+                    });
+
+                    // Listener Khusus untuk Cert List
+                    firebase.database().ref('pmc_cert_list').on('value', (snap) => {
+                        const certData = snap.val();
+                        if (certData && Array.isArray(certData)) {
+                            setCertList(certData);
+                        } else {
+                            const defaultCerts = [
+                                "Teknik Air Minum", "AMDAL", "Teknik Lingkungan", "STRA", "Arsitek", "Lanskap", "Teknik Bangunan Gedung", "Interior", "Teknik Elektronika dan Telekomunikasi dalam Gedung", "Geodesi", "Geodesi Jalan dan Jembatan", "Geodesi Bangunan Gedung", "Pengukuran Jalan", "Survei Terestris", "Geoteknik", "Penilai Bangunan Hijau", "Greenship", "Iluminasi", "Teknik Jalan", "Perencanaan Drainase", "Teknik Jembatan", "K3 Konstruksi", "Kesehatan Masyarakat", "Keselamatan Jalan", "Manajemen Konstruksi", "Manajemen Mutu", "Teknik Mekanikal", "Manajemen Proyek", "Perencanaan Wilayah dan Kota", "Teknik Plambing", "Teknik Proteksi Kebakaran", "Quantity Surveyor", "Teknik Sanitasi dan Limbah", "Sumber Daya Air", "Sistem Tata Udara", "Elektrikal Konstruksi Bangunan Gedung", "Teknik Transportasi dalam Gedung", "BIM", "Manajer Pengelolaan Bangunan Gedung", "Pengawas Bangunan Gedung", "Pelaksana Bangunan Gedung", "Pemeriksa Kelaikan Fungsi Struktur Bangunan Gedung", "Perawatan Bangunan Gedung", "Pelaksana Saluran Irigasi", "Teknik Bendungan Besar", "Sistem Informasi Geografis", "Kewilayahan", "Teknik Tenaga Listrik", "Teknik Sistem Tata Udara dan Refigrasi", "Pelaksana Pemeliharaan Jembatan"
+                            ];
+                            setCertList(defaultCerts);
+                            firebase.database().ref('pmc_cert_list').set(defaultCerts);
+                        }
+                    });
+
                     // Pasang Listener Real-time
+
                     firebaseDbRef.on('value', (snap) => {
                         const data = snap.val() || { projects: [], resources: [], inventory: [] };
 
@@ -1077,7 +1165,6 @@
 
                         setProjects(healedProjects);
                         setResources(processedResources);
-                        setInventory((data.inventory || []).filter(Boolean));
                         setIsLive(true);
                         setLoading(false);
                     }, (error) => {
@@ -1108,7 +1195,7 @@
 
             // Mengganti Tab dan me-reset view
             const handleTabChange = (tab) => {
-                if ((tab === 'kpi' || tab === 'inventaris') && !isDeveloper) {
+                if ((tab === 'kpi' || tab === 'inventaris' || tab === 'ahli' || tab === 'penugasan') && !isDeveloper) {
                     setShowDevPrompt(true);
                     setPendingTabAttempt(tab);
                     setDevPassword("");
@@ -1122,6 +1209,15 @@
                 }
                 setViewingEmployee(null);
                 setSidebarOpen(false);
+                
+                // Reset semua filter pencarian saat pindah tab agar data tidak terlihat 'hilang'
+                setSearchTeamTab("");
+                setSearchProjectTab("");
+                setSearchKPITab("");
+                setSearchGanttTab("");
+                setSearchInvTab("");
+                setSearchExpertTab("");
+                setSearchAssignmentTab("");
             };
 
             const handleDevLogin = () => {
@@ -1282,7 +1378,7 @@
                     } else if (action === 'borrow-cart') {
                         newData = newData.map(item => {
                             if (payload.selectedIds.includes(item.id)) {
-                                return { ...item, status: 'Dipinjam', ...payload.data };
+                                return { ...item, status: 'Menunggu Verifikasi', ...payload.data };
                             }
                             return item;
                         });
@@ -1293,12 +1389,218 @@
                         newData = newData.filter(item => item.id !== payload.id);
                     }
                     
-                    await firebaseDbRef.child('inventory').set(newData);
+                    await firebase.database().ref('pmc_inventory').set(newData);
                     setInventory(newData);
                     setModalConfig({ isOpen: false, type: null, mode: 'add', data: null });
                 } catch (error) {
                     console.error("Firebase Inventory Write Error:", error);
                     setErrorMsg("Gagal menyimpan data inventaris.");
+                }
+                setLoading(false);
+            };
+
+            const handleImportExcel = (e) => {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                const reader = new FileReader();
+                reader.onload = async (evt) => {
+                    setLoading(true);
+                    try {
+                        const bstr = evt.target.result;
+                        const wb = XLSX.read(bstr, { type: 'binary' });
+                        const wsname = wb.SheetNames[0];
+                        const ws = wb.Sheets[wsname];
+                        const data = XLSX.utils.sheet_to_json(ws);
+                        
+                        const expertsMap = new Map();
+                        
+                        data.forEach(row => {
+                            const name = row['Nama Personil'] || row['Nama'] || row['Nama Lengkap'] || row['Name'];
+                            if (!name) return;
+                            
+                            const nameStr = name.toString().trim();
+                            
+                            if (!expertsMap.has(nameStr)) {
+                                const category = row['Kategori'] || row['Category'] || 'Internal';
+                                const phone = row['Kontak'] || row['No HP'] || row['No. HP'] || row['Telepon'] || '';
+                                const status = row['Status'] || 'Tersedia';
+                                const bidangIlmu = row['Jenjang dan Bidang Ilmu'] || row['Bidang Ilmu'] || row['Jurusan'] || '';
+                                const perusahaan = row['Perusahaan'] || row['Instansi'] || row['Asal Perusahaan'] || '';
+                                // 'Jenjang' in the excel screenshot is actually the certificate level (Madya, Utama, etc.)
+                                // We keep the Expert's jenjang empty or map from 'Jenjang Pendidikan' if available
+                                const jenjangEdu = row['Jenjang Pendidikan'] || '';
+
+                                expertsMap.set(nameStr, {
+                                    id: 'exp-' + Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                                    name: nameStr,
+                                    category: category.toString(),
+                                    phone: phone.toString(),
+                                    status: status.toString(),
+                                    jenjang: jenjangEdu.toString(),
+                                    bidangIlmu: bidangIlmu.toString(),
+                                    perusahaan: perusahaan.toString(),
+                                    certificates: [],
+                                    tenders: []
+                                });
+                            }
+                            
+                            // Parse Certificate Data
+                            const certName = row['Sertifikat Keahlian'];
+                            const certLevel = row['Jenjang']; 
+                            const rawDate = row['Masa Berlaku'];
+                            
+                            let expiredDateStr = '';
+                            if (rawDate) {
+                                if (typeof rawDate === 'number') {
+                                    // Excel serial date to JS Date (UTC)
+                                    const utc_days = Math.floor(rawDate - 25569);
+                                    const date_info = new Date(utc_days * 86400 * 1000);
+                                    expiredDateStr = `${date_info.getUTCFullYear()}-${String(date_info.getUTCMonth() + 1).padStart(2, '0')}-${String(date_info.getUTCDate()).padStart(2, '0')}`;
+                                } else {
+                                    const parsed = new Date(rawDate);
+                                    if (!isNaN(parsed.getTime())) {
+                                        expiredDateStr = parsed.toISOString().split('T')[0];
+                                    } else {
+                                        // fallback for DD/MM/YYYY
+                                        const parts = rawDate.toString().split(/[-/]/);
+                                        if (parts.length === 3) {
+                                            expiredDateStr = `${parts[2]}-${parts[1].padStart(2, '0')}-${parts[0].padStart(2, '0')}`;
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            if (certName) {
+                                expertsMap.get(nameStr).certificates.push({
+                                    certName: certName.toString().trim(),
+                                    certLevel: certLevel ? certLevel.toString().trim() : 'Ahli Muda',
+                                    issuedDate: '',
+                                    expiredDate: expiredDateStr
+                                });
+                            }
+                        });
+
+                        const imported = Array.from(expertsMap.values());
+
+                        if (imported.length > 0) {
+                            if (confirm(`Ditemukan ${imported.length} tenaga ahli valid. Lanjutkan import ke database?`)) {
+                                const newExperts = [...experts, ...imported];
+                                await firebase.database().ref('pmc_experts').set(newExperts);
+                                setExperts(newExperts);
+                                alert('Import berhasil diselesaikan!');
+                            }
+                        } else {
+                            alert('Tidak ada data valid yang ditemukan. Pastikan Excel Anda memiliki kolom "Nama Personil".');
+                        }
+                    } catch (err) {
+                        console.error('Import error:', err);
+                        alert('Gagal membaca atau memproses file Excel.');
+                    } finally {
+                        setLoading(false);
+                        e.target.value = '';
+                    }
+                };
+                reader.readAsBinaryString(file);
+            };
+
+            const handleCleanDuplicates = async () => {
+                if (!confirm("Yakin ingin membersihkan duplikat tenaga ahli? Aksi ini akan menggabungkan sertifikat dan menghapus entri ganda.")) return;
+                setLoading(true);
+                try {
+                    const expertsMap = new Map();
+                    experts.forEach(exp => {
+                        const key = (exp.name || '').trim().toLowerCase();
+                        if (expertsMap.has(key)) {
+                            const existing = expertsMap.get(key);
+                            if (exp.certificates && exp.certificates.length > 0) {
+                                if (!existing.certificates) existing.certificates = [];
+                                exp.certificates.forEach(c => {
+                                    const isDuplicateCert = existing.certificates.some(ec => 
+                                        ec.certName === c.certName && ec.certLevel === c.certLevel
+                                    );
+                                    if (!isDuplicateCert) existing.certificates.push(c);
+                                });
+                            }
+                            if (exp.tenders && exp.tenders.length > 0) {
+                                if (!existing.tenders) existing.tenders = [];
+                                exp.tenders.forEach(t => {
+                                    const isDuplicateTender = existing.tenders.some(et => 
+                                        et.lpseName === t.lpseName && et.projectName === t.projectName
+                                    );
+                                    if (!isDuplicateTender) existing.tenders.push(t);
+                                });
+                            }
+                            if (!existing.phone && exp.phone) existing.phone = exp.phone;
+                            if (!existing.bidangIlmu && exp.bidangIlmu) existing.bidangIlmu = exp.bidangIlmu;
+                            if (!existing.perusahaan && exp.perusahaan) existing.perusahaan = exp.perusahaan;
+                        } else {
+                            expertsMap.set(key, exp);
+                        }
+                    });
+                    
+                    const cleanedExperts = Array.from(expertsMap.values());
+                    await firebase.database().ref('pmc_experts').set(cleanedExperts);
+                    setExperts(cleanedExperts);
+                    alert(`Berhasil! Membuang ${experts.length - cleanedExperts.length} entri duplikat.`);
+                } catch (error) {
+                    console.error("Firebase Clean Duplicate Error:", error);
+                    alert("Gagal membersihkan duplikat.");
+                }
+                setLoading(false);
+            };
+
+            // CRUD ACTION EXPERTS
+            const handleExpertAction = async (action, payload) => {
+                setLoading(true);
+                setErrorMsg("");
+                try {
+                    let newData = [...experts];
+                    
+                    if (action === 'add') {
+                        payload.id = 'exp-' + Date.now().toString();
+                        if (!payload.certificates) payload.certificates = [];
+                        if (!payload.tenders) payload.tenders = [];
+                        newData.push(payload);
+                    } else if (action === 'edit' || action === 'update_certificates' || action === 'update_tenders') {
+                        newData = newData.map(item => item.id === payload.id ? payload : item);
+                    } else if (action === 'delete') {
+                        newData = newData.filter(item => item.id !== payload.id);
+                    }
+                    
+                    await firebase.database().ref('pmc_experts').set(newData);
+                    setExperts(newData);
+                    setModalConfig({ isOpen: false, type: null, mode: 'add', data: null });
+                } catch (error) {
+                    console.error("Firebase Expert Write Error:", error);
+                    setErrorMsg("Gagal menyimpan data tenaga ahli.");
+                }
+                setLoading(false);
+            };
+
+            // CRUD ACTION ASSIGNMENTS
+            const handleAssignmentAction = async (action, payload) => {
+                setLoading(true);
+                setErrorMsg("");
+                try {
+                    let newData = [...assignments];
+                    
+                    if (action === 'add') {
+                        payload.id = 'asg-' + Date.now().toString();
+                        newData.push(payload);
+                    } else if (action === 'edit') {
+                        newData = newData.map(item => item.id === payload.id ? payload : item);
+                    } else if (action === 'delete') {
+                        newData = newData.filter(item => item.id !== payload.id);
+                    }
+                    
+                    await firebase.database().ref('pmc_assignments').set(newData);
+                    setAssignments(newData);
+                    setModalConfig({ isOpen: false, type: null, mode: 'add', data: null });
+                } catch (error) {
+                    console.error("Firebase Assignment Write Error:", error);
+                    alert("Gagal menyimpan data ke Firebase: " + error.message);
+                    setErrorMsg("Gagal menyimpan data penugasan: " + error.message);
                 }
                 setLoading(false);
             };
@@ -1356,7 +1658,7 @@
                         return newP;
                     });
 
-                    await firebaseDbRef.set({
+                    await firebaseDbRef.update({
                         projects: cleanProjects,
                         resources: newResources
                     });
@@ -1403,6 +1705,39 @@
                         delete updatedPayload.individualStatus;
                         delete updatedPayload.teamLeader;
                         delete updatedPayload.computedStatus;
+
+                        await handleCrudAction('edit', 'project', updatedPayload);
+                    }
+                });
+            };
+
+            const handleToggleNotStarted = (projectId, newNotStartedStatus) => {
+                setConfirmDialog({
+                    isOpen: true,
+                    type: newNotStartedStatus ? 'warning' : 'info',
+                    title: newNotStartedStatus ? 'Tandai Proyek Belum Mulai' : 'Mulai Proyek',
+                    message: newNotStartedStatus 
+                        ? 'Tandai proyek ini sebagai "Belum Mulai"? Proyek ini tidak akan dihitung dalam beban kerja dan tidak muncul dalam Rincian Penugasan Pegawai.'
+                        : 'Tandai proyek ini sebagai "Sudah Mulai"? Proyek ini akan kembali dihitung dalam beban kerja dan muncul dalam KPI personil.',
+                    onConfirm: async () => {
+                        const project = projects.find(p => p.id === projectId);
+                        if (!project) return;
+
+                        const teamDataObj = {
+                            members: project.team || [],
+                            details: project.categoryDetails || {},
+                            leader: project.teamLeader || "",
+                            individualStatus: project.individualStatus || {},
+                            pengawasanDetails: project.pengawasanDetails || {}
+                        };
+
+                        const updatedPayload = { ...project, team: JSON.stringify(teamDataObj), notStarted: newNotStartedStatus };
+
+                        delete updatedPayload.categoryDetails;
+                        delete updatedPayload.individualStatus;
+                        delete updatedPayload.teamLeader;
+                        delete updatedPayload.computedStatus;
+                        delete updatedPayload.pengawasanDetails;
 
                         await handleCrudAction('edit', 'project', updatedPayload);
                     }
@@ -2010,6 +2345,9 @@
                                                         <td className="p-4 pt-5">
                                                             <div className="flex items-center gap-2 mb-0.5">
                                                                 <p className="font-bold text-slate-800 dark:text-slate-200 text-base">{p.name}</p>
+                                                                {p.notStarted && (
+                                                                    <span className="px-2 py-0.5 bg-slate-100 text-slate-700 border border-slate-300 rounded text-[10px] font-bold tracking-wider dark:bg-slate-800 dark:text-slate-300 dark:border-slate-600">BELUM MULAI</span>
+                                                                )}
                                                                 {p.isPending && (
                                                                     <span className="px-2 py-0.5 bg-orange-100 text-orange-700 border border-orange-200 rounded text-[10px] font-bold tracking-wider">PENDING</span>
                                                                 )}
@@ -2154,10 +2492,18 @@
                                                                     <button onClick={() => { setActiveScheduleProject(p); setActiveTab('schedule'); }} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg border border-purple-200 dark:border-purple-800/50"><Icon name="calendar" size={14} /> Time Schedule</button>
                                                                 )}
                                                                 
-                                                                {p.isPending ? (
-                                                                    <button onClick={() => handleResumeProject(p)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded-lg border border-orange-200 dark:border-orange-800/50"><Icon name="play" size={14} /> Resume Proyek</button>
-                                                                ) : (
-                                                                    <button onClick={() => { setPendingProjectData(p); setShowPendingModal(true); }} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg border border-slate-300 dark:border-slate-600"><Icon name="pause" size={14} /> Set Pending</button>
+                                                                {!(p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi')) && (
+                                                                    p.isPending ? (
+                                                                        <button onClick={() => handleResumeProject(p)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded-lg border border-orange-200 dark:border-orange-800/50"><Icon name="play" size={14} /> Resume Proyek</button>
+                                                                    ) : (
+                                                                        <button onClick={() => { setPendingProjectData(p); setShowPendingModal(true); }} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg border border-slate-300 dark:border-slate-600"><Icon name="pause" size={14} /> Set Pending</button>
+                                                                    )
+                                                                )}
+
+                                                                {p.type?.toLowerCase().includes('pengawas') && (
+                                                                    <button onClick={() => handleToggleNotStarted(p.id, !p.notStarted)} className={`flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg border ${p.notStarted ? 'bg-amber-50 text-amber-600 border-amber-200 hover:bg-amber-100 dark:bg-amber-900/30 dark:border-amber-800/50 dark:hover:bg-amber-900/50' : 'bg-slate-100 text-slate-600 border-slate-300 hover:bg-slate-200 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-400 dark:hover:bg-slate-700'}`}>
+                                                                        <Icon name={p.notStarted ? "play" : "pause"} size={14} /> {p.notStarted ? 'Mulai Proyek' : 'Belum Mulai'}
+                                                                    </button>
                                                                 )}
 
                                                                 <button onClick={() => {
@@ -2222,7 +2568,7 @@
                 const empCategory = getCategoryFromRole(viewingEmployee.role);
 
                 const activeAssignedProjects = computedProjects.filter(p => {
-                    if (!p.team || !p.team.includes(viewingEmployee.name) || p.computedStatus === 'Done') return false;
+                    if (!p.team || !p.team.includes(viewingEmployee.name) || p.computedStatus === 'Done' || p.notStarted) return false;
                     const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
                     let isIndividuallyDone = p.individualStatus?.[viewingEmployee.name] === true;
 
@@ -2240,7 +2586,7 @@
                 });
 
                 const completedAssignedProjects = computedProjects.filter(p => {
-                    if (!p.team || !p.team.includes(viewingEmployee.name) || p.computedStatus === 'Done') return false;
+                    if (!p.team || !p.team.includes(viewingEmployee.name) || p.computedStatus === 'Done' || p.notStarted) return false;
                     const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
                     let isIndividuallyDone = p.individualStatus?.[viewingEmployee.name] === true;
 
@@ -2259,7 +2605,7 @@
 
                 const ledProjects = computedProjects.filter(p =>
                     p.teamLeader === viewingEmployee.name &&
-                    p.computedStatus !== 'Done'
+                    p.computedStatus !== 'Done' && !p.notStarted
                 );
 
                 return (
@@ -2877,12 +3223,6 @@
                                         <Icon name="shopping-cart" size={18} /> Pinjam {borrowCart.length} Alat
                                     </button>
                                 )}
-                                <button
-                                    onClick={() => setModalConfig({ isOpen: true, type: 'inventory', mode: 'add', data: null })}
-                                    className="flex-shrink-0 flex items-center gap-2 px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl transition-colors shadow-sm text-sm"
-                                >
-                                    <Icon name="plus" size={18} /> Tambah Alat
-                                </button>
                             </div>
                         </div>
 
@@ -2915,7 +3255,7 @@
                                     </thead>
                                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                                         {filteredInv.map((item) => {
-                                            const isOverdue = item.status === 'Dipinjam' && item.returnDate && new Date(item.returnDate).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
+                                            const isOverdue = (item.status === 'Dipinjam' || item.status === 'Menunggu Verifikasi' || item.status === 'Menunggu Verifikasi Pengembalian' || item.status === 'Menunggu Verifikasi Perpanjangan') && item.returnDate && new Date(item.returnDate).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
                                             return (
                                             <tr key={item.id} className={`transition-colors ${borrowCart.includes(item.id) ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
                                                 <td className="px-6 py-4 text-center">
@@ -2944,14 +3284,17 @@
                                                     </span>
                                                 </td>
                                                 <td className="px-6 py-4 text-center">
-                                                    {item.status === 'Dipinjam' ? (
+                                                    {item.status === 'Dipinjam' || item.status === 'Menunggu Verifikasi' || item.status === 'Menunggu Verifikasi Pengembalian' || item.status === 'Menunggu Verifikasi Perpanjangan' ? (
                                                         <div className="flex flex-col items-center">
-                                                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${isOverdue ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 shadow-sm border border-red-100 dark:border-red-800' : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                                                                {isOverdue ? 'Masa pinjam sudah habis' : 'Dipinjam'}
+                                                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${isOverdue ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 shadow-sm border border-red-100 dark:border-red-800' : (item.status === 'Menunggu Verifikasi' || item.status === 'Menunggu Verifikasi Pengembalian' || item.status === 'Menunggu Verifikasi Perpanjangan') ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                                                {isOverdue ? 'Masa pinjam habis' : item.status}
                                                             </span>
                                                             <div className={`text-[11px] mt-2 text-center whitespace-nowrap ${isOverdue ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-slate-500'}`}>
                                                                 Oleh: <strong>{item.borrower}</strong><br/>
                                                                 {item.borrowDate ? `${formatDateIndo(item.borrowDate)} s/d ` : ''}{item.returnDate ? formatDateIndo(item.returnDate) : '-'}
+                                                                {item.status === 'Menunggu Verifikasi Perpanjangan' && item.newReturnDate && (
+                                                                    <div className="text-amber-600 font-semibold mt-1">Request: {formatDateIndo(item.newReturnDate)}</div>
+                                                                )}
                                                             </div>
                                                         </div>
                                                     ) : (
@@ -2959,11 +3302,6 @@
                                                             <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
                                                                 Tersedia
                                                             </span>
-                                                            {item.lastBorrower && (
-                                                                <div className="text-[10px] text-slate-400 mt-2 text-center whitespace-nowrap">
-                                                                    Peminjam Terakhir:<br/><strong>{item.lastBorrower}</strong>
-                                                                </div>
-                                                            )}
                                                         </div>
                                                     )}
                                                 </td>
@@ -2978,6 +3316,8 @@
                                                             >
                                                                 Pinjam
                                                             </button>
+                                                        ) : item.status === 'Menunggu Verifikasi' || item.status === 'Menunggu Verifikasi Pengembalian' || item.status === 'Menunggu Verifikasi Perpanjangan' ? (
+                                                            <span className="text-xs text-purple-600 font-medium px-2 py-1 bg-purple-50 rounded-lg">Menunggu Logistik</span>
                                                         ) : (
                                                             <>
                                                                 <button 
@@ -2994,28 +3334,6 @@
                                                                 </button>
                                                             </>
                                                         )}
-                                                        <button 
-                                                            onClick={() => setModalConfig({ isOpen: true, type: 'inventory', mode: 'edit', data: item })}
-                                                            className="p-1.5 text-slate-400 hover:text-blue-600 rounded-lg hover:bg-blue-50 dark:hover:bg-blue-900/30 transition-colors"
-                                                            title="Edit Alat"
-                                                        >
-                                                            <Icon name="edit" size={16} />
-                                                        </button>
-                                                        <button 
-                                                            onClick={() => {
-                                                                setConfirmDialog({
-                                                                    isOpen: true,
-                                                                    title: 'Hapus Alat',
-                                                                    message: `Yakin ingin menghapus ${item.name}? Data yang dihapus tidak dapat dikembalikan.`,
-                                                                    type: 'danger',
-                                                                    onConfirm: () => handleInventoryAction('delete', item)
-                                                                });
-                                                            }}
-                                                            className="p-1.5 text-slate-400 hover:text-red-600 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 transition-colors"
-                                                            title="Hapus Alat"
-                                                        >
-                                                            <Icon name="trash" size={16} />
-                                                        </button>
                                                     </div>
                                                 </td>
                                             </tr>
@@ -3050,9 +3368,497 @@
                 </div>
             );
 
+            const ExpertModalForm = () => {
+                if (!modalConfig.isOpen || modalConfig.type !== 'expert') return null;
+                const isEdit = modalConfig.mode === 'edit';
+                
+                const [formData, setFormData] = useState(() => {
+                    if (isEdit && modalConfig.data) return { ...modalConfig.data };
+                    return { id: '', name: '', phone: '', status: 'Tersedia', jenjang: '', bidangIlmu: '', perusahaan: '' };
+                });
+
+                const handleSubmit = (e) => {
+                    e.preventDefault();
+                    handleExpertAction(isEdit ? 'edit' : 'add', formData);
+                };
+
+                return (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center fade-in p-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-lg flex flex-col max-h-[90vh] overflow-hidden transform scale-in border border-slate-200 dark:border-slate-800">
+                            <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-900/50">
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{isEdit ? 'Edit Data Tenaga Ahli' : 'Tambah Tenaga Ahli'}</h3>
+                                <button onClick={() => setModalConfig({ isOpen: false, type: null })} type="button" className="text-slate-400 hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300 p-2 rounded-xl transition-colors"><Icon name="x" size={20} /></button>
+                            </div>
+                            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                                <form id="expertForm" onSubmit={handleSubmit} className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Lengkap</label>
+                                        <input type="text" required value={formData.name} onChange={e => setFormData({ ...formData, name: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">No. HP / WhatsApp</label>
+                                        <input type="text" value={formData.phone} onChange={e => setFormData({ ...formData, phone: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Jenjang & Bidang Ilmu</label>
+                                        <input type="text" placeholder="Cth: SMA, S1 Teknik Sipil Thn 1997" value={formData.bidangIlmu || ''} onChange={e => setFormData({ ...formData, bidangIlmu: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Perusahaan / Instansi</label>
+                                        <select value={formData.perusahaan || ''} onChange={e => setFormData({ ...formData, perusahaan: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                            <option value="">-- Pilih Perusahaan --</option>
+                                            <option value="PT. Gaharu Sempana">PT. Gaharu Sempana</option>
+                                            <option value="PT. Kencana Adhi Karma">PT. Kencana Adhi Karma</option>
+                                            <option value="CV. Cipta Asri Disain">CV. Cipta Asri Disain</option>
+                                            <option value="CV. Tataring Bali">CV. Tataring Bali</option>
+                                            <option value="Tidak Tetap">Tidak Tetap</option>
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div className="p-5 border-t border-slate-100 dark:border-slate-700/50 flex justify-end gap-3 bg-slate-50 dark:bg-slate-900/50">
+                                <button onClick={() => setModalConfig({ isOpen: false, type: null })} type="button" className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl">Batal</button>
+                                <button form="expertForm" type="submit" disabled={loading} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl disabled:opacity-70 flex items-center gap-2">
+                                    {loading ? <Icon name="refresh-ccw" className="animate-spin" size={16} /> : <Icon name="save" size={16} />} Simpan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const ExpertCertModalForm = () => {
+                if (!modalConfig.isOpen || modalConfig.type !== 'expert_cert') return null;
+                const { expertId, certIndex, cert } = modalConfig.data;
+                const expert = experts.find(e => e.id === expertId);
+                const isEdit = modalConfig.mode === 'edit';
+                
+                const [formData, setFormData] = useState(() => {
+                    if (isEdit && cert) return { ...cert };
+                    return { certName: '', certLevel: 'Ahli Muda', issuedDate: '', expiredDate: '' };
+                });
+
+                const handleSubmit = (e) => {
+                    e.preventDefault();
+                    if (!expert) return;
+                    let newCerts = [...(expert.certificates || [])];
+                    if (isEdit) {
+                        newCerts[certIndex] = formData;
+                    } else {
+                        newCerts.push(formData);
+                    }
+                    handleExpertAction('update_certificates', { ...expert, certificates: newCerts });
+                };
+
+                return (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center fade-in p-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden transform scale-in border border-slate-200 dark:border-slate-800">
+                            <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-900/50">
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{isEdit ? 'Edit Sertifikat' : 'Tambah Sertifikat'}</h3>
+                                <button onClick={() => setModalConfig({ isOpen: false, type: null })} type="button" className="text-slate-400 hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300 p-2 rounded-xl transition-colors"><Icon name="x" size={20} /></button>
+                            </div>
+                            <div className="p-6">
+                                <form id="expertCertForm" onSubmit={handleSubmit} className="space-y-4">
+                                    <div>
+                                        <div className="flex justify-between items-center mb-1">
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">Nama Sertifikat</label>
+                                            <button type="button" onClick={() => setShowCertManager(true)} className="text-xs text-indigo-600 dark:text-indigo-400 hover:text-indigo-700 font-semibold flex items-center gap-1">
+                                                <Icon name="settings" size={12} /> Kelola Daftar
+                                            </button>
+                                        </div>
+                                        <input type="text" required list="cert-options" value={formData.certName} onChange={e => setFormData({ ...formData, certName: e.target.value })} placeholder="Cth: SKA Ahli Teknik Bangunan Gedung" className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
+                                        <datalist id="cert-options">
+                                            {certList.map((cert, idx) => <option key={idx} value={cert} />)}
+                                        </datalist>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tingkat / Kualifikasi</label>
+                                        <select value={formData.certLevel} onChange={e => setFormData({ ...formData, certLevel: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                            <option value="Ahli Muda">Ahli Muda</option>
+                                            <option value="Ahli Madya">Ahli Madya</option>
+                                            <option value="Ahli Utama">Ahli Utama</option>
+                                            <option value="Lainnya">Lainnya</option>
+                                        </select>
+                                    </div>
+                                    <div className="grid grid-cols-2 gap-4">
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tgl Terbit</label>
+                                            <input type="date" required value={formData.issuedDate} onChange={e => setFormData({ ...formData, issuedDate: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
+                                        </div>
+                                        <div>
+                                            <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tgl Berakhir</label>
+                                            <input type="date" required value={formData.expiredDate} onChange={e => setFormData({ ...formData, expiredDate: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                            <div className="p-5 border-t border-slate-100 dark:border-slate-700/50 flex justify-end gap-3 bg-slate-50 dark:bg-slate-900/50">
+                                <button onClick={() => setModalConfig({ isOpen: false, type: null })} type="button" className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl">Batal</button>
+                                <button form="expertCertForm" type="submit" disabled={loading} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl disabled:opacity-70 flex items-center gap-2">
+                                    {loading ? <Icon name="refresh-ccw" className="animate-spin" size={16} /> : <Icon name="save" size={16} />} Simpan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            const ExpertTenderModalForm = () => {
+                if (!modalConfig.isOpen || modalConfig.type !== 'expert_tender') return null;
+                const { expertId, tenderIndex, tender } = modalConfig.data;
+                const expert = experts.find(e => e.id === expertId);
+                const isEdit = modalConfig.mode === 'edit';
+                
+                const [formData, setFormData] = useState(() => {
+                    if (isEdit && tender) return { ...tender };
+                    return { lpseName: '', position: 'Team Leader', status: 'Aktif' };
+                });
+
+                const handleSubmit = (e) => {
+                    e.preventDefault();
+                    if (!expert) return;
+
+                    // Validation rule
+                    if (formData.status === 'Aktif' || formData.status === 'Menunggu Pengumuman') {
+                        const existingActive = (expert.tenders || []).find((t, idx) => 
+                            (!isEdit || idx !== tenderIndex) && 
+                            t.lpseName.trim().toLowerCase() === formData.lpseName.trim().toLowerCase() && 
+                            (t.status === 'Aktif' || t.status === 'Menunggu Pengumuman')
+                        );
+
+                        if (existingActive) {
+                            alert(`Gagal menyimpan! Tenaga Ahli ini sudah memiliki tender aktif/menunggu di ${existingActive.lpseName}. Sesuai aturan, tidak boleh dipasang pada lebih dari 1 tender aktif di LPSE yang sama.`);
+                            return;
+                        }
+                    }
+
+                    let newTenders = [...(expert.tenders || [])];
+                    if (isEdit) {
+                        newTenders[tenderIndex] = formData;
+                    } else {
+                        newTenders.push(formData);
+                    }
+                    handleExpertAction('update_tenders', { ...expert, tenders: newTenders });
+                };
+
+                return (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center fade-in p-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md flex flex-col overflow-hidden transform scale-in border border-slate-200 dark:border-slate-800">
+                            <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-900/50">
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{isEdit ? 'Edit Riwayat Tender' : 'Plotting Tender LPSE'}</h3>
+                                <button onClick={() => setModalConfig({ isOpen: false, type: null })} type="button" className="text-slate-400 hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300 p-2 rounded-xl transition-colors"><Icon name="x" size={20} /></button>
+                            </div>
+                            <div className="p-6">
+                                <form id="expertTenderForm" onSubmit={handleSubmit} className="space-y-4">
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nama / Instansi LPSE</label>
+                                        <div className="flex gap-2 items-center">
+                                            <input type="text" list="lpse-options" required value={formData.lpseName} onChange={e => setFormData({ ...formData, lpseName: e.target.value })} placeholder="Cth: LPSE Kementerian PUPR" className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
+                                            <datalist id="lpse-options">
+                                                {lpseList.map((lpse, idx) => <option key={idx} value={lpse} />)}
+                                            </datalist>
+                                            <button type="button" onClick={() => setShowLpseManager(true)} className="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-xl transition-colors shrink-0" title="Kelola Daftar LPSE">
+                                                <Icon name="settings" size={18} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Posisi / Jabatan yang Ditawarkan</label>
+                                        <input type="text" required value={formData.position} onChange={e => setFormData({ ...formData, position: e.target.value })} placeholder="Cth: Team Leader / Ahli Struktur" className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
+                                    </div>
+                                    <div>
+                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Status Tender</label>
+                                        <select value={formData.status} onChange={e => setFormData({ ...formData, status: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                            <option value="Menunggu Pengumuman">Menunggu Pengumuman</option>
+                                            <option value="Aktif">Aktif (Sedang Proses)</option>
+                                            <option value="Menang">Menang</option>
+                                            <option value="Kalah">Kalah / Gugur</option>
+                                            <option value="Selesai">Selesai / Riwayat</option>
+                                        </select>
+                                    </div>
+                                </form>
+                            </div>
+                            <div className="p-5 border-t border-slate-100 dark:border-slate-700/50 flex justify-end gap-3 bg-slate-50 dark:bg-slate-900/50">
+                                <button onClick={() => setModalConfig({ isOpen: false, type: null })} type="button" className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl">Batal</button>
+                                <button form="expertTenderForm" type="submit" disabled={loading} className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-xl disabled:opacity-70 flex items-center gap-2">
+                                    {loading ? <Icon name="refresh-ccw" className="animate-spin" size={16} /> : <Icon name="save" size={16} />} Simpan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
+            // --- ASSIGNMENT MODAL FORM ---
+            const AssignmentModalForm = () => {
+                if (!modalConfig.isOpen || modalConfig.type !== 'assignment') return null;
+
+                const isEdit = modalConfig.mode === 'edit';
+                
+                const [formData, setFormData] = useState(() => {
+                    if (isEdit && modalConfig.data) {
+                        return { ...modalConfig.data, experts: modalConfig.data.experts || [] };
+                    }
+                    return { jobName: '', projectType: 'Pengawasan', contractType: 'Waktu Penugasan', tenderType: 'Tender', lpseName: '', startDate: '', duration: '', experts: [] };
+                });
+
+                // Auto hitung end date jika start date & durasi diisi
+                const [endDate, setEndDate] = useState('');
+                useEffect(() => {
+                    if (formData.startDate && formData.duration) {
+                        const start = new Date(formData.startDate);
+                        const days = parseInt(formData.duration, 10);
+                        if (!isNaN(days)) {
+                            const end = new Date(start);
+                            end.setDate(start.getDate() + days);
+                            setEndDate(end.toISOString().split('T')[0]);
+                        } else {
+                            setEndDate('');
+                        }
+                    } else {
+                        setEndDate('');
+                    }
+                }, [formData.startDate, formData.duration]);
+
+                const handleSubmit = (e) => {
+                    e.preventDefault();
+                    if (!formData.jobName || !formData.lpseName) {
+                        alert("Harap lengkapi informasi pekerjaan!");
+                        return;
+                    }
+                    if (!formData.experts || formData.experts.length === 0) {
+                        alert("Harap plot minimal 1 tenaga ahli ke pekerjaan ini!");
+                        return;
+                    }
+
+                    for (let i = 0; i < formData.experts.length; i++) {
+                        const exp = formData.experts[i];
+                        if (!exp.expertId || !exp.manMonth) {
+                            setAlertModal({ isOpen: true, title: 'Validasi Form', message: `Harap lengkapi data personil (Tenaga Ahli dan Man Month) di baris ke-${i+1}` });
+                            return;
+                        }
+
+                        // Cek aturan perundang-undangan LPSE
+                        const expertObj = experts.find(e => e.id === exp.expertId);
+                        const expertName = expertObj ? expertObj.name : 'Tenaga Ahli';
+
+                        const existingAssignmentsInSameLpse = assignments.filter(asg => {
+                            if (isEdit && asg.id === formData.id) return false;
+                            if ((asg.lpseName || '').trim().toLowerCase() !== (formData.lpseName || '').trim().toLowerCase()) return false;
+                            return (asg.experts || []).some(e => e.expertId === exp.expertId);
+                        });
+
+                        const countPengawasan = existingAssignmentsInSameLpse.filter(asg => (asg.projectType || 'Pengawasan') === 'Pengawasan').length;
+                        const countPerencanaan = existingAssignmentsInSameLpse.filter(asg => asg.projectType === 'Perencanaan').length;
+
+                        if ((formData.projectType || 'Pengawasan') === 'Pengawasan') {
+                            if (countPengawasan >= 1) {
+                                setAlertModal({ isOpen: true, title: 'Melanggar Batas Aturan', message: `Gagal menyimpan! ${expertName} sudah diplot pada proyek Pengawasan di ${formData.lpseName}.\n\nSesuai aturan, Tenaga Ahli hanya boleh diplot maksimal 1 proyek Pengawasan di LPSE yang sama.` });
+                                return;
+                            }
+                        } else if (formData.projectType === 'Perencanaan') {
+                            if (countPerencanaan >= 3) {
+                                setAlertModal({ isOpen: true, title: 'Melanggar Batas Aturan', message: `Gagal menyimpan! ${expertName} sudah diplot pada ${countPerencanaan} proyek Perencanaan di ${formData.lpseName}.\n\nSesuai aturan, Tenaga Ahli hanya boleh diplot maksimal 3 proyek Perencanaan di LPSE yang sama.` });
+                                return;
+                            }
+                        }
+                    }
+                    const cleanedExperts = formData.experts.map(exp => {
+                        const { expertSearchTemp, ...rest } = exp;
+                        return rest;
+                    });
+                    
+                    const payload = { ...formData, experts: cleanedExperts, endDate };
+                    handleAssignmentAction(isEdit ? 'edit' : 'add', payload);
+                };
+
+                const handleAddExpertRow = () => {
+                    setFormData(prev => ({
+                        ...prev,
+                        experts: [...(prev.experts || []), { expertId: '', certificateName: '', manMonth: '' }]
+                    }));
+                };
+
+                const handleRemoveExpertRow = (index) => {
+                    setFormData(prev => {
+                        const newExperts = [...prev.experts];
+                        newExperts.splice(index, 1);
+                        return { ...prev, experts: newExperts };
+                    });
+                };
+
+                const handleExpertRowChange = (index, field, value) => {
+                    setFormData(prev => {
+                        const newExperts = [...prev.experts];
+                        newExperts[index] = { ...newExperts[index], [field]: value };
+                        
+                        // Reset certificate when expert changes
+                        if (field === 'expertId') {
+                            newExperts[index].certificateName = '';
+                        }
+                        
+                        return { ...prev, experts: newExperts };
+                    });
+                };
+
+                return (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center fade-in p-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-3xl flex flex-col max-h-[90vh] overflow-hidden transform scale-in border border-slate-200 dark:border-slate-800">
+                            <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-900/50">
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">{isEdit ? 'Edit Penugasan' : 'Tambah Penugasan'}</h3>
+                                <button onClick={() => setModalConfig({ isOpen: false, type: null })} type="button" className="text-slate-400 hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300 p-2 rounded-xl transition-colors"><Icon name="x" size={20} /></button>
+                            </div>
+                            <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                                <form id="assignmentForm" onSubmit={handleSubmit} className="space-y-6">
+                                    
+                                    {/* SEKSI INFORMASI PEKERJAAN */}
+                                    <div className="space-y-4">
+                                        <h4 className="font-bold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-2">Informasi Pekerjaan</h4>
+                                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Nama Pekerjaan</label>
+                                                <input type="text" required value={formData.jobName} onChange={e => setFormData({ ...formData, jobName: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">LPSE / Instansi</label>
+                                                <div className="flex gap-2 items-center">
+                                                    <input type="text" list="assignment-lpse-options" required value={formData.lpseName} onChange={e => setFormData({ ...formData, lpseName: e.target.value })} placeholder="Cth: LPSE Provinsi Bali" className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
+                                                    <datalist id="assignment-lpse-options">
+                                                        {lpseList.map((lpse, idx) => <option key={idx} value={lpse} />)}
+                                                    </datalist>
+                                                    <button type="button" onClick={() => setShowLpseManager(true)} className="p-2.5 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 text-slate-500 rounded-xl transition-colors shrink-0" title="Kelola Daftar LPSE">
+                                                        <Icon name="settings" size={18} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Tipe Proyek</label>
+                                                <select required value={formData.projectType || 'Pengawasan'} onChange={e => setFormData({ ...formData, projectType: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                                    <option value="Pengawasan">Pengawasan</option>
+                                                    <option value="Perencanaan">Perencanaan</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Jenis Kontrak</label>
+                                                <select required value={formData.contractType} onChange={e => setFormData({ ...formData, contractType: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                                    <option value="Waktu Penugasan">Waktu Penugasan</option>
+                                                    <option value="Lumsum">Lumsum</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Jenis Tender</label>
+                                                <select required value={formData.tenderType} onChange={e => setFormData({ ...formData, tenderType: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                                    <option value="Tender">Tender</option>
+                                                    <option value="PL">Penunjukan Langsung (PL)</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div className="grid grid-cols-2 gap-4">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Start (Tanggal)</label>
+                                                <input type="date" required value={formData.startDate} onChange={e => setFormData({ ...formData, startDate: e.target.value })} className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
+                                            </div>
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">Durasi Kontrak Induk (Hari)</label>
+                                                <input type="number" min="1" required value={formData.duration} onChange={e => setFormData({ ...formData, duration: e.target.value })} placeholder="Cth: 90" className="w-full p-2.5 rounded-xl border border-slate-300 dark:border-slate-600 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
+                                            </div>
+                                        </div>
+                                        {endDate && (
+                                            <div className="p-3 bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-100 dark:border-indigo-800/50 rounded-xl flex items-center justify-between">
+                                                <span className="text-xs font-semibold text-indigo-700 dark:text-indigo-300">Estimasi Akhir Kontrak Induk:</span>
+                                                <span className="text-sm font-bold text-indigo-800 dark:text-indigo-200">{formatDateIndo(endDate)}</span>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* SEKSI PLOTTING TENAGA AHLI */}
+                                    <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                        <div className="flex justify-between items-center">
+                                            <h4 className="font-bold text-slate-700 dark:text-slate-200">Plotting Tenaga Ahli</h4>
+                                            <button type="button" onClick={handleAddExpertRow} className="text-xs font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                                                <Icon name="plus" size={14} /> Tambah Personil
+                                            </button>
+                                        </div>
+
+                                        {(formData.experts || []).length === 0 ? (
+                                            <div className="p-6 text-center border border-dashed border-slate-300 dark:border-slate-700 rounded-xl bg-slate-50/50 dark:bg-slate-800/50">
+                                                <p className="text-sm text-slate-500">Belum ada tenaga ahli yang diplot pada pekerjaan ini.</p>
+                                            </div>
+                                        ) : (
+                                            <div className="space-y-3">
+                                                {formData.experts.map((expPlot, idx) => {
+                                                    const selectedExpertObj = experts.find(e => e.id === expPlot.expertId);
+                                                    const availableCerts = selectedExpertObj?.certificates || [];
+
+                                                    return (
+                                                        <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row gap-3 relative group">
+                                                            <div className="flex-1">
+                                                                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Tenaga Ahli</label>
+                                                                <input 
+                                                                    type="text" 
+                                                                    list={`expert-list-${idx}`}
+                                                                    required 
+                                                                    value={expPlot.expertSearchTemp !== undefined ? expPlot.expertSearchTemp : (selectedExpertObj ? selectedExpertObj.name : '')}
+                                                                    onChange={e => {
+                                                                        const val = e.target.value;
+                                                                        const matched = experts.find(ex => ex.name === val);
+                                                                        setFormData(prev => {
+                                                                            const newExperts = [...prev.experts];
+                                                                            if (matched) {
+                                                                                newExperts[idx] = { ...newExperts[idx], expertId: matched.id, expertSearchTemp: undefined, certificateName: '' };
+                                                                            } else {
+                                                                                newExperts[idx] = { ...newExperts[idx], expertId: '', expertSearchTemp: val };
+                                                                            }
+                                                                            return { ...prev, experts: newExperts };
+                                                                        });
+                                                                    }} 
+                                                                    placeholder="Cari atau ketik nama..."
+                                                                    className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" 
+                                                                />
+                                                                <datalist id={`expert-list-${idx}`}>
+                                                                    {experts.map(e => <option key={e.id} value={e.name} />)}
+                                                                </datalist>
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Sertifikat Terpakai</label>
+                                                                <select value={expPlot.certificateName} onChange={e => handleExpertRowChange(idx, 'certificateName', e.target.value)} className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                                                    <option value="">-- Tidak Pakai / Kosong --</option>
+                                                                    {availableCerts.map((c, i) => <option key={i} value={c.certName}>{c.certName} ({c.certLevel})</option>)}
+                                                                </select>
+                                                            </div>
+                                                            <div className="w-full md:w-24">
+                                                                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Man Month</label>
+                                                                <input type="text" required value={expPlot.manMonth} onChange={e => handleExpertRowChange(idx, 'manMonth', e.target.value)} placeholder="Cth: 1.5" className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
+                                                            </div>
+                                                            
+                                                            <button type="button" onClick={() => handleRemoveExpertRow(idx)} className="absolute -top-2 -right-2 p-1.5 bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-400 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity" title="Hapus Baris">
+                                                                <Icon name="x" size={14} />
+                                                            </button>
+                                                        </div>
+                                                    )
+                                                })}
+                                            </div>
+                                        )}
+                                    </div>
+                                </form>
+                            </div>
+                            <div className="p-5 border-t border-slate-100 dark:border-slate-700/50 flex justify-end gap-3 bg-slate-50 dark:bg-slate-900/50">
+                                <button onClick={() => setModalConfig({ isOpen: false, type: null })} type="button" className="px-4 py-2 text-sm font-medium text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-xl">Batal</button>
+                                <button form="assignmentForm" type="submit" disabled={loading} className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-medium rounded-xl disabled:opacity-70 flex items-center gap-2">
+                                    {loading ? <Icon name="refresh-ccw" className="animate-spin" size={16} /> : <Icon name="save" size={16} />} Simpan
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
             // --- MODAL FORMULAR ---
             const ModalForm = () => {
                 if (!modalConfig.isOpen) return null;
+                if (modalConfig.type === 'expert' || modalConfig.type === 'expert_cert' || modalConfig.type === 'expert_tender' || modalConfig.type === 'assignment') return null;
 
                 const isProject = modalConfig.type === 'project';
                 const isInventory = modalConfig.type === 'inventory' || modalConfig.type === 'inventory-borrow' || modalConfig.type === 'inventory-return' || modalConfig.type === 'inventory-extend' || modalConfig.type === 'inventory-cart';
@@ -3393,15 +4199,14 @@
                             });
                             return;
                         } else if (modalConfig.mode === 'borrow') {
-                            finalPayload.status = 'Dipinjam';
+                            finalPayload.status = 'Menunggu Verifikasi';
                             if (!finalPayload.borrowDate) finalPayload.borrowDate = new Date().toISOString().split('T')[0];
                         } else if (modalConfig.mode === 'return') {
-                            finalPayload.status = 'Tersedia';
-                            finalPayload.lastBorrower = finalPayload.borrower;
-                            finalPayload.borrower = null;
-                            finalPayload.borrowDate = null;
-                            finalPayload.returnDate = null;
-                            finalPayload.projectAssigned = null;
+                            finalPayload.status = 'Menunggu Verifikasi Pengembalian';
+                        } else if (modalConfig.mode === 'extend') {
+                            finalPayload.status = 'Menunggu Verifikasi Perpanjangan';
+                            finalPayload.newReturnDate = finalPayload.returnDate;
+                            finalPayload.returnDate = modalConfig.data.returnDate;
                         }
                         handleInventoryAction(modalConfig.mode, finalPayload);
                         return;
@@ -4152,7 +4957,7 @@
                                     <Icon name="alert-triangle" size={32} />
                                 </div>
                                 <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 mb-2">Akses Terbatas (BETA)</h3>
-                                <p className="text-sm text-slate-500 mb-6 leading-relaxed">Menu {pendingTabAttempt === 'inventaris' ? 'Logistik & Inventaris' : 'Evaluasi & KPI'} masih dalam tahap uji coba (BETA) dan sedang dalam tahap pengembangan sementara hanya dapat diakses oleh Developer (Krisna).</p>
+                                <p className="text-sm text-slate-500 mb-6 leading-relaxed">Menu {pendingTabAttempt === 'inventaris' ? 'Logistik & Inventaris' : pendingTabAttempt === 'ahli' ? 'Tenaga Ahli' : pendingTabAttempt === 'penugasan' ? 'Penugasan Tenaga Ahli' : 'Evaluasi & KPI'} masih dalam tahap uji coba (BETA) dan sedang dalam tahap pengembangan sementara hanya dapat diakses oleh Developer (Krisna).</p>
 
                                 <input
                                     type="password"
@@ -4342,7 +5147,7 @@
                 if (!printData) return null;
 
                 let title = "Laporan Eksekutif Status Proyek & Penugasan Personil";
-                let filteredProjects = [...computedProjects].filter(p => p.computedStatus !== 'Done');
+                let filteredProjects = [...computedProjects].filter(p => p.computedStatus !== 'Done' && !p.notStarted);
                 let filteredResources = [...calculatedResources];
 
                 if (printData.type === 'project') {
@@ -4352,7 +5157,7 @@
                 } else if (printData.type === 'personnel') {
                     filteredResources = filteredResources.filter(r => r.name === printData.name);
                     title = `Laporan Rekam Penugasan Personil: ${filteredResources[0]?.name}`;
-                    filteredProjects = filteredProjects.filter(p => p.team?.includes(filteredResources[0]?.name) || p.teamLeader === filteredResources[0]?.name);
+                    filteredProjects = filteredProjects.filter(p => (p.team?.includes(filteredResources[0]?.name) || p.teamLeader === filteredResources[0]?.name) && !p.notStarted);
                 } else if (printData.type === 'custom') {
                     if (printData.options.section === 'ProyekSaja') title = "Laporan Eksekutif Status Proyek";
                     if (printData.options.section === 'PegawaiSaja') title = "Laporan Eksekutif Penugasan Personil";
@@ -4825,7 +5630,7 @@
                                                     {(() => {
                                                         const resourcesBySubTeam = {};
                                                         filteredResources.forEach(res => {
-                                                            const activeProjectsForRes = filteredProjects.filter(p => p.team?.includes(res.name) || p.teamLeader === res.name || p.surveyorTeam?.includes(res.name));
+                                                            const activeProjectsForRes = filteredProjects.filter(p => (p.team?.includes(res.name) || p.teamLeader === res.name || p.surveyorTeam?.includes(res.name)) && !p.notStarted);
                                                             if (printData.type === 'custom' && printData.options.projectType !== 'Semua' && activeProjectsForRes.length === 0) return;
                                                             
                                                             const subTeam = getCategoryFromRole(res.role);
@@ -5665,6 +6470,281 @@
                 );
             };
 
+            const renderPenugasan = () => {
+                const filteredAssignments = assignments.filter(asg => {
+                    const search = searchAssignmentTab.toLowerCase();
+                    const matchJob = (asg.jobName || '').toLowerCase().includes(search);
+                    const matchLpse = (asg.lpseName || '').toLowerCase().includes(search);
+                    
+                    const matchExpert = (asg.experts || []).some(expPlot => {
+                        const exp = experts.find(e => e.id === expPlot.expertId);
+                        const expertName = exp ? exp.name.toLowerCase() : '';
+                        return expertName.includes(search) || (expPlot.certificateName || '').toLowerCase().includes(search);
+                    });
+
+                    return matchJob || matchLpse || matchExpert;
+                });
+
+                return (
+                    <div className="space-y-6 fade-in pb-12">
+                        <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 dark:border-slate-800 p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                                        <Icon name="briefcase" size={24} />
+                                    </div>
+                                    Penugasan Tenaga Ahli
+                                </h3>
+                                <p className="text-sm text-slate-500 mt-1">Kelola plotting penugasan tenaga ahli untuk proyek.</p>
+                            </div>
+                            <div className="flex gap-2 w-full sm:w-auto flex-wrap sm:flex-nowrap">
+                                <div className="relative flex-1 sm:w-64 min-w-[200px]">
+                                    <input type="text" placeholder="Cari penugasan..." value={searchAssignmentTab} onChange={(e) => setSearchAssignmentTab(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm transition-shadow" />
+                                    <Icon name="search" size={16} className="absolute left-3 top-3 text-slate-400" />
+                                </div>
+                                <button onClick={() => setModalConfig({ isOpen: true, type: 'assignment', mode: 'add', data: null })} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all font-semibold flex items-center gap-2 text-sm shrink-0">
+                                    <Icon name="plus" size={18} /> Tambah Penugasan
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {filteredAssignments.map(asg => {
+                                return (
+                                    <div key={asg.id} className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-800 overflow-hidden transition-all group flex flex-col">
+                                        <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start bg-slate-50/50 dark:bg-slate-900/50">
+                                            <div>
+                                                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg leading-tight mb-2">{asg.jobName}</h4>
+                                                <div className="flex flex-col items-start gap-2">
+                                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/30 dark:text-indigo-400 border border-indigo-200 dark:border-indigo-800">
+                                                        {asg.tenderType}
+                                                    </span>
+                                                    <p className="text-xs font-semibold text-slate-600 dark:text-slate-400">{asg.lpseName}</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onClick={() => setModalConfig({ isOpen: true, type: 'assignment', mode: 'edit', data: asg })} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800 rounded-lg" title="Edit Penugasan"><Icon name="edit-3" size={16} /></button>
+                                                <button onClick={() => {
+                                                    if(confirm(`Hapus pekerjaan ${asg.jobName}?`)) handleAssignmentAction('delete', { id: asg.id });
+                                                }} className="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-slate-800 rounded-lg" title="Hapus"><Icon name="trash-2" size={16} /></button>
+                                            </div>
+                                        </div>
+                                        
+                                        <div className="p-5 space-y-3 flex-1">
+                                            <div className="flex flex-col gap-3 mb-3">
+                                                <div>
+                                                    <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-0.5">Tipe Proyek & Kontrak</p>
+                                                    <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{asg.projectType || 'Pengawasan'} - {asg.contractType}</p>
+                                                </div>
+                                                <div>
+                                                    <p className="text-[10px] text-slate-500 font-bold mb-0.5">Mulai - Durasi</p>
+                                                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{asg.startDate ? formatDateIndo(asg.startDate) : '-'} ({asg.duration} Hari)</p>
+                                                </div>
+                                            </div>
+
+                                            <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
+                                                <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5"><Icon name="users" size={12}/> Tenaga Ahli Diplot ({(asg.experts || []).length})</p>
+                                                {(asg.experts || []).length === 0 ? (
+                                                    <p className="text-xs text-slate-400 italic">Belum ada tenaga ahli.</p>
+                                                ) : (
+                                                    <div className="space-y-2">
+                                                        {(asg.experts || []).map((expPlot, idx) => {
+                                                            const exp = experts.find(e => e.id === expPlot.expertId);
+                                                            const expertName = exp ? exp.name : 'Unknown';
+                                                            return (
+                                                                <div key={idx} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50">
+                                                                    <div>
+                                                                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{expertName}</p>
+                                                                        {expPlot.certificateName && <p className="text-[10px] text-slate-500">SKA: {expPlot.certificateName}</p>}
+                                                                    </div>
+                                                                    <div className="text-right">
+                                                                        <span className="text-[10px] font-bold bg-indigo-100 text-indigo-700 dark:bg-indigo-900/50 dark:text-indigo-300 px-2 py-0.5 rounded-full">{expPlot.manMonth} MM</span>
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                            
+                            {filteredAssignments.length === 0 && (
+                                <div className="col-span-full py-12 text-center text-slate-400">
+                                    <Icon name="briefcase" size={48} className="mx-auto mb-3 opacity-20" />
+                                    <p className="text-lg font-medium text-slate-500">Belum ada penugasan tenaga ahli.</p>
+                                    <p className="text-sm mt-1">Klik "Tambah Penugasan" untuk membuat data baru.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
+            const renderTenagaAhli = () => {
+                const filteredExperts = experts.filter(e => {
+                    const search = searchExpertTab.toLowerCase();
+                    const matchName = e.name?.toLowerCase().includes(search);
+                    const matchCert = e.certificates?.some(c => c.certName?.toLowerCase().includes(search));
+                    return matchName || matchCert;
+                });
+
+                return (
+                    <div className="space-y-6 fade-in pb-12">
+                        <div className="bg-white/60 dark:bg-slate-900/60 backdrop-blur-xl rounded-2xl shadow-sm border border-white/60 dark:border-slate-800 p-4 sm:p-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 transition-colors">
+                            <div>
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                                    <div className="p-2 bg-indigo-100 dark:bg-indigo-900/50 text-indigo-600 dark:text-indigo-400 rounded-lg">
+                                        <Icon name="award" size={24} />
+                                    </div>
+                                    Tenaga Ahli & Tender LPSE
+                                </h3>
+                                <p className="text-sm text-slate-500 mt-1">Kelola data tenaga ahli, sertifikat keahlian, dan alokasi tender LPSE.</p>
+                            </div>
+                            <div className="flex gap-2 w-full sm:w-auto">
+                                <div className="relative flex-1 sm:w-64">
+                                    <input type="text" placeholder="Cari tenaga ahli..." value={searchExpertTab} onChange={(e) => setSearchExpertTab(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm transition-shadow" />
+                                    <Icon name="search" size={16} className="absolute left-3 top-3 text-slate-400" />
+                                </div>
+                                <button onClick={() => setModalConfig({ isOpen: true, type: 'expert', mode: 'add', data: null })} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all font-semibold flex items-center gap-2 text-sm shrink-0">
+                                    <Icon name="plus" size={18} /> Tambah
+                                </button>
+                                <label className="cursor-pointer px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md transition-all font-semibold flex items-center gap-2 text-sm shrink-0">
+                                    <Icon name="file-text" size={18} /> Import Excel
+                                    <input type="file" accept=".xlsx, .xls" onChange={handleImportExcel} className="hidden" />
+                                </label>
+                                <button onClick={handleCleanDuplicates} className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl shadow-md transition-all font-semibold flex items-center gap-2 text-sm shrink-0" title="Bersihkan Duplikat">
+                                    <Icon name="trash-2" size={18} /> Bersihkan Duplikat
+                                </button>
+                            </div>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                            {filteredExperts.map(exp => (
+                                <div key={exp.id} className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-800 overflow-hidden transition-all group">
+                                    <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start bg-slate-50/50 dark:bg-slate-900/50">
+                                        <div>
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg">{exp.name}</h4>
+                                            </div>
+                                            <div className="flex flex-col gap-1 mt-2">
+                                                <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5"><Icon name="phone" size={12} /> {exp.phone || '-'}</p>
+                                                {exp.bidangIlmu && (
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5" title="Jenjang & Bidang Ilmu">
+                                                        <Icon name="graduation-cap" size={12} /> {exp.bidangIlmu}
+                                                    </p>
+                                                )}
+                                                {exp.perusahaan && (
+                                                    <p className="text-xs text-slate-600 dark:text-slate-400 flex items-center gap-1.5" title="Perusahaan / Instansi">
+                                                        <Icon name="building-2" size={12} /> {exp.perusahaan}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </div>
+                                        <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <button onClick={() => setModalConfig({ isOpen: true, type: 'expert', mode: 'edit', data: exp })} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800 rounded-lg" title="Edit Identitas"><Icon name="edit-3" size={16} /></button>
+                                            <button onClick={() => {
+                                                if(confirm(`Hapus tenaga ahli ${exp.name}?`)) handleExpertAction('delete', { id: exp.id });
+                                            }} className="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-slate-800 rounded-lg" title="Hapus"><Icon name="trash-2" size={16} /></button>
+                                        </div>
+                                    </div>
+                                    
+                                    <div className="p-5 space-y-5">
+                                        {/* Sertifikat Section */}
+                                        <div>
+                                            <div className="flex justify-between items-center mb-3">
+                                                <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                                    <Icon name="shield" size={14} /> Sertifikat Keahlian
+                                                </h5>
+                                                <button onClick={() => setModalConfig({ isOpen: true, type: 'expert_cert', mode: 'add', data: { expertId: exp.id } })} className="text-[10px] font-bold text-indigo-600 hover:text-indigo-800 dark:text-indigo-400 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 px-2 py-1 rounded-md transition-colors flex items-center gap-1">
+                                                    <Icon name="plus" size={10} /> Tambah
+                                                </button>
+                                            </div>
+                                            <div className="space-y-2">
+                                                {(!exp.certificates || exp.certificates.length === 0) ? (
+                                                    <p className="text-xs text-slate-400 italic">Belum ada sertifikat.</p>
+                                                ) : (
+                                                    exp.certificates.map((cert, idx) => {
+                                                        const isExpired = new Date(cert.expiredDate) < new Date();
+                                                        return (
+                                                            <div key={idx} className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 flex justify-between items-center group/cert">
+                                                                <div>
+                                                                    <div className="text-sm font-semibold text-slate-700 dark:text-slate-200">{cert.certName} <span className="text-xs font-normal text-slate-500">({cert.certLevel})</span></div>
+                                                                    <div className={`text-[10px] font-bold mt-0.5 ${isExpired ? 'text-red-500' : 'text-emerald-500'}`}>
+                                                                        Exp: {formatDateIndo(cert.expiredDate)} {isExpired && '(EXPIRED)'}
+                                                                    </div>
+                                                                </div>
+                                                                <div className="flex gap-1">
+                                                                    <button onClick={() => setModalConfig({ isOpen: true, type: 'expert_cert', mode: 'edit', data: { expertId: exp.id, certIndex: idx, cert } })} className="text-slate-400 hover:text-blue-600 p-1 rounded transition-colors opacity-0 group-hover/cert:opacity-100"><Icon name="edit-2" size={14} /></button>
+                                                                    <button onClick={() => {
+                                                                        if(confirm('Hapus sertifikat ini?')) {
+                                                                            let updatedCerts = [...exp.certificates];
+                                                                            updatedCerts.splice(idx, 1);
+                                                                            handleExpertAction('update_certificates', { ...exp, certificates: updatedCerts });
+                                                                        }
+                                                                    }} className="text-slate-400 hover:text-red-600 p-1 rounded transition-colors opacity-0 group-hover/cert:opacity-100"><Icon name="trash-2" size={14} /></button>
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Tender LPSE Section (Linked to Assignments) */}
+                                        <div>
+                                            <div className="flex justify-between items-center mb-3">
+                                                <h5 className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
+                                                    <Icon name="briefcase" size={14} /> Riwayat Tender LPSE
+                                                </h5>
+                                                {/* Tombol Tambah dihapus karena sudah terhubung ke menu Penugasan Tenaga Ahli */}
+                                            </div>
+                                            <div className="space-y-2">
+                                                {(() => {
+                                                    const expertAssignments = [];
+                                                    assignments.forEach(asg => {
+                                                        const plot = (asg.experts || []).find(e => e.expertId === exp.id);
+                                                        if (plot) {
+                                                            expertAssignments.push({ ...asg, plotData: plot });
+                                                        }
+                                                    });
+
+                                                    if (expertAssignments.length === 0) {
+                                                        return <p className="text-xs text-slate-400 italic">Belum ada penugasan terdaftar.</p>;
+                                                    }
+                                                    return expertAssignments.map((tender, idx) => (
+                                                        <div key={idx} className="bg-slate-50 dark:bg-slate-800/50 p-2.5 rounded-xl border border-slate-200 dark:border-slate-700 flex justify-between items-center group/tender">
+                                                            <div>
+                                                                <div className="text-xs font-semibold text-slate-700 dark:text-slate-200">{tender.lpseName}</div>
+                                                                <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded inline-block mt-1 ${tender.contractType === 'Waktu Penugasan' ? 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-800' : 'bg-slate-200 text-slate-600 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'}`}>
+                                                                    {tender.jobName} ({tender.tenderType})
+                                                                </div>
+                                                                <div className="mt-1 text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex gap-3">
+                                                                    <span>SKA: {tender.plotData.certificateName || '-'}</span>
+                                                                    <span>MM: {tender.plotData.manMonth}</span>
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    ));
+                                                })()}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                            {filteredExperts.length === 0 && (
+                                <div className="col-span-full py-12 text-center text-slate-500 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+                                    <Icon name="award" size={48} className="mx-auto mb-3 opacity-20" />
+                                    <p>Tidak ada data tenaga ahli ditemukan.</p>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                );
+            };
+
             return (
                 <>
                     {renderPrintExecutiveReport()}
@@ -5778,6 +6858,8 @@
                                     <SidebarItem icon={<Icon name="calendar" size={20} />} label="Master Schedule" isActive={activeTab === 'master-schedule'} onClick={() => handleTabChange('master-schedule')} />
                                     <SidebarItem icon={<Icon name="users" size={20} />} label="Alokasi Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
                                     <SidebarItem icon={<Icon name="calendar-days" size={20} />} label="Ploting Jadwal" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
+                                    <SidebarItem icon={<Icon name="award" size={20} />} label="Tenaga Ahli" isActive={activeTab === 'ahli'} onClick={() => handleTabChange('ahli')} />
+                                    <SidebarItem icon={<Icon name="briefcase" size={20} />} label="Penugasan Tenaga Ahli" isActive={activeTab === 'penugasan'} onClick={() => handleTabChange('penugasan')} />
                                     <SidebarItem icon={<Icon name="box" size={20} />} label="Logistik & Inventaris" isActive={activeTab === 'inventaris'} onClick={() => handleTabChange('inventaris')} />
                                     <SidebarItem icon={<Icon name="bar-chart" size={20} />} label="Evaluasi & KPI (BETA)" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
                                 </nav>
@@ -5792,6 +6874,8 @@
                                                 {activeTab === 'master-schedule' && 'Master Schedule Proyek'}
                                                 {activeTab === 'proyek' && 'List Proyek'}
                                                 {activeTab === 'tim' && 'Alokasi Tim'}
+                                                {activeTab === 'ahli' && 'Tenaga Ahli & Tender LPSE'}
+                                                {activeTab === 'penugasan' && 'Penugasan Tenaga Ahli'}
                                                 {activeTab === 'gantt' && 'Ploting Jadwal & Timeline'}
                                                 {activeTab === 'timesheet' && 'Timesheet Harian'}
                                                 {activeTab === 'inventaris' && 'Logistik & Inventaris Alat'}
@@ -5839,6 +6923,8 @@
                                         {activeTab === 'master-schedule' && renderMasterSchedule()}
                                         {activeTab === 'proyek' && renderProyek()}
                                         {activeTab === 'tim' && renderTim()}
+                                        {activeTab === 'ahli' && renderTenagaAhli()}
+                                        {activeTab === 'penugasan' && renderPenugasan()}
                                         {activeTab === 'gantt' && renderGantt()}
                                         {activeTab === 'timesheet' && renderTimesheet()}
                                         {activeTab === 'inventaris' && renderInventory()}
@@ -5959,12 +7045,115 @@
                             )}
 
                             <ModalForm />
+                            <ExpertModalForm />
+                            <ExpertCertModalForm />
+                            <ExpertTenderModalForm />
+                            <AssignmentModalForm />
+                            
+                            {/* Lpse Manager Modal Inline */}
+                            {showLpseManager && (
+                                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center fade-in p-4">
+                                    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh] overflow-hidden transform scale-in border border-slate-200 dark:border-slate-800">
+                                        <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-900/50">
+                                            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2"><Icon name="settings" size={20} className="text-slate-400" /> Kelola Daftar LPSE</h3>
+                                            <button onClick={() => setShowLpseManager(false)} type="button" className="text-slate-400 hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300 p-2 rounded-xl transition-colors"><Icon name="x" size={20} /></button>
+                                        </div>
+                                        <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                                            <form onSubmit={(e) => {
+                                                e.preventDefault();
+                                                const input = e.target.elements.newlpse.value.trim();
+                                                if (!input) return;
+                                                if (lpseList.includes(input)) {
+                                                    setAlertModal({ isOpen: true, title: 'Duplikasi LPSE', message: "LPSE sudah ada di dalam daftar!" });
+                                                    return;
+                                                }
+                                                handleUpdateLpseList([...lpseList, input]);
+                                                e.target.reset();
+                                            }} className="flex gap-2 mb-4">
+                                                <input type="text" name="newlpse" placeholder="Tambah instansi LPSE baru..." className="flex-1 p-2 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:border-indigo-500 bg-slate-50 dark:bg-slate-800 text-sm dark:text-slate-200" />
+                                                <button type="submit" className="px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-1"><Icon name="plus" size={16} /> Tambah</button>
+                                            </form>
+                                            <div className="space-y-2">
+                                                {lpseList.length === 0 ? <p className="text-sm text-slate-400 italic">Daftar kosong.</p> : null}
+                                                {lpseList.map((lpse, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
+                                                        <span className="text-sm text-slate-700 dark:text-slate-300">{lpse}</span>
+                                                        <button onClick={() => {
+                                                            if (confirm(`Hapus ${lpse} dari daftar LPSE?`)) {
+                                                                handleUpdateLpseList(lpseList.filter(item => item !== lpse));
+                                                            }
+                                                        }} className="text-slate-400 hover:text-red-500 transition-colors p-1" title="Hapus"><Icon name="trash-2" size={16} /></button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Cert Manager Modal Inline */}
+                            {showCertManager && (
+                                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[130] flex items-center justify-center fade-in p-4">
+                                    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-md flex flex-col max-h-[80vh] overflow-hidden transform scale-in border border-slate-200 dark:border-slate-800">
+                                        <div className="flex justify-between items-center p-5 border-b border-slate-100 dark:border-slate-700/50 bg-slate-50/50 dark:bg-slate-900/50">
+                                            <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2"><Icon name="settings" size={20} className="text-slate-400" /> Kelola Daftar Sertifikat</h3>
+                                            <button onClick={() => setShowCertManager(false)} type="button" className="text-slate-400 hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300 p-2 rounded-xl transition-colors"><Icon name="x" size={20} /></button>
+                                        </div>
+                                        <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
+                                            <form onSubmit={(e) => {
+                                                e.preventDefault();
+                                                const input = e.target.elements.newcert.value.trim();
+                                                if (!input) return;
+                                                if (certList.includes(input)) {
+                                                    setAlertModal({ isOpen: true, title: 'Duplikasi Sertifikat', message: "Sertifikat sudah ada di dalam daftar!" });
+                                                    return;
+                                                }
+                                                handleUpdateCertList([input, ...certList]);
+                                                e.target.reset();
+                                            }} className="flex gap-2 mb-4">
+                                                <input type="text" name="newcert" placeholder="Tambah nama sertifikat baru..." className="flex-1 p-2 border border-slate-300 dark:border-slate-700 rounded-lg outline-none focus:border-indigo-500 bg-slate-50 dark:bg-slate-800 text-sm dark:text-slate-200" />
+                                                <button type="submit" className="px-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold transition-colors flex items-center gap-1"><Icon name="plus" size={16} /> Tambah</button>
+                                            </form>
+                                            <div className="space-y-2">
+                                                {certList.length === 0 ? <p className="text-sm text-slate-400 italic">Daftar kosong.</p> : null}
+                                                {certList.map((cert, idx) => (
+                                                    <div key={idx} className="flex justify-between items-center p-2.5 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg">
+                                                        <span className="text-sm text-slate-700 dark:text-slate-300">{cert}</span>
+                                                        <button onClick={() => {
+                                                            if (confirm(`Hapus ${cert} dari daftar sertifikat?`)) {
+                                                                handleUpdateCertList(certList.filter(item => item !== cert));
+                                                            }
+                                                        }} className="text-slate-400 hover:text-red-500 transition-colors p-1" title="Hapus"><Icon name="trash-2" size={16} /></button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
+                            {/* Alert Modal */}
+                            {alertModal.isOpen && (
+                                <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[200] flex items-center justify-center fade-in p-4">
+                                    <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-sm p-6 transform scale-in border border-slate-200 dark:border-slate-800 text-center">
+                                        <div className="w-16 h-16 bg-red-100 dark:bg-red-900/30 text-red-600 dark:text-red-400 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <Icon name="alert-triangle" size={32} />
+                                        </div>
+                                        <h3 className="text-lg font-bold text-slate-800 dark:text-slate-100 mb-2">{alertModal.title}</h3>
+                                        <p className="text-sm text-slate-600 dark:text-slate-400 mb-6 whitespace-pre-line">{alertModal.message}</p>
+                                        <button onClick={() => setAlertModal({ isOpen: false, title: '', message: '' })} className="w-full px-4 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-semibold transition-colors">
+                                            Mengerti
+                                        </button>
+                                    </div>
+                                </div>
+                            )}
 
                             <nav className="lg:hidden fixed bottom-0 left-0 right-0 h-[68px] bg-white/60 dark:bg-slate-900/60 backdrop-blur-3xl border-t border-white/60 dark:border-slate-800 z-50 flex justify-around items-center px-1 pb-safe shadow-[0_-4px_20px_-10px_rgba(0,0,0,0.1)] transition-colors duration-200">
                                 <BottomNavItem icon={<Icon name="layout-dashboard" size={22} />} label="Beranda" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
-                                <BottomNavItem icon={<Icon name="folder-open" size={22} />} label="Master" isActive={activeTab === 'master-schedule'} onClick={() => handleTabChange('master-schedule')} />
                                 <BottomNavItem icon={<Icon name="briefcase" size={22} />} label="Proyek" isActive={activeTab === 'proyek'} onClick={() => handleTabChange('proyek')} />
                                 <BottomNavItem icon={<Icon name="users" size={22} />} label="Tim" isActive={activeTab === 'tim'} onClick={() => handleTabChange('tim')} />
+                                <BottomNavItem icon={<Icon name="award" size={22} />} label="Ahli" isActive={activeTab === 'ahli'} onClick={() => handleTabChange('ahli')} />
+                                <BottomNavItem icon={<Icon name="briefcase" size={22} />} label="Tugas" isActive={activeTab === 'penugasan'} onClick={() => handleTabChange('penugasan')} />
                                 <BottomNavItem icon={<Icon name="calendar" size={22} />} label="Ploting" isActive={activeTab === 'gantt'} onClick={() => handleTabChange('gantt')} />
                                 <BottomNavItem icon={<Icon name="box" size={22} />} label="Inventaris" isActive={activeTab === 'inventaris'} onClick={() => handleTabChange('inventaris')} />
                                 <BottomNavItem icon={<Icon name="bar-chart" size={22} />} label="KPI" isActive={activeTab === 'kpi'} onClick={() => handleTabChange('kpi')} />
