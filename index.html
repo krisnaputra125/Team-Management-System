@@ -9,7 +9,7 @@
     <meta name="theme-color" content="#0f172a">
     <link rel="manifest" href="manifest.json">
     <link rel="apple-touch-icon" href="icon-192.png">
-    <title>Project Management Control Gaharu Sempana Group</title>
+    <title>SIDAMON Gaharu Sempana Group</title>
     <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
 
@@ -323,7 +323,7 @@
 
         const calculateComputedStatus = (project) => {
             if (project.isPending) return "Pending";
-            
+
             const baseStatus = project.status === "On Track" ? "On Progress" : (project.status || "On Progress");
             if (baseStatus === "Done" || project.progress >= 100) return "Done";
 
@@ -802,11 +802,11 @@
             const [showPendingModal, setShowPendingModal] = useState(false);
             const [pendingProjectData, setPendingProjectData] = useState(null);
             const [pendingReasonText, setPendingReasonText] = useState("");
-            
+
             // Resume Modal States
             const [showResumeModal, setShowResumeModal] = useState(false);
             const [resumeProjectData, setResumeProjectData] = useState(null);
-            
+
             // Alert Modal States
             const [alertModal, setAlertModal] = useState({ isOpen: false, title: 'Perhatian', message: '' });
             React.useEffect(() => {
@@ -847,7 +847,7 @@
             const [lpseList, setLpseList] = useState([]);
             const [showLpseManager, setShowLpseManager] = useState(false);
             const [assignments, setAssignments] = useState([]);
-            
+
             const handleUpdateLpseList = (newList) => {
                 firebase.database().ref('pmc_lpse_list').set(newList);
                 setLpseList(newList);
@@ -877,6 +877,7 @@
             const [searchGanttTab, setSearchGanttTab] = useState("");
             const [searchInvTab, setSearchInvTab] = useState("");
             const [searchExpertTab, setSearchExpertTab] = useState("");
+            const [expertPage, setExpertPage] = useState(1);
             const [searchAssignmentTab, setSearchAssignmentTab] = useState("");
             const [projectPage, setProjectPage] = useState(1);
             const [dominoAnalysis, setDominoAnalysis] = useState(null);
@@ -954,7 +955,7 @@
                         if (p.notStarted) return;
                         if (p.computedStatus !== 'Done') {
                             const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
-                            
+
                             // Jika pengawasan dan statusnya tidak turun, lewati (tidak dihitung beban)
                             if (isPengawasan) {
                                 const statusTurun = p.pengawasanDetails?.[res.name]?.statusTurun;
@@ -1033,16 +1034,57 @@
 
                     // Listener Khusus untuk Tenaga Ahli (dipisah dari pmc_data)
                     firebase.database().ref('pmc_experts').on('value', (snap) => {
-                        const expData = snap.val() || [];
-                        setExperts(expData.filter(Boolean));
+                        let expData = snap.val() || [];
+                        expData = expData.filter(Boolean);
+
+                        // --- AUTO CLEANUP DUPLICATES ---
+                        const uniqueMap = new Map();
+                        let hasDuplicates = false;
+
+                        expData.forEach(exp => {
+                            if (!exp || !exp.name) return;
+                            const key = exp.name.trim().toLowerCase().replace(/\s+/g, ' ');
+                            if (!uniqueMap.has(key)) {
+                                uniqueMap.set(key, { ...exp });
+                            } else {
+                                hasDuplicates = true;
+                                const existing = uniqueMap.get(key);
+                                // Merge data
+                                if (!existing.phone && exp.phone) existing.phone = exp.phone;
+                                if (!existing.bidangIlmu && exp.bidangIlmu) existing.bidangIlmu = exp.bidangIlmu;
+                                if (!existing.jenjang && exp.jenjang) existing.jenjang = exp.jenjang;
+                                if (!existing.perusahaan && exp.perusahaan) existing.perusahaan = exp.perusahaan;
+                                
+                                // Merge certificates
+                                if (exp.certificates && Array.isArray(exp.certificates)) {
+                                    if (!existing.certificates) existing.certificates = [];
+                                    exp.certificates.forEach(c => {
+                                        if (c && c.certName) {
+                                            const cKey = c.certName.toLowerCase().replace(/\s+/g, ' ');
+                                            if (!existing.certificates.find(xc => xc.certName && xc.certName.toLowerCase().replace(/\s+/g, ' ') === cKey)) {
+                                                existing.certificates.push(c);
+                                            }
+                                        }
+                                    });
+                                }
+                            }
+                        });
+
+                        const cleanedData = Array.from(uniqueMap.values());
+                        if (hasDuplicates) {
+                            // Sync cleaned data back to Firebase silently
+                            firebase.database().ref('pmc_experts').set(cleanedData);
+                        }
+                        
+                        setExperts(cleanedData);
                     });
-                    
+
                     // Listener Khusus untuk Penugasan Tenaga Ahli
                     firebase.database().ref('pmc_assignments').on('value', (snap) => {
                         const asgData = snap.val() || [];
                         setAssignments(asgData.filter(Boolean));
                     });
-                    
+
                     // Listener Khusus untuk LPSE List
                     firebase.database().ref('pmc_lpse_list').on('value', (snap) => {
                         const lpseData = snap.val();
@@ -1057,8 +1099,8 @@
                                 "LPSE Kemen PU", "LPSE ATR", "LPSE Kemenpar", "LPSE Kemendikbud",
                                 "LPSE Kemenkumham", "LPSE Kemendag", "LPSE Kemen LHK", "LPSE Kemenkeu",
                                 "LPSE Polri", "LPSE BPOM", "LPSE Mah-Agung", "LPSE Kemen Perhubungan",
-                                "LPSE INAPROC Nasional", "Kantor Desa Dauh Puri Kangin", 
-                                "Kantor Desa Dauh Puri Kelod", "Kantor Desa Saba Blahbatuh", 
+                                "LPSE INAPROC Nasional", "Kantor Desa Dauh Puri Kangin",
+                                "Kantor Desa Dauh Puri Kelod", "Kantor Desa Saba Blahbatuh",
                                 "Bank BPD", "Bank Mandiri", "LPSE Provinsi Bali"
                             ];
                             setLpseList(defaultLpse);
@@ -1209,7 +1251,7 @@
                 }
                 setViewingEmployee(null);
                 setSidebarOpen(false);
-                
+
                 // Reset semua filter pencarian saat pindah tab agar data tidak terlihat 'hilang'
                 setSearchTeamTab("");
                 setSearchProjectTab("");
@@ -1251,7 +1293,7 @@
                         if (!isIndividuallyDone) {
                             const res = resources.find(r => r.name === memberName);
                             let memberDeadlineStr = null;
-                            
+
                             if (res) {
                                 const effectiveCat = getEffectiveEmpCategory(project, res.name, res.role);
                                 if (project.categoryDetails?.[effectiveCat]?.deadline) {
@@ -1266,7 +1308,7 @@
                             memberDeadlineDate.setHours(0, 0, 0, 0);
 
                             const delayDays = Math.ceil((today.getTime() - memberDeadlineDate.getTime()) / (1000 * 60 * 60 * 24));
-                            
+
                             // Jika secara individu tidak terlambat, lewati
                             if (delayDays <= 0) return;
 
@@ -1331,17 +1373,17 @@
             };
             const handleTogglePendingSubmit = () => {
                 if (!pendingProjectData) return;
-                
+
                 const now = new Date();
                 const dateStr = formatDateTimeIndo(now.toISOString());
-                
+
                 const updatedProject = {
                     ...pendingProjectData,
                     isPending: true,
                     pendingReason: pendingReasonText,
                     pendingDate: dateStr
                 };
-                
+
                 handleCrudAction('edit', 'project', updatedProject);
                 setShowPendingModal(false);
                 setPendingProjectData(null);
@@ -1372,7 +1414,7 @@
                 setErrorMsg("");
                 try {
                     let newData = [...inventory];
-                    
+
                     if (action === 'add') {
                         newData.push(payload);
                     } else if (action === 'borrow-cart') {
@@ -1388,7 +1430,7 @@
                     } else if (action === 'delete') {
                         newData = newData.filter(item => item.id !== payload.id);
                     }
-                    
+
                     await firebase.database().ref('pmc_inventory').set(newData);
                     setInventory(newData);
                     setModalConfig({ isOpen: false, type: null, mode: 'add', data: null });
@@ -1412,44 +1454,63 @@
                         const wsname = wb.SheetNames[0];
                         const ws = wb.Sheets[wsname];
                         const data = XLSX.utils.sheet_to_json(ws);
-                        
+
                         const expertsMap = new Map();
-                        
+
                         data.forEach(row => {
                             const name = row['Nama Personil'] || row['Nama'] || row['Nama Lengkap'] || row['Name'];
                             if (!name) return;
-                            
-                            const nameStr = name.toString().trim();
-                            
-                            if (!expertsMap.has(nameStr)) {
-                                const category = row['Kategori'] || row['Category'] || 'Internal';
-                                const phone = row['Kontak'] || row['No HP'] || row['No. HP'] || row['Telepon'] || '';
-                                const status = row['Status'] || 'Tersedia';
-                                const bidangIlmu = row['Jenjang dan Bidang Ilmu'] || row['Bidang Ilmu'] || row['Jurusan'] || '';
-                                const perusahaan = row['Perusahaan'] || row['Instansi'] || row['Asal Perusahaan'] || '';
-                                // 'Jenjang' in the excel screenshot is actually the certificate level (Madya, Utama, etc.)
-                                // We keep the Expert's jenjang empty or map from 'Jenjang Pendidikan' if available
-                                const jenjangEdu = row['Jenjang Pendidikan'] || '';
 
-                                expertsMap.set(nameStr, {
-                                    id: 'exp-' + Date.now().toString() + Math.random().toString(36).substr(2, 5),
-                                    name: nameStr,
+                            const nameStr = name.toString().trim();
+                            const nameKey = nameStr.toLowerCase().replace(/\s+/g, ' ');
+
+                            if (!expertsMap.has(nameKey)) {
+                                const existingExpert = experts.find(e => {
+                                    if (!e || !e.name) return false;
+                                    return e.name.trim().toLowerCase().replace(/\s+/g, ' ') === nameKey;
+                                });
+                                
+                                // Kategori is removed from template, default to existing or 'Internal'
+                                const category = row['Kategori'] || row['Category'] || (existingExpert ? existingExpert.category : 'Internal');
+                                const phone = row['Kontak'] || row['No HP'] || row['No. HP'] || row['Telepon'] || (existingExpert ? existingExpert.phone : '');
+                                const status = row['Status'] || (existingExpert ? existingExpert.status : 'Tersedia');
+                                
+                                // Merge Jenjang Pendidikan and Bidang Ilmu
+                                const jenjangBidang = row['Jenjang dan Bidang Ilmu'] || row['Bidang Ilmu'] || row['Jurusan'];
+                                let parsedBidangIlmu = existingExpert ? existingExpert.bidangIlmu : '';
+                                let parsedJenjang = existingExpert ? existingExpert.jenjang : '';
+                                
+                                if (jenjangBidang) {
+                                    parsedBidangIlmu = jenjangBidang.toString().trim();
+                                    // If old template was used with split columns, try to capture it. Otherwise leave jenjang empty.
+                                    parsedJenjang = row['Jenjang Pendidikan'] ? row['Jenjang Pendidikan'].toString().trim() : '';
+                                } else {
+                                    parsedJenjang = row['Jenjang Pendidikan'] || (existingExpert ? existingExpert.jenjang : '');
+                                }
+
+                                const perusahaan = row['Perusahaan'] || row['Instansi'] || row['Asal Perusahaan'] || (existingExpert ? existingExpert.perusahaan : '');
+
+                                expertsMap.set(nameKey, {
+                                    id: existingExpert ? existingExpert.id : 'exp-' + Date.now().toString() + Math.random().toString(36).substr(2, 5),
+                                    name: existingExpert ? existingExpert.name : nameStr,
                                     category: category.toString(),
                                     phone: phone.toString(),
                                     status: status.toString(),
-                                    jenjang: jenjangEdu.toString(),
-                                    bidangIlmu: bidangIlmu.toString(),
+                                    jenjang: parsedJenjang.toString(),
+                                    bidangIlmu: parsedBidangIlmu.toString(),
                                     perusahaan: perusahaan.toString(),
-                                    certificates: [],
-                                    tenders: []
+                                    certificates: existingExpert ? [...(existingExpert.certificates || [])] : [],
+                                    tenders: existingExpert ? [...(existingExpert.tenders || [])] : []
                                 });
                             }
-                            
+
+                            const currentExpert = expertsMap.get(nameKey);
+
                             // Parse Certificate Data
                             const certName = row['Sertifikat Keahlian'];
-                            const certLevel = row['Jenjang']; 
+                            const certLevel = row['Jenjang'];
                             const rawDate = row['Masa Berlaku'];
-                            
+
                             let expiredDateStr = '';
                             if (rawDate) {
                                 if (typeof rawDate === 'number') {
@@ -1470,25 +1531,40 @@
                                     }
                                 }
                             }
-                            
+
                             if (certName) {
-                                expertsMap.get(nameStr).certificates.push({
-                                    certName: certName.toString().trim(),
-                                    certLevel: certLevel ? certLevel.toString().trim() : 'Ahli Muda',
-                                    issuedDate: '',
-                                    expiredDate: expiredDateStr
-                                });
+                                const certNameStr = certName.toString().trim();
+                                const cKey = certNameStr.toLowerCase().replace(/\s+/g, ' ');
+                                const existingCert = currentExpert.certificates.find(c => c.certName && c.certName.toLowerCase().replace(/\s+/g, ' ') === cKey);
+                                if (!existingCert) {
+                                    currentExpert.certificates.push({
+                                        certName: certNameStr,
+                                        certLevel: certLevel ? certLevel.toString().trim() : 'Ahli Muda',
+                                        issuedDate: '',
+                                        expiredDate: expiredDateStr
+                                    });
+                                }
                             }
                         });
 
-                        const imported = Array.from(expertsMap.values());
+                        const importedData = Array.from(expertsMap.values());
 
-                        if (imported.length > 0) {
-                            if (confirm(`Ditemukan ${imported.length} tenaga ahli valid. Lanjutkan import ke database?`)) {
-                                const newExperts = [...experts, ...imported];
+                        if (importedData.length > 0) {
+                            if (confirm(`Ditemukan ${importedData.length} data tenaga ahli (baru/update) dari Excel. Lanjutkan sinkronisasi ke database?`)) {
+                                const newExperts = [...experts];
+                                
+                                importedData.forEach(importedExp => {
+                                    const index = newExperts.findIndex(e => e.id === importedExp.id);
+                                    if (index !== -1) {
+                                        newExperts[index] = importedExp;
+                                    } else {
+                                        newExperts.push(importedExp);
+                                    }
+                                });
+
                                 await firebase.database().ref('pmc_experts').set(newExperts);
                                 setExperts(newExperts);
-                                alert('Import berhasil diselesaikan!');
+                                alert('Sinkronisasi data tenaga ahli berhasil diselesaikan!');
                             }
                         } else {
                             alert('Tidak ada data valid yang ditemukan. Pastikan Excel Anda memiliki kolom "Nama Personil".');
@@ -1510,7 +1586,7 @@
                 setErrorMsg("");
                 try {
                     let newData = [...experts];
-                    
+
                     if (action === 'add') {
                         payload.id = 'exp-' + Date.now().toString();
                         if (!payload.certificates) payload.certificates = [];
@@ -1521,7 +1597,7 @@
                     } else if (action === 'delete') {
                         newData = newData.filter(item => item.id !== payload.id);
                     }
-                    
+
                     await firebase.database().ref('pmc_experts').set(newData);
                     setExperts(newData);
                     setModalConfig({ isOpen: false, type: null, mode: 'add', data: null });
@@ -1538,7 +1614,7 @@
                 setErrorMsg("");
                 try {
                     let newData = [...assignments];
-                    
+
                     if (action === 'add') {
                         payload.id = 'asg-' + Date.now().toString();
                         newData.push(payload);
@@ -1547,7 +1623,7 @@
                     } else if (action === 'delete') {
                         newData = newData.filter(item => item.id !== payload.id);
                     }
-                    
+
                     await firebase.database().ref('pmc_assignments').set(newData);
                     setAssignments(newData);
                     setModalConfig({ isOpen: false, type: null, mode: 'add', data: null });
@@ -1670,7 +1746,7 @@
                     isOpen: true,
                     type: newNotStartedStatus ? 'warning' : 'info',
                     title: newNotStartedStatus ? 'Tandai Proyek Belum Mulai' : 'Mulai Proyek',
-                    message: newNotStartedStatus 
+                    message: newNotStartedStatus
                         ? 'Tandai proyek ini sebagai "Belum Mulai"? Proyek ini tidak akan dihitung dalam beban kerja dan tidak muncul dalam Rincian Penugasan Pegawai.'
                         : 'Tandai proyek ini sebagai "Sudah Mulai"? Proyek ini akan kembali dihitung dalam beban kerja dan muncul dalam KPI personil.',
                     onConfirm: async () => {
@@ -2098,20 +2174,20 @@
                 const getProjectSortScore = (p) => {
                     // 6. Proyek yang sudah selesai (Perencanaan dan Pengawasan)
                     if (p.computedStatus === "Done" || p.status === "Done" || p.progress >= 100) return 60;
-                    
+
                     const isPengawasan = p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi');
-                    
+
                     // 5. Data proyek pengawasan (Running)
                     if (isPengawasan) return 50;
-                    
+
                     // Proyek Perencanaan (Running)
                     // 1. Terlambat dari waktu kontrak
                     if (p.computedStatus === "Terlambat") return 10;
-                    
+
                     // Calculate sub-team statuses
                     let hasMicroTerlambat = false;
                     let hasMicroBeresiko = false;
-                    
+
                     if (p.categoryDetails) {
                         Object.values(p.categoryDetails).forEach(cat => {
                             const microStatus = getMicroStatus(cat.progress || 0, cat.deadline);
@@ -2441,11 +2517,11 @@
                                                                 {p.computedStatus === 'Terlambat' && (
                                                                     <button onClick={() => handleAnalyzeDomino(p)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-bold bg-gradient-to-r from-orange-500 to-rose-500 text-white hover:from-orange-600 hover:to-rose-600 rounded-lg shadow-md animate-pulse hover:animate-none"><Icon name="alert-triangle" size={14} /> Cek Domino</button>
                                                                 )}
-                                                                
+
                                                                 {p.type?.toLowerCase().includes('perencana') && (
                                                                     <button onClick={() => { setActiveScheduleProject(p); setActiveTab('schedule'); }} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 hover:bg-purple-100 dark:hover:bg-purple-900/50 rounded-lg border border-purple-200 dark:border-purple-800/50"><Icon name="calendar" size={14} /> Time Schedule</button>
                                                                 )}
-                                                                
+
                                                                 {!(p.type?.toLowerCase().includes('pengawas') || p.type?.toLowerCase().includes('manajemen konstruksi')) && (
                                                                     p.isPending ? (
                                                                         <button onClick={() => handleResumeProject(p)} className="flex items-center justify-center gap-1.5 px-3 py-1.5 text-xs font-semibold bg-orange-50 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 hover:bg-orange-100 dark:hover:bg-orange-900/50 rounded-lg border border-orange-200 dark:border-orange-800/50"><Icon name="play" size={14} /> Resume Proyek</button>
@@ -3186,8 +3262,8 @@
                                     <thead className="text-xs text-slate-500 bg-slate-50 dark:bg-slate-800/50 uppercase border-b border-slate-200 dark:border-slate-700">
                                         <tr>
                                             <th className="px-6 py-4 w-12 text-center">
-                                                <input 
-                                                    type="checkbox" 
+                                                <input
+                                                    type="checkbox"
                                                     className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                                                     checked={filteredInv.filter(i => i.status === 'Tersedia' && i.condition !== 'Rusak Berat').length > 0 && borrowCart.length === filteredInv.filter(i => i.status === 'Tersedia' && i.condition !== 'Rusak Berat').length}
                                                     onChange={(e) => {
@@ -3209,88 +3285,88 @@
                                     </thead>
                                     <tbody className="divide-y divide-slate-200 dark:divide-slate-700">
                                         {filteredInv.map((item) => {
-                                            const isOverdue = (item.status === 'Dipinjam' || item.status === 'Menunggu Verifikasi' || item.status === 'Menunggu Verifikasi Pengembalian' || item.status === 'Menunggu Verifikasi Perpanjangan') && item.returnDate && new Date(item.returnDate).setHours(0,0,0,0) < new Date().setHours(0,0,0,0);
+                                            const isOverdue = (item.status === 'Dipinjam' || item.status === 'Menunggu Verifikasi' || item.status === 'Menunggu Verifikasi Pengembalian' || item.status === 'Menunggu Verifikasi Perpanjangan') && item.returnDate && new Date(item.returnDate).setHours(0, 0, 0, 0) < new Date().setHours(0, 0, 0, 0);
                                             return (
-                                            <tr key={item.id} className={`transition-colors ${borrowCart.includes(item.id) ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
-                                                <td className="px-6 py-4 text-center">
-                                                    <input 
-                                                        type="checkbox" 
-                                                        className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
-                                                        disabled={item.status !== 'Tersedia' || item.condition === 'Rusak Berat'}
-                                                        checked={borrowCart.includes(item.id)}
-                                                        onChange={(e) => {
-                                                            if (e.target.checked) {
-                                                                setBorrowCart([...borrowCart, item.id]);
-                                                            } else {
-                                                                setBorrowCart(borrowCart.filter(id => id !== item.id));
-                                                            }
-                                                        }}
-                                                    />
-                                                </td>
-                                                <td className="px-6 py-4">
-                                                    <div className="font-semibold text-slate-900 dark:text-white">{item.name}</div>
-                                                    <div className="text-xs text-slate-500 mt-1">{item.id}</div>
-                                                </td>
-                                                <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{item.type}</td>
-                                                <td className="px-6 py-4 text-center">
-                                                    <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${item.condition === 'Baik' ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
-                                                        {item.condition}
-                                                    </span>
-                                                </td>
-                                                <td className="px-6 py-4 text-center">
-                                                    {item.status === 'Dipinjam' || item.status === 'Menunggu Verifikasi' || item.status === 'Menunggu Verifikasi Pengembalian' || item.status === 'Menunggu Verifikasi Perpanjangan' ? (
-                                                        <div className="flex flex-col items-center">
-                                                            <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${isOverdue ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 shadow-sm border border-red-100 dark:border-red-800' : (item.status === 'Menunggu Verifikasi' || item.status === 'Menunggu Verifikasi Pengembalian' || item.status === 'Menunggu Verifikasi Perpanjangan') ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
-                                                                {isOverdue ? 'Masa pinjam habis' : item.status}
-                                                            </span>
-                                                            <div className={`text-[11px] mt-2 text-center whitespace-nowrap ${isOverdue ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-slate-500'}`}>
-                                                                Oleh: <strong>{item.borrower}</strong><br/>
-                                                                {item.borrowDate ? `${formatDateIndo(item.borrowDate)} s/d ` : ''}{item.returnDate ? formatDateIndo(item.returnDate) : '-'}
-                                                                {item.status === 'Menunggu Verifikasi Perpanjangan' && item.newReturnDate && (
-                                                                    <div className="text-amber-600 font-semibold mt-1">Request: {formatDateIndo(item.newReturnDate)}</div>
-                                                                )}
+                                                <tr key={item.id} className={`transition-colors ${borrowCart.includes(item.id) ? 'bg-indigo-50 dark:bg-indigo-900/20' : 'hover:bg-slate-50 dark:hover:bg-slate-800/50'}`}>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <input
+                                                            type="checkbox"
+                                                            className="w-4 h-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                                                            disabled={item.status !== 'Tersedia' || item.condition === 'Rusak Berat'}
+                                                            checked={borrowCart.includes(item.id)}
+                                                            onChange={(e) => {
+                                                                if (e.target.checked) {
+                                                                    setBorrowCart([...borrowCart, item.id]);
+                                                                } else {
+                                                                    setBorrowCart(borrowCart.filter(id => id !== item.id));
+                                                                }
+                                                            }}
+                                                        />
+                                                    </td>
+                                                    <td className="px-6 py-4">
+                                                        <div className="font-semibold text-slate-900 dark:text-white">{item.name}</div>
+                                                        <div className="text-xs text-slate-500 mt-1">{item.id}</div>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-slate-600 dark:text-slate-300">{item.type}</td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${item.condition === 'Baik' ? 'bg-green-50 text-green-700 dark:bg-green-900/30 dark:text-green-400' : 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400'}`}>
+                                                            {item.condition}
+                                                        </span>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-center">
+                                                        {item.status === 'Dipinjam' || item.status === 'Menunggu Verifikasi' || item.status === 'Menunggu Verifikasi Pengembalian' || item.status === 'Menunggu Verifikasi Perpanjangan' ? (
+                                                            <div className="flex flex-col items-center">
+                                                                <span className={`px-2.5 py-1 rounded-full text-xs font-medium ${isOverdue ? 'bg-red-50 text-red-700 dark:bg-red-900/30 dark:text-red-400 shadow-sm border border-red-100 dark:border-red-800' : (item.status === 'Menunggu Verifikasi' || item.status === 'Menunggu Verifikasi Pengembalian' || item.status === 'Menunggu Verifikasi Perpanjangan') ? 'bg-purple-50 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400' : 'bg-amber-50 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400'}`}>
+                                                                    {isOverdue ? 'Masa pinjam habis' : item.status}
+                                                                </span>
+                                                                <div className={`text-[11px] mt-2 text-center whitespace-nowrap ${isOverdue ? 'text-red-600 dark:text-red-400 font-semibold' : 'text-slate-500'}`}>
+                                                                    Oleh: <strong>{item.borrower}</strong><br />
+                                                                    {item.borrowDate ? `${formatDateIndo(item.borrowDate)} s/d ` : ''}{item.returnDate ? formatDateIndo(item.returnDate) : '-'}
+                                                                    {item.status === 'Menunggu Verifikasi Perpanjangan' && item.newReturnDate && (
+                                                                        <div className="text-amber-600 font-semibold mt-1">Request: {formatDateIndo(item.newReturnDate)}</div>
+                                                                    )}
+                                                                </div>
                                                             </div>
-                                                        </div>
-                                                    ) : (
-                                                        <div className="flex flex-col items-center">
-                                                            <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
-                                                                Tersedia
-                                                            </span>
-                                                        </div>
-                                                    )}
-                                                </td>
-                                                <td className="px-6 py-4 text-right">
-                                                    <div className="flex items-center justify-end gap-2">
-                                                        {item.status === 'Tersedia' ? (
-                                                            <button 
-                                                                onClick={() => setModalConfig({ isOpen: true, type: 'inventory-borrow', mode: 'borrow', data: item })}
-                                                                disabled={item.condition === 'Rusak Berat'}
-                                                                title={item.condition === 'Rusak Berat' ? "Alat rusak, tidak dapat dipinjam." : "Pinjam"}
-                                                                className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border ${item.condition === 'Rusak Berat' ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'}`}
-                                                            >
-                                                                Pinjam
-                                                            </button>
-                                                        ) : item.status === 'Menunggu Verifikasi' || item.status === 'Menunggu Verifikasi Pengembalian' || item.status === 'Menunggu Verifikasi Perpanjangan' ? (
-                                                            <span className="text-xs text-purple-600 font-medium px-2 py-1 bg-purple-50 rounded-lg">Menunggu Logistik</span>
                                                         ) : (
-                                                            <>
-                                                                <button 
-                                                                    onClick={() => setModalConfig({ isOpen: true, type: 'inventory-extend', mode: 'extend', data: item })}
-                                                                    className="px-3 py-1.5 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 rounded-lg transition-colors border border-amber-200 dark:border-amber-800"
-                                                                >
-                                                                    Perpanjang
-                                                                </button>
-                                                                <button 
-                                                                    onClick={() => setModalConfig({ isOpen: true, type: 'inventory-return', mode: 'return', data: item })}
-                                                                    className="px-3 py-1.5 text-xs font-medium bg-white text-slate-700 hover:bg-slate-50 border border-slate-300 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 rounded-lg transition-colors"
-                                                                >
-                                                                    Kembalikan
-                                                                </button>
-                                                            </>
+                                                            <div className="flex flex-col items-center">
+                                                                <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-50 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400">
+                                                                    Tersedia
+                                                                </span>
+                                                            </div>
                                                         )}
-                                                    </div>
-                                                </td>
-                                            </tr>
+                                                    </td>
+                                                    <td className="px-6 py-4 text-right">
+                                                        <div className="flex items-center justify-end gap-2">
+                                                            {item.status === 'Tersedia' ? (
+                                                                <button
+                                                                    onClick={() => setModalConfig({ isOpen: true, type: 'inventory-borrow', mode: 'borrow', data: item })}
+                                                                    disabled={item.condition === 'Rusak Berat'}
+                                                                    title={item.condition === 'Rusak Berat' ? "Alat rusak, tidak dapat dipinjam." : "Pinjam"}
+                                                                    className={`px-3 py-1.5 text-xs font-medium rounded-lg transition-colors border ${item.condition === 'Rusak Berat' ? 'bg-slate-100 text-slate-400 border-slate-200 cursor-not-allowed dark:bg-slate-800 dark:text-slate-500 dark:border-slate-700' : 'bg-indigo-50 text-indigo-700 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800'}`}
+                                                                >
+                                                                    Pinjam
+                                                                </button>
+                                                            ) : item.status === 'Menunggu Verifikasi' || item.status === 'Menunggu Verifikasi Pengembalian' || item.status === 'Menunggu Verifikasi Perpanjangan' ? (
+                                                                <span className="text-xs text-purple-600 font-medium px-2 py-1 bg-purple-50 rounded-lg">Menunggu Logistik</span>
+                                                            ) : (
+                                                                <>
+                                                                    <button
+                                                                        onClick={() => setModalConfig({ isOpen: true, type: 'inventory-extend', mode: 'extend', data: item })}
+                                                                        className="px-3 py-1.5 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-900/30 dark:text-amber-400 rounded-lg transition-colors border border-amber-200 dark:border-amber-800"
+                                                                    >
+                                                                        Perpanjang
+                                                                    </button>
+                                                                    <button
+                                                                        onClick={() => setModalConfig({ isOpen: true, type: 'inventory-return', mode: 'return', data: item })}
+                                                                        className="px-3 py-1.5 text-xs font-medium bg-white text-slate-700 hover:bg-slate-50 border border-slate-300 dark:bg-slate-800 dark:border-slate-600 dark:text-slate-300 rounded-lg transition-colors"
+                                                                    >
+                                                                        Kembalikan
+                                                                    </button>
+                                                                </>
+                                                            )}
+                                                        </div>
+                                                    </td>
+                                                </tr>
                                             );
                                         })}
                                         {filteredInv.length === 0 && (
@@ -3325,7 +3401,7 @@
             const ExpertModalForm = () => {
                 if (!modalConfig.isOpen || modalConfig.type !== 'expert') return null;
                 const isEdit = modalConfig.mode === 'edit';
-                
+
                 const [formData, setFormData] = useState(() => {
                     if (isEdit && modalConfig.data) return { ...modalConfig.data };
                     return { id: '', name: '', phone: '', status: 'Tersedia', jenjang: '', bidangIlmu: '', perusahaan: '' };
@@ -3386,7 +3462,7 @@
                 const { expertId, certIndex, cert } = modalConfig.data;
                 const expert = experts.find(e => e.id === expertId);
                 const isEdit = modalConfig.mode === 'edit';
-                
+
                 const [formData, setFormData] = useState(() => {
                     if (isEdit && cert) return { ...cert };
                     return { certName: '', certLevel: 'Ahli Muda', issuedDate: '', expiredDate: '' };
@@ -3462,7 +3538,7 @@
                 const { expertId, tenderIndex, tender } = modalConfig.data;
                 const expert = experts.find(e => e.id === expertId);
                 const isEdit = modalConfig.mode === 'edit';
-                
+
                 const [formData, setFormData] = useState(() => {
                     if (isEdit && tender) return { ...tender };
                     return { lpseName: '', position: 'Team Leader', status: 'Aktif' };
@@ -3474,9 +3550,9 @@
 
                     // Validation rule
                     if (formData.status === 'Aktif' || formData.status === 'Menunggu Pengumuman') {
-                        const existingActive = (expert.tenders || []).find((t, idx) => 
-                            (!isEdit || idx !== tenderIndex) && 
-                            t.lpseName.trim().toLowerCase() === formData.lpseName.trim().toLowerCase() && 
+                        const existingActive = (expert.tenders || []).find((t, idx) =>
+                            (!isEdit || idx !== tenderIndex) &&
+                            t.lpseName.trim().toLowerCase() === formData.lpseName.trim().toLowerCase() &&
                             (t.status === 'Aktif' || t.status === 'Menunggu Pengumuman')
                         );
 
@@ -3543,12 +3619,59 @@
                 );
             };
 
+            // --- IMPORT EXCEL MODAL ---
+            const ImportExcelModal = () => {
+                if (!modalConfig.isOpen || modalConfig.type !== 'import_expert') return null;
+                
+                return (
+                    <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[100] flex items-center justify-center fade-in p-4">
+                        <div className="bg-white dark:bg-slate-900 rounded-3xl shadow-2xl w-full max-w-sm flex flex-col overflow-hidden transform scale-in border border-slate-200 dark:border-slate-800 p-6">
+                            <div className="flex justify-between items-center mb-6">
+                                <h3 className="text-xl font-bold text-slate-800 dark:text-slate-100">Import Data Excel</h3>
+                                <button onClick={() => setModalConfig({ isOpen: false, type: null })} className="text-slate-400 hover:bg-slate-200 hover:text-slate-600 dark:hover:bg-slate-700 dark:hover:text-slate-300 p-2 rounded-xl transition-colors"><Icon name="x" size={20} /></button>
+                            </div>
+                            <div className="space-y-4">
+                                <p className="text-sm text-slate-500 dark:text-slate-400">Silakan download template format Excel yang didukung sistem terlebih dahulu untuk menghindari kesalahan input.</p>
+                                
+                                <button onClick={() => {
+                                    const ws_data = [
+                                        ["Nama Personil", "No HP", "Status", "Jenjang dan Bidang Ilmu", "Perusahaan", "Sertifikat Keahlian", "Jenjang", "Masa Berlaku"],
+                                        ["Contoh: Budi Santoso", "08123456789", "Tersedia", "S1 Teknik Sipil", "PT. Maju Jaya", "Ahli Teknik Bangunan Gedung", "Madya", "2027-12-31"]
+                                    ];
+                                    const ws = XLSX.utils.aoa_to_sheet(ws_data);
+                                    ws['!cols'] = [{wch: 25}, {wch: 15}, {wch: 15}, {wch: 25}, {wch: 20}, {wch: 30}, {wch: 15}, {wch: 15}];
+                                    const wb = XLSX.utils.book_new();
+                                    XLSX.utils.book_append_sheet(wb, ws, "Template");
+                                    XLSX.writeFile(wb, "Template_Import_Tenaga_Ahli.xlsx");
+                                }} className="w-full px-4 py-3 bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 rounded-xl font-semibold flex items-center justify-center gap-2 text-sm transition-colors border border-slate-200 dark:border-slate-700 shadow-sm">
+                                    <Icon name="download" size={18} /> Download Template Excel
+                                </button>
+
+                                <div className="relative flex py-2 items-center">
+                                    <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+                                    <span className="flex-shrink-0 mx-4 text-slate-400 text-xs font-semibold">ATAU</span>
+                                    <div className="flex-grow border-t border-slate-200 dark:border-slate-700"></div>
+                                </div>
+
+                                <label className="w-full cursor-pointer px-4 py-3 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl font-semibold flex items-center justify-center gap-2 text-sm transition-colors shadow-md">
+                                    <Icon name="upload" size={18} /> Pilih File & Import
+                                    <input type="file" accept=".xlsx, .xls" onChange={(e) => {
+                                        setModalConfig({ isOpen: false, type: null });
+                                        handleImportExcel(e);
+                                    }} className="hidden" />
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                );
+            };
+
             // --- ASSIGNMENT MODAL FORM ---
             const AssignmentModalForm = () => {
                 if (!modalConfig.isOpen || modalConfig.type !== 'assignment') return null;
 
                 const isEdit = modalConfig.mode === 'edit';
-                
+
                 const [formData, setFormData] = useState(() => {
                     if (isEdit && modalConfig.data) {
                         return { ...modalConfig.data, experts: modalConfig.data.experts || [] };
@@ -3588,7 +3711,7 @@
                     for (let i = 0; i < formData.experts.length; i++) {
                         const exp = formData.experts[i];
                         if (!exp.expertId || !exp.manMonth) {
-                            setAlertModal({ isOpen: true, title: 'Validasi Form', message: `Harap lengkapi data personil (Tenaga Ahli dan Man Month) di baris ke-${i+1}` });
+                            setAlertModal({ isOpen: true, title: 'Validasi Form', message: `Harap lengkapi data personil (Tenaga Ahli dan Man Month) di baris ke-${i + 1}` });
                             return;
                         }
 
@@ -3599,20 +3722,54 @@
                         const existingAssignmentsInSameLpse = assignments.filter(asg => {
                             if (isEdit && asg.id === formData.id) return false;
                             if ((asg.lpseName || '').trim().toLowerCase() !== (formData.lpseName || '').trim().toLowerCase()) return false;
+
+                            // Abaikan pekerjaan yang sudah expired / lewat dari hari ini
+                            if (asg.endDate) {
+                                const today = new Date();
+                                today.setHours(0, 0, 0, 0);
+                                const asgEnd = new Date(asg.endDate);
+                                asgEnd.setHours(0, 0, 0, 0);
+                                if (asgEnd < today) {
+                                    return false; // Pekerjaan sudah selesai dan dianggap hilang, jadi tidak masuk kuota
+                                }
+                            }
+
+                            // Cek overlapping tanggal (jika tanggal akhir pekerjaan lama sudah lewat dari tanggal mulai pekerjaan baru, maka aman dan tidak masuk perhitungan kuota)
+                            if (formData.startDate && endDate && asg.startDate && asg.endDate) {
+                                const newStart = new Date(formData.startDate);
+                                const newEnd = new Date(endDate);
+                                const asgStart = new Date(asg.startDate);
+                                const asgEnd = new Date(asg.endDate);
+
+                                // Reset time to 00:00:00 to prevent edge case issues
+                                newStart.setHours(0, 0, 0, 0);
+                                newEnd.setHours(0, 0, 0, 0);
+                                asgStart.setHours(0, 0, 0, 0);
+                                asgEnd.setHours(0, 0, 0, 0);
+
+                                if (newStart > asgEnd || newEnd < asgStart) {
+                                    return false; // Tidak tumpang tindih, boleh diplot
+                                }
+                            }
+
                             return (asg.experts || []).some(e => e.expertId === exp.expertId);
                         });
 
-                        const countPengawasan = existingAssignmentsInSameLpse.filter(asg => (asg.projectType || 'Pengawasan') === 'Pengawasan').length;
-                        const countPerencanaan = existingAssignmentsInSameLpse.filter(asg => asg.projectType === 'Perencanaan').length;
+                        const countWaktuPenugasan = existingAssignmentsInSameLpse.filter(asg => (asg.contractType || 'Waktu Penugasan') === 'Waktu Penugasan').length;
+                        const countLumsum = existingAssignmentsInSameLpse.filter(asg => asg.contractType === 'Lumsum').length;
 
-                        if ((formData.projectType || 'Pengawasan') === 'Pengawasan') {
-                            if (countPengawasan >= 1) {
-                                setAlertModal({ isOpen: true, title: 'Melanggar Batas Aturan', message: `Gagal menyimpan! ${expertName} sudah diplot pada proyek Pengawasan di ${formData.lpseName}.\n\nSesuai aturan, Tenaga Ahli hanya boleh diplot maksimal 1 proyek Pengawasan di LPSE yang sama.` });
-                                return;
-                            }
-                        } else if (formData.projectType === 'Perencanaan') {
-                            if (countPerencanaan >= 3) {
-                                setAlertModal({ isOpen: true, title: 'Melanggar Batas Aturan', message: `Gagal menyimpan! ${expertName} sudah diplot pada ${countPerencanaan} proyek Perencanaan di ${formData.lpseName}.\n\nSesuai aturan, Tenaga Ahli hanya boleh diplot maksimal 3 proyek Perencanaan di LPSE yang sama.` });
+                        if (countWaktuPenugasan >= 1) {
+                            setAlertModal({ isOpen: true, title: 'Kapasitas Penuh', message: `Gagal menyimpan! ${expertName} sudah memiliki 1 pekerjaan Waktu Penugasan di ${formData.lpseName}.\n\nSesuai aturan, Tenaga Ahli tidak dapat di-plot di pekerjaan baru (Waktu Penugasan / Lumsum) pada LPSE yang sama.` });
+                            return;
+                        }
+                        if (countLumsum >= 3) {
+                            setAlertModal({ isOpen: true, title: 'Kapasitas Penuh', message: `Gagal menyimpan! ${expertName} sudah memiliki 3 pekerjaan Lumsum di ${formData.lpseName}.\n\nSesuai aturan, Tenaga Ahli telah mencapai batas maksimal 3 pekerjaan dan tidak dapat di-plot di pekerjaan baru pada LPSE yang sama.` });
+                            return;
+                        }
+
+                        if ((formData.contractType || 'Waktu Penugasan') === 'Waktu Penugasan') {
+                            if (countLumsum > 0) {
+                                setAlertModal({ isOpen: true, title: 'Melanggar Batas Aturan', message: `Gagal menyimpan! ${expertName} sudah memiliki pekerjaan Lumsum di ${formData.lpseName}.\n\nTenaga ahli tidak dapat ditambahkan ke pekerjaan Waktu Penugasan karena tidak dapat digabungkan dengan kontrak Lumsum yang sudah berjalan.` });
                                 return;
                             }
                         }
@@ -3621,7 +3778,7 @@
                         const { expertSearchTemp, ...rest } = exp;
                         return rest;
                     });
-                    
+
                     const payload = { ...formData, experts: cleanedExperts, endDate };
                     handleAssignmentAction(isEdit ? 'edit' : 'add', payload);
                 };
@@ -3629,7 +3786,7 @@
                 const handleAddExpertRow = () => {
                     setFormData(prev => ({
                         ...prev,
-                        experts: [...(prev.experts || []), { expertId: '', certificateName: '', manMonth: '' }]
+                        experts: [...(prev.experts || []), { expertId: '', role: '', certificateName: '', manMonth: '' }]
                     }));
                 };
 
@@ -3645,12 +3802,12 @@
                     setFormData(prev => {
                         const newExperts = [...prev.experts];
                         newExperts[index] = { ...newExperts[index], [field]: value };
-                        
+
                         // Reset certificate when expert changes
                         if (field === 'expertId') {
                             newExperts[index].certificateName = '';
                         }
-                        
+
                         return { ...prev, experts: newExperts };
                     });
                 };
@@ -3664,7 +3821,7 @@
                             </div>
                             <div className="p-6 overflow-y-auto custom-scrollbar flex-1">
                                 <form id="assignmentForm" onSubmit={handleSubmit} className="space-y-6">
-                                    
+
                                     {/* SEKSI INFORMASI PEKERJAAN */}
                                     <div className="space-y-4">
                                         <h4 className="font-bold text-slate-700 dark:text-slate-200 border-b border-slate-200 dark:border-slate-700 pb-2">Informasi Pekerjaan</h4>
@@ -3749,11 +3906,11 @@
                                                     return (
                                                         <div key={idx} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 flex flex-col md:flex-row gap-3 relative group">
                                                             <div className="flex-1">
-                                                                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Tenaga Ahli</label>
-                                                                <input 
-                                                                    type="text" 
+                                                                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Nama</label>
+                                                                <input
+                                                                    type="text"
                                                                     list={`expert-list-${idx}`}
-                                                                    required 
+                                                                    required
                                                                     value={expPlot.expertSearchTemp !== undefined ? expPlot.expertSearchTemp : (selectedExpertObj ? selectedExpertObj.name : '')}
                                                                     onChange={e => {
                                                                         const val = e.target.value;
@@ -3767,13 +3924,25 @@
                                                                             }
                                                                             return { ...prev, experts: newExperts };
                                                                         });
-                                                                    }} 
+                                                                    }}
                                                                     placeholder="Cari atau ketik nama..."
-                                                                    className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" 
+                                                                    className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200"
                                                                 />
                                                                 <datalist id={`expert-list-${idx}`}>
                                                                     {experts.map(e => <option key={e.id} value={e.name} />)}
                                                                 </datalist>
+                                                            </div>
+                                                            <div className="flex-1">
+                                                                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Peran</label>
+                                                                <select required value={expPlot.role || ''} onChange={e => handleExpertRowChange(idx, 'role', e.target.value)} className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200">
+                                                                    <option value="">-- Pilih Peran --</option>
+                                                                    {((formData.projectType || 'Pengawasan') === 'Perencanaan'
+                                                                        ? ['Team Leader', 'Tenaga Ahli', 'K3', 'Quantity Surveyor / Cost Estimator', 'Drafter / Operator CAD', 'Surveyor', 'Administrasi']
+                                                                        : ['Team Leader', 'Tenaga Ahli', 'Inspector', 'Laboratory Technician', 'Quantity Surveyor', 'K3', 'Administrasi']
+                                                                    ).map(r => (
+                                                                        <option key={r} value={r}>{r}</option>
+                                                                    ))}
+                                                                </select>
                                                             </div>
                                                             <div className="flex-1">
                                                                 <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Sertifikat Terpakai</label>
@@ -3786,7 +3955,7 @@
                                                                 <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Man Month</label>
                                                                 <input type="text" required value={expPlot.manMonth} onChange={e => handleExpertRowChange(idx, 'manMonth', e.target.value)} placeholder="Cth: 1.5" className="w-full p-2 rounded-lg border border-slate-300 dark:border-slate-600 outline-none text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200" />
                                                             </div>
-                                                            
+
                                                             <button type="button" onClick={() => handleRemoveExpertRow(idx)} className="absolute -top-2 -right-2 p-1.5 bg-red-100 text-red-600 hover:bg-red-200 dark:bg-red-900/50 dark:text-red-400 rounded-full shadow-sm opacity-0 group-hover:opacity-100 transition-opacity" title="Hapus Baris">
                                                                 <Icon name="x" size={14} />
                                                             </button>
@@ -3812,7 +3981,7 @@
             // --- MODAL FORMULAR ---
             const ModalForm = () => {
                 if (!modalConfig.isOpen) return null;
-                if (modalConfig.type === 'expert' || modalConfig.type === 'expert_cert' || modalConfig.type === 'expert_tender' || modalConfig.type === 'assignment') return null;
+                if (modalConfig.type === 'expert' || modalConfig.type === 'expert_cert' || modalConfig.type === 'expert_tender' || modalConfig.type === 'assignment' || modalConfig.type === 'import_expert') return null;
 
                 const isProject = modalConfig.type === 'project';
                 const isInventory = modalConfig.type === 'inventory' || modalConfig.type === 'inventory-borrow' || modalConfig.type === 'inventory-return' || modalConfig.type === 'inventory-extend' || modalConfig.type === 'inventory-cart';
@@ -5112,6 +5281,8 @@
                     filteredResources = filteredResources.filter(r => r.name === printData.name);
                     title = `Laporan Rekam Penugasan Personil: ${filteredResources[0]?.name}`;
                     filteredProjects = filteredProjects.filter(p => (p.team?.includes(filteredResources[0]?.name) || p.teamLeader === filteredResources[0]?.name) && !p.notStarted);
+                } else if (printData.type === 'expert_assignment') {
+                    title = "Laporan Eksekutif Penugasan Tenaga Ahli";
                 } else if (printData.type === 'custom') {
                     if (printData.options.section === 'ProyekSaja') title = "Laporan Eksekutif Status Proyek";
                     if (printData.options.section === 'PegawaiSaja') title = "Laporan Eksekutif Penugasan Personil";
@@ -5261,25 +5432,25 @@
 
                     const phases = [];
                     const possibleCats = ['Arsitek', 'Struktur', 'MEP', 'Tata Ruang', 'QS', 'Surveyor', 'Lainnya'];
-                    
+
                     let globalMinDate = null;
                     let globalMaxDate = null;
-                    
+
                     possibleCats.forEach(cat => {
                         const detail = p.categoryDetails?.[cat];
                         const hasData = detail && (detail.startDate || detail.deadline || (detail.progress !== undefined && detail.progress !== ""));
                         const hasSpmkData = p.spmk && detail && (detail.deadline || (detail.progress !== undefined && detail.progress !== ""));
-                        
+
                         if (hasData || hasSpmkData) {
                             const rawStartDate = detail.startDate ? detail.startDate : p.spmk;
                             let sd = rawStartDate ? new Date(rawStartDate) : null;
                             let ed = detail.deadline ? new Date(detail.deadline) : null;
-                            
+
                             if (sd && (!globalMinDate || sd < globalMinDate)) globalMinDate = new Date(sd);
                             if (ed && (!globalMaxDate || ed > globalMaxDate)) globalMaxDate = new Date(ed);
                             if (sd && !globalMaxDate) globalMaxDate = new Date(sd);
                             if (ed && !globalMinDate) globalMinDate = new Date(ed);
-                            
+
                             phases.push({
                                 id: cat,
                                 name: cat,
@@ -5315,7 +5486,7 @@
 
                     const chartStart = new Date(globalMinDate);
                     chartStart.setDate(1);
-                    
+
                     const chartEnd = new Date(globalMaxDate);
                     chartEnd.setMonth(chartEnd.getMonth() + 2);
                     chartEnd.setDate(0);
@@ -5397,11 +5568,11 @@
                                         let leftPerc = 0;
                                         let widthPerc = 0;
                                         let manMonthStr = '-';
-                                        
+
                                         if (hasBar) {
                                             let s = new Date(phase.startDate);
                                             let e = new Date(phase.endDate);
-                                            
+
                                             // Calculate Duration based on actual dates
                                             const daysTotal = Math.round((e - s) / (1000 * 60 * 60 * 24));
                                             if (daysTotal >= 0) {
@@ -5411,10 +5582,10 @@
                                             // Bounding for chart bar
                                             if (s < chartStart) s = chartStart;
                                             if (e > chartEnd) e = chartEnd;
-                                            
+
                                             const offsetDays = Math.round((s - chartStart) / (1000 * 60 * 60 * 24));
                                             const durationDays = Math.round((e - s) / (1000 * 60 * 60 * 24)) + 1;
-                                            
+
                                             leftPerc = (offsetDays / totalDays) * 100;
                                             widthPerc = (durationDays / totalDays) * 100;
                                         }
@@ -5422,7 +5593,7 @@
                                         return (
                                             <tr key={phase.id} className={phase.isSubTask ? "bg-white" : "bg-gray-50 font-semibold"}>
                                                 <td className={`border border-black p-1.5 truncate ${phase.isSubTask ? 'pl-4 text-gray-700' : ''}`}>
-                                            {phase.isSubTask ? `└ ${phase.name}` : phase.name}
+                                                    {phase.isSubTask ? `└ ${phase.name}` : phase.name}
                                                 </td>
                                                 <td className="border border-black p-1 text-center font-bold whitespace-nowrap">{manMonthStr}</td>
                                                 <td className="border border-black p-1 text-center font-bold uppercase">{getMicroStatus(phase.progress, phase.endDate)}</td>
@@ -5434,7 +5605,7 @@
                                                         ))}
                                                     </div>
                                                     {hasBar && (
-                                                        <div 
+                                                        <div
                                                             className="absolute top-[4px] bottom-[4px] bg-black border border-black z-10 flex items-center justify-between px-1 text-[7px] text-white overflow-hidden whitespace-nowrap"
                                                             style={{ left: `${leftPerc}%`, width: `${widthPerc}%`, printColorAdjust: 'exact' }}
                                                         >
@@ -5449,7 +5620,7 @@
                                 </tbody>
                             </table>
                             <div className="mt-4 text-xs italic text-gray-600">
-                                Catatan: Bar berwarna solid hitam menunjukkan rentang waktu pelaksanaan tugas secara proporsional. <br/>
+                                Catatan: Bar berwarna solid hitam menunjukkan rentang waktu pelaksanaan tugas secara proporsional. <br />
                                 <strong>Tanggal Mulai (awal garis bar) pada chart ini disesuaikan dengan Tanggal Mulai masing-masing sub-tim.</strong>
                             </div>
                         </div>
@@ -5493,7 +5664,7 @@
                             `}
                         </style>
                         <div className="custom-print-footer">
-                            <span>This Document Created By Tim Teknis Gaharu Sempana Group</span>
+                            <span>This Document Created By {printData.type === 'expert_assignment' ? 'Tim Administrasi Teknis' : 'Tim Teknis'} Gaharu Sempana Group</span>
                         </div>
 
                         <table style={{ width: '100%' }}>
@@ -5508,7 +5679,7 @@
                                             <img src="./LGIHT TRANSPARAN (1).PNG" alt="Gaharu Sempana Group Logo" className="h-20 object-contain" />
                                             <div>
                                                 <h1 className="text-2xl font-black uppercase tracking-wider">{title}</h1>
-                                                <p className="text-sm mt-1 font-semibold">Project Management Control System (PMC)</p>
+                                                <p className="text-sm mt-1 font-semibold">SIDAMON (Sistem Database Dan Monitoring)</p>
                                                 <p className="text-sm">Gaharu Sempana Group</p>
                                             </div>
                                         </div>
@@ -5586,14 +5757,14 @@
                                                         filteredResources.forEach(res => {
                                                             const activeProjectsForRes = filteredProjects.filter(p => (p.team?.includes(res.name) || p.teamLeader === res.name || p.surveyorTeam?.includes(res.name)) && !p.notStarted);
                                                             if (printData.type === 'custom' && printData.options.projectType !== 'Semua' && activeProjectsForRes.length === 0) return;
-                                                            
+
                                                             const subTeam = getCategoryFromRole(res.role);
                                                             if (!resourcesBySubTeam[subTeam]) resourcesBySubTeam[subTeam] = [];
                                                             resourcesBySubTeam[subTeam].push({ res, activeProjectsForRes });
                                                         });
 
                                                         const subTeamKeys = Object.keys(resourcesBySubTeam).sort();
-                                                        
+
                                                         if (subTeamKeys.length === 0) {
                                                             return <p className="text-sm italic">Tidak ada personil yang terlibat di kriteria ini.</p>;
                                                         }
@@ -5662,12 +5833,12 @@
                                                                                                 manMonthStr = details.manMonth || '-';
                                                                                             } else {
                                                                                                 statusLapangan = p.computedStatus || '-';
-                                                                                                
+
                                                                                                 // Kalkulasi Man Month Team Leader Perencanaan
                                                                                                 const cats = ['Arsitek', 'QS', 'Struktur', 'MEP', 'Tata Ruang', 'Surveyor', 'Lainnya'];
                                                                                                 let minDate = null;
                                                                                                 let maxDate = null;
-                                                                                                
+
                                                                                                 cats.forEach(cat => {
                                                                                                     const d = p.categoryDetails?.[cat];
                                                                                                     if (d) {
@@ -5682,16 +5853,16 @@
                                                                                                         }
                                                                                                     }
                                                                                                 });
-                                                                                                
+
                                                                                                 if (minDate && maxDate) {
-                                                                                                    minDate.setHours(0,0,0,0);
-                                                                                                    maxDate.setHours(0,0,0,0);
+                                                                                                    minDate.setHours(0, 0, 0, 0);
+                                                                                                    maxDate.setHours(0, 0, 0, 0);
                                                                                                     const diffDays = Math.ceil((maxDate.getTime() - minDate.getTime()) / (1000 * 60 * 60 * 24));
                                                                                                     if (diffDays > 0) {
                                                                                                         manMonthStr = parseFloat((diffDays / 30).toFixed(1)).toString();
                                                                                                     }
                                                                                                 }
-                                                                                                
+
                                                                                                 deadlineStr = maxDate ? formatDateIndo(maxDate.toISOString().split('T')[0]) : (p.deadline ? formatDateIndo(p.deadline) : '-');
                                                                                             }
                                                                                         } else if (isPengawasan) {
@@ -5705,20 +5876,20 @@
                                                                                             const details = p.categoryDetails?.[effectiveCat] || {};
                                                                                             deadlineStr = details.deadline ? formatDateIndo(details.deadline) : '-';
                                                                                             roleStr = effectiveCat === 'Surveyor' ? 'Tim Surveyor' : effectiveCat;
-                                                                                            
+
                                                                                             // Kalkulasi Man Month dari startDate ke deadline tim
                                                                                             const startDateSource = details.startDate ? details.startDate : p.spmk;
                                                                                             if (startDateSource && details.deadline) {
                                                                                                 const startD = new Date(startDateSource);
                                                                                                 const endD = new Date(details.deadline);
-                                                                                                startD.setHours(0,0,0,0);
-                                                                                                endD.setHours(0,0,0,0);
+                                                                                                startD.setHours(0, 0, 0, 0);
+                                                                                                endD.setHours(0, 0, 0, 0);
                                                                                                 const diffDays = Math.ceil((endD.getTime() - startD.getTime()) / (1000 * 60 * 60 * 24));
                                                                                                 if (diffDays > 0) {
                                                                                                     manMonthStr = parseFloat((diffDays / 30).toFixed(1)).toString();
                                                                                                 }
                                                                                             }
-                                                                                            
+
                                                                                             // Status Lapangan diambil dari status sub tim
                                                                                             statusLapangan = getMicroStatus(details.progress || 0, details.deadline);
                                                                                         }
@@ -5746,11 +5917,76 @@
                                         </div>
                                     )}
 
+                                    {/* BAGIAN 3: DAFTAR PENUGASAN TENAGA AHLI */}
+                                    {(printData.type === 'expert_assignment') && (() => {
+                                        const activeAsg = assignments.filter(asg => {
+                                            if (asg.endDate) {
+                                                const today = new Date();
+                                                today.setHours(0, 0, 0, 0);
+                                                const end = new Date(asg.endDate);
+                                                end.setHours(0, 0, 0, 0);
+                                                if (end < today) return false;
+                                            }
+                                            return true;
+                                        });
+
+                                        return (
+                                            <div>
+                                                <h2 className="text-lg font-bold mb-4 uppercase border-b border-gray-400 pb-2">Laporan Rekam Penugasan Tenaga Ahli</h2>
+                                                {activeAsg.length === 0 ? (
+                                                    <p className="text-sm italic">Tidak ada penugasan tenaga ahli aktif yang terdaftar.</p>
+                                                ) : (
+                                                    <div className="space-y-6">
+                                                        {activeAsg.map(asg => (
+                                                            <div key={asg.id} className="border-2 border-black p-4" style={{ pageBreakInside: 'avoid' }}>
+                                                                <div className="flex justify-between items-center mb-2">
+                                                                    <div>
+                                                                        <h3 className="font-bold uppercase text-base">{asg.jobName}</h3>
+                                                                        <p className="text-xs uppercase mt-0.5 font-bold">{asg.tenderType} | {asg.lpseName}</p>
+                                                                        <p className="text-xs mt-0.5">Tipe Proyek & Kontrak: {asg.projectType || 'Pengawasan'} - {asg.contractType}</p>
+                                                                        <p className="text-xs mt-0.5">SPMK - Berakhir: {asg.startDate ? formatDateIndo(asg.startDate) : '-'} s/d {asg.endDate ? formatDateIndo(asg.endDate) : '-'} ({asg.duration || 0} Hari)</p>
+                                                                    </div>
+                                                                </div>
+
+                                                                <table className="w-full text-xs border-collapse border border-black mt-3">
+                                                                    <thead>
+                                                                        <tr className="bg-gray-100">
+                                                                            <th className="border border-black p-1.5 text-left w-[40%]">Nama</th>
+                                                                            <th className="border border-black p-1.5 text-left w-[30%]">Sertifikat (SKA)</th>
+                                                                            <th className="border border-black p-1.5 text-center w-[15%]">Peran</th>
+                                                                            <th className="border border-black p-1.5 text-center w-[15%]">Man Month</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        {(asg.experts || []).length === 0 ? (
+                                                                            <tr><td colSpan="4" className="border border-black p-1.5 text-center italic">Belum ada tenaga ahli.</td></tr>
+                                                                        ) : (asg.experts || []).map((expPlot, idx) => {
+                                                                            const exp = experts.find(e => e.id === expPlot.expertId);
+                                                                            const expertName = exp ? exp.name : 'Unknown';
+                                                                            return (
+                                                                                <tr key={idx}>
+                                                                                    <td className="border border-black p-1.5 font-semibold">{expertName}</td>
+                                                                                    <td className="border border-black p-1.5">{expPlot.certificateName || '-'}</td>
+                                                                                    <td className="border border-black p-1.5 text-center">{expPlot.role || '-'}</td>
+                                                                                    <td className="border border-black p-1.5 text-center font-bold">{expPlot.manMonth}</td>
+                                                                                </tr>
+                                                                            )
+                                                                        })}
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        );
+                                    })()}
+
                                     {/* BAGIAN TANDA TANGAN */}
                                     <div className="mt-16 pt-8 flex justify-between px-10 text-sm text-black" style={{ pageBreakInside: 'avoid' }}>
                                         <div className="text-center">
-                                            <p className="mb-24">Diketahui Oleh,<br />Manajer Teknis Gaharu Sempana Group</p>
-                                            <p className="font-bold underline decoration-black underline-offset-2">Ar. Ir. I Nyoman Adi Putra Wijaya, ST. IAI.</p>
+                                            <p className="mb-24">Diketahui Oleh,<br />{printData.type === 'expert_assignment' ? 'Manajer Administrasi' : 'Manajer Teknis'} Gaharu Sempana Group</p>
+                                            <p className="font-bold underline decoration-black underline-offset-2">{printData.type === 'expert_assignment' ? 'Gusti Ayu Legong Aryaningsih, S.T., M.T.' : 'Ar. Ir. I Nyoman Adi Putra Wijaya, ST. IAI.'}</p>
                                         </div>
                                         <div className="text-center">
                                             <p className="mb-24">Disetujui Oleh,<br />CEO Gaharu Sempana Group</p>
@@ -5776,28 +6012,28 @@
                 // 1. Ekstrak Fase/Tim yang aktif di proyek ini
                 const phases = [];
                 const possibleCats = ['Arsitek', 'Struktur', 'MEP', 'Tata Ruang', 'QS', 'Surveyor', 'Lainnya'];
-                
+
                 let globalMinDate = null;
                 let globalMaxDate = null;
-                
+
                 const isPerencanaan = p.type?.toLowerCase().includes('perencana');
-                
+
                 possibleCats.forEach(cat => {
                     const detail = p.categoryDetails?.[cat];
                     const hasData = detail && (detail.startDate || detail.deadline || (detail.progress !== undefined && detail.progress !== ""));
                     const hasSpmkData = isPerencanaan && p.spmk && detail && (detail.deadline || (detail.progress !== undefined && detail.progress !== ""));
-                    
+
                     // Tampilkan jika punya startDate/deadline atau progress > 0
                     if (hasData || hasSpmkData) {
                         const rawStartDate = detail.startDate ? detail.startDate : p.spmk;
                         let sd = rawStartDate ? new Date(rawStartDate) : null;
                         let ed = detail.deadline ? new Date(detail.deadline) : null;
-                        
+
                         if (sd && (!globalMinDate || sd < globalMinDate)) globalMinDate = new Date(sd);
                         if (ed && (!globalMaxDate || ed > globalMaxDate)) globalMaxDate = new Date(ed);
                         if (sd && !globalMaxDate) globalMaxDate = new Date(sd);
                         if (ed && !globalMinDate) globalMinDate = new Date(ed);
-                        
+
                         // Cari assignees (orang yang perannya masuk ke kategori ini dan ada di p.team)
                         const assignees = p.team ? p.team.filter(mName => {
                             const res = resources.find(r => r.name === mName);
@@ -5806,7 +6042,7 @@
                             }
                             return false;
                         }) : [];
-                        
+
                         if (cat === 'Surveyor' && p.surveyorTeam && p.surveyorTeam.length > 0) {
                             p.surveyorTeam.forEach(st => { if (!assignees.includes(st)) assignees.push(st); });
                         }
@@ -5848,7 +6084,7 @@
                 // Beri padding 1 bulan ke belakang dan 2 bulan ke depan untuk visual
                 const chartStart = new Date(globalMinDate);
                 chartStart.setDate(1);
-                
+
                 const chartEnd = new Date(globalMaxDate);
                 chartEnd.setMonth(chartEnd.getMonth() + 2);
                 chartEnd.setDate(0); // Akhir bulan
@@ -5856,7 +6092,7 @@
                 // Generate array of months for the header
                 const timeUnits = [];
                 let curr = new Date(chartStart);
-                
+
                 if (scheduleZoom === 'month') {
                     while (curr <= chartEnd) {
                         timeUnits.push({ date: new Date(curr), label: curr.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' }).toUpperCase(), monthLabel: curr.toLocaleDateString('id-ID', { month: 'short', year: '2-digit' }).toUpperCase() });
@@ -5872,10 +6108,10 @@
                             weekCounter = 1;
                         }
                         timeUnits.push({ date: new Date(curr), label: `MG ${weekCounter}`, monthLabel: monthStr });
-                        
+
                         let nextDate = new Date(curr);
                         nextDate.setDate(nextDate.getDate() + 7);
-                        
+
                         if (nextDate.getMonth() !== currentMonth) {
                             curr = new Date(curr.getFullYear(), curr.getMonth() + 1, 1);
                         } else {
@@ -5899,8 +6135,8 @@
                 if (scheduleFilterUser !== 'Semua') {
                     filteredPhases = phases.filter(ph => {
                         if (ph.isSubTask) {
-                           const parent = phases.find(parentPhase => parentPhase.id === ph.id.split('-task')[0]);
-                           return parent && parent.assignees && parent.assignees.includes(scheduleFilterUser);
+                            const parent = phases.find(parentPhase => parentPhase.id === ph.id.split('-task')[0]);
+                            return parent && parent.assignees && parent.assignees.includes(scheduleFilterUser);
                         }
                         return ph.assignees && ph.assignees.includes(scheduleFilterUser);
                     });
@@ -5934,7 +6170,7 @@
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <select 
+                                <select
                                     className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-purple-500/50"
                                     value={scheduleZoom}
                                     onChange={(e) => setScheduleZoom(e.target.value)}
@@ -5971,41 +6207,41 @@
 
                         {/* Gantt Area */}
                         <div className="flex-1 overflow-auto flex bg-white dark:bg-slate-950">
-                            
+
                             {/* Left Column: Items Table */}
                             <div className="w-72 sm:w-80 border-r border-slate-200 dark:border-slate-800 shrink-0 flex flex-col bg-white dark:bg-slate-950 z-10 sticky left-0 shadow-[4px_0_12px_-4px_rgba(0,0,0,0.05)] dark:shadow-none">
                                 <div className="h-10 border-b border-slate-200 dark:border-slate-800 flex items-center px-4 shrink-0 bg-slate-50 dark:bg-slate-900/50">
                                     <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Tasks</span>
                                 </div>
-                                               <div className="flex-1 overflow-y-auto">
+                                <div className="flex-1 overflow-y-auto">
                                     {filteredPhases.length === 0 ? (
                                         <div className="p-4 text-xs text-slate-400 italic">Tidak ada data fase / jadwal untuk kriteria ini.</div>
                                     ) : (
                                         <div className="flex flex-col">
                                             {filteredPhases.map((phase) => {
-                                            const isDone = phase.progress >= 100;
-                                            return (
-                                                <div key={phase.id} className={`h-12 border-b border-slate-100 dark:border-slate-800/50 flex items-center px-4 gap-2 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors group ${phase.isSubTask ? 'pl-10 bg-slate-50/30 dark:bg-slate-900/10' : ''}`}>
-                                                    {!phase.isSubTask ? (
-                                                        <button 
-                                                            onClick={() => setScheduleCollapsedCats(prev => ({ ...prev, [phase.id]: !prev[phase.id] }))}
-                                                            className="text-slate-400 hover:text-indigo-500 transition-colors"
-                                                            title={scheduleCollapsedCats[phase.id] ? "Buka Sub-Tugas" : "Tutup Sub-Tugas"}
-                                                        >
-                                                            <Icon name={scheduleCollapsedCats[phase.id] ? "chevron-right" : "chevron-down"} size={16} />
-                                                        </button>
-                                                    ) : (
-                                                        <div className="w-3 border-b-2 border-l-2 border-slate-300 dark:border-slate-600 h-3 rounded-bl -mt-2 ml-1 opacity-50 shrink-0"></div>
-                                                    )}
-                                                    <div className={`w-4 h-4 rounded shadow-sm border flex items-center justify-center shrink-0 ${isDone ? 'bg-emerald-500 border-emerald-600' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}>
-                                                        {isDone && <Icon name="check" size={10} className="text-white" strokeWidth={3} />}
+                                                const isDone = phase.progress >= 100;
+                                                return (
+                                                    <div key={phase.id} className={`h-12 border-b border-slate-100 dark:border-slate-800/50 flex items-center px-4 gap-2 hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors group ${phase.isSubTask ? 'pl-10 bg-slate-50/30 dark:bg-slate-900/10' : ''}`}>
+                                                        {!phase.isSubTask ? (
+                                                            <button
+                                                                onClick={() => setScheduleCollapsedCats(prev => ({ ...prev, [phase.id]: !prev[phase.id] }))}
+                                                                className="text-slate-400 hover:text-indigo-500 transition-colors"
+                                                                title={scheduleCollapsedCats[phase.id] ? "Buka Sub-Tugas" : "Tutup Sub-Tugas"}
+                                                            >
+                                                                <Icon name={scheduleCollapsedCats[phase.id] ? "chevron-right" : "chevron-down"} size={16} />
+                                                            </button>
+                                                        ) : (
+                                                            <div className="w-3 border-b-2 border-l-2 border-slate-300 dark:border-slate-600 h-3 rounded-bl -mt-2 ml-1 opacity-50 shrink-0"></div>
+                                                        )}
+                                                        <div className={`w-4 h-4 rounded shadow-sm border flex items-center justify-center shrink-0 ${isDone ? 'bg-emerald-500 border-emerald-600' : 'bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-600'}`}>
+                                                            {isDone && <Icon name="check" size={10} className="text-white" strokeWidth={3} />}
+                                                        </div>
+                                                        <span className={`${phase.isSubTask ? 'text-xs' : 'text-sm'} font-semibold truncate ${isDone ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-300'}`} title={phase.name}>{phase.name}</span>
+                                                        {isDone && <Icon name="check-circle-2" size={14} className="text-emerald-500 ml-auto shrink-0" />}
                                                     </div>
-                                                    <span className={`${phase.isSubTask ? 'text-xs' : 'text-sm'} font-semibold truncate ${isDone ? 'text-slate-400 dark:text-slate-500' : 'text-slate-700 dark:text-slate-300'}`} title={phase.name}>{phase.name}</span>
-                                                    {isDone && <Icon name="check-circle-2" size={14} className="text-emerald-500 ml-auto shrink-0" />}
-                                                </div>
-                                            )
-                                        })}
-                                </div>
+                                                )
+                                            })}
+                                        </div>
                                     )}
                                 </div>
                             </div>
@@ -6066,7 +6302,7 @@
                                             const duration = (phase.endDate - phase.startDate) / (1000 * 60 * 60 * 24);
                                             leftPercent = (startOffset / totalDays) * 100;
                                             widthPercent = Math.max(1, (duration / totalDays) * 100);
-                                            
+
                                             // Get precise micro status
                                             phaseStatus = getMicroStatus(phase.progress, phase.endDate);
                                             if (phaseStatus === "Terlambat") {
@@ -6090,7 +6326,7 @@
                                         return (
                                             <div key={`bar-${phase.id}`} className="h-12 border-b border-slate-100/50 dark:border-slate-800/30 flex items-center relative hover:bg-slate-50/50 dark:hover:bg-slate-900/10 transition-colors w-full">
                                                 {hasBar && (
-                                                    <div 
+                                                    <div
                                                         className={`absolute h-6 rounded-md border flex items-center shadow-sm group cursor-pointer hover:shadow-md transition-shadow hover:z-50 ${colorClass}`}
                                                         style={{ left: `${leftPercent}%`, width: chartAnimate ? `${widthPercent}%` : '0%', minWidth: chartAnimate ? '40px' : '0px', transition: 'width 1s cubic-bezier(0.16, 1, 0.3, 1)' }}
                                                     >
@@ -6098,13 +6334,13 @@
                                                         <div className="absolute inset-0 overflow-hidden rounded-md pointer-events-none">
                                                             <div className={`absolute top-0 bottom-0 left-0 opacity-20 ${isLate ? 'bg-black' : 'bg-current'}`} style={{ width: `${phase.progress}%` }}></div>
                                                         </div>
-                                                        
+
                                                         {/* Label inside bar */}
                                                         <div className="px-2 flex items-center gap-1.5 z-10 w-full h-full text-[10px] font-bold pointer-events-none overflow-hidden">
                                                             {isLate && <Icon name="alert-triangle" size={10} className="text-white shrink-0" />}
                                                             {phase.progress === 100 && <Icon name="check-circle-2" size={10} className="shrink-0" />}
                                                         </div>
-                                                        
+
                                                         {/* Rich Tooltip (Glassmorphism) */}
                                                         <div className="absolute top-full left-0 mt-2 hidden group-hover:block z-[100] w-64 bg-slate-900/90 backdrop-blur-md text-white rounded-xl p-3 shadow-2xl pointer-events-none border border-slate-700">
                                                             <div className="font-bold text-sm mb-1">{phase.name}</div>
@@ -6151,7 +6387,7 @@
                                             const todayOffset = (today - chartStart) / (1000 * 60 * 60 * 24);
                                             const todayPercent = (todayOffset / totalDays) * 100;
                                             return (
-                                                <div 
+                                                <div
                                                     className="absolute top-0 bottom-0 border-l-2 border-rose-500 border-dashed z-20 pointer-events-none"
                                                     style={{ left: `${todayPercent}%` }}
                                                 >
@@ -6173,7 +6409,7 @@
 
             const renderMasterSchedule = () => {
                 let displayedProjects = projects.filter(p => p.spmk && p.deadline && p.type?.toLowerCase().includes('perencana') && Number(p.progress || 0) < 100 && p.status !== 'Done');
-                
+
                 if (displayedProjects.length === 0) {
                     return (
                         <div className="flex flex-col h-full bg-white dark:bg-slate-950 items-center justify-center p-8 text-center absolute inset-0 z-20">
@@ -6215,10 +6451,10 @@
                             weekCounter = 1;
                         }
                         timeUnits.push({ date: new Date(curr), label: `MG ${weekCounter}`, monthLabel: monthStr });
-                        
+
                         let nextDate = new Date(curr);
                         nextDate.setDate(nextDate.getDate() + 7);
-                        
+
                         if (nextDate.getMonth() !== currentMonth) {
                             curr = new Date(curr.getFullYear(), curr.getMonth() + 1, 1);
                         } else {
@@ -6259,7 +6495,7 @@
                                 </div>
                             </div>
                             <div className="flex items-center gap-2">
-                                <select 
+                                <select
                                     className="px-3 py-1.5 text-xs font-semibold rounded-lg bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 outline-none focus:ring-2 focus:ring-purple-500/50"
                                     value={scheduleZoom}
                                     onChange={(e) => setScheduleZoom(e.target.value)}
@@ -6334,12 +6570,12 @@
                                             {displayedProjects.map((p) => {
                                                 const pStart = new Date(p.spmk);
                                                 const pEnd = new Date(p.deadline);
-                                                
+
                                                 const leftPercent = getDatePercent(pStart);
                                                 const widthPercent = getDatePercent(pEnd) - leftPercent;
-                                                
+
                                                 const progress = Number(p.progress || 0);
-                                                
+
                                                 let pStatus = "On Progress";
                                                 if (p.isPending) {
                                                     pStatus = "Pending";
@@ -6348,7 +6584,7 @@
                                                 } else if (p.deadline) {
                                                     pStatus = getMicroStatus(progress, p.deadline);
                                                 }
-                                                
+
                                                 let bgColor = '#3b82f6'; // blue-500
                                                 let textColor = 'text-white';
                                                 if (pStatus === "Pending") bgColor = '#64748b'; // slate-500
@@ -6371,7 +6607,7 @@
                                                         >
                                                             <div className="absolute top-0 bottom-0 left-0 bg-white/20 rounded-l-full" style={{ width: `${progress}%` }}></div>
                                                             <span className={`relative z-10 px-3 text-xs font-bold truncate drop-shadow-md ${textColor}`}>{progress}%</span>
-                                                            
+
                                                             {/* Hover Tooltip */}
                                                             <div className="absolute top-full left-1/2 -translate-x-1/2 mt-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50 bg-slate-800 text-white px-3 py-2 rounded-lg shadow-xl text-[10px] whitespace-nowrap flex flex-col gap-1 border border-slate-700/50 pointer-events-none">
                                                                 <div className="absolute -top-1.5 left-1/2 -translate-x-1/2 border-l-4 border-r-4 border-b-4 border-transparent border-b-slate-800"></div>
@@ -6404,7 +6640,7 @@
                                                 const todayOffset = (today - chartStart) / (1000 * 60 * 60 * 24);
                                                 const todayPercent = (todayOffset / totalDays) * 100;
                                                 return (
-                                                    <div 
+                                                    <div
                                                         className="absolute top-0 bottom-0 border-l-2 border-rose-500 border-dashed z-20 pointer-events-none"
                                                         style={{ left: `${todayPercent}%` }}
                                                     >
@@ -6426,10 +6662,22 @@
 
             const renderPenugasan = () => {
                 const filteredAssignments = assignments.filter(asg => {
+                    // Filter pekerjaan yang sudah selesai (akhir kontrak < hari ini) agar tampilan tetap clean
+                    if (asg.endDate) {
+                        const today = new Date();
+                        today.setHours(0, 0, 0, 0);
+                        const end = new Date(asg.endDate);
+                        end.setHours(0, 0, 0, 0);
+
+                        if (end < today) {
+                            return false;
+                        }
+                    }
+
                     const search = searchAssignmentTab.toLowerCase();
                     const matchJob = (asg.jobName || '').toLowerCase().includes(search);
                     const matchLpse = (asg.lpseName || '').toLowerCase().includes(search);
-                    
+
                     const matchExpert = (asg.experts || []).some(expPlot => {
                         const exp = experts.find(e => e.id === expPlot.expertId);
                         const expertName = exp ? exp.name.toLowerCase() : '';
@@ -6456,6 +6704,12 @@
                                     <input type="text" placeholder="Cari penugasan..." value={searchAssignmentTab} onChange={(e) => setSearchAssignmentTab(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm transition-shadow" />
                                     <Icon name="search" size={16} className="absolute left-3 top-3 text-slate-400" />
                                 </div>
+                                <button onClick={() => {
+                                    setPrintData({ type: 'expert_assignment' });
+                                    setTimeout(() => window.print(), 500);
+                                }} className="px-4 py-2 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl shadow-sm hover:bg-slate-50 dark:hover:bg-slate-700 transition-all font-semibold flex items-center gap-2 text-sm shrink-0 border border-slate-300 dark:border-slate-700">
+                                    <Icon name="printer" size={18} /> Ekspor PDF
+                                </button>
                                 <button onClick={() => setModalConfig({ isOpen: true, type: 'assignment', mode: 'add', data: null })} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all font-semibold flex items-center gap-2 text-sm shrink-0">
                                     <Icon name="plus" size={18} /> Tambah Penugasan
                                 </button>
@@ -6479,11 +6733,11 @@
                                             <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <button onClick={() => setModalConfig({ isOpen: true, type: 'assignment', mode: 'edit', data: asg })} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800 rounded-lg" title="Edit Penugasan"><Icon name="edit-3" size={16} /></button>
                                                 <button onClick={() => {
-                                                    if(confirm(`Hapus pekerjaan ${asg.jobName}?`)) handleAssignmentAction('delete', { id: asg.id });
+                                                    if (confirm(`Hapus pekerjaan ${asg.jobName}?`)) handleAssignmentAction('delete', { id: asg.id });
                                                 }} className="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-slate-800 rounded-lg" title="Hapus"><Icon name="trash-2" size={16} /></button>
                                             </div>
                                         </div>
-                                        
+
                                         <div className="p-5 space-y-3 flex-1">
                                             <div className="flex flex-col gap-3 mb-3">
                                                 <div>
@@ -6491,13 +6745,15 @@
                                                     <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{asg.projectType || 'Pengawasan'} - {asg.contractType}</p>
                                                 </div>
                                                 <div>
-                                                    <p className="text-[10px] text-slate-500 font-bold mb-0.5">Mulai - Durasi</p>
-                                                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">{asg.startDate ? formatDateIndo(asg.startDate) : '-'} ({asg.duration} Hari)</p>
+                                                    <p className="text-[10px] text-slate-500 font-bold mb-0.5">SPMK - Berakhir - Durasi</p>
+                                                    <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                                                        {asg.startDate ? formatDateIndo(asg.startDate) : '-'} s/d {asg.endDate ? formatDateIndo(asg.endDate) : '-'} ({asg.duration || 0} Hari)
+                                                    </p>
                                                 </div>
                                             </div>
 
                                             <div className="pt-3 border-t border-slate-100 dark:border-slate-800">
-                                                <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5"><Icon name="users" size={12}/> Tenaga Ahli Diplot ({(asg.experts || []).length})</p>
+                                                <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-2 flex items-center gap-1.5"><Icon name="users" size={12} /> Tenaga Ahli Diplot ({(asg.experts || []).length})</p>
                                                 {(asg.experts || []).length === 0 ? (
                                                     <p className="text-xs text-slate-400 italic">Belum ada tenaga ahli.</p>
                                                 ) : (
@@ -6508,7 +6764,10 @@
                                                             return (
                                                                 <div key={idx} className="flex items-center justify-between bg-slate-50 dark:bg-slate-800/50 p-2 rounded-lg border border-slate-100 dark:border-slate-700/50">
                                                                     <div>
-                                                                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200">{expertName}</p>
+                                                                        <p className="text-xs font-bold text-slate-700 dark:text-slate-200">
+                                                                            {expertName}
+                                                                            {expPlot.role && <span className="ml-2 font-normal text-slate-500">({expPlot.role})</span>}
+                                                                        </p>
                                                                         {expPlot.certificateName && <p className="text-[10px] text-slate-500">SKA: {expPlot.certificateName}</p>}
                                                                     </div>
                                                                     <div className="text-right">
@@ -6524,7 +6783,7 @@
                                     </div>
                                 );
                             })}
-                            
+
                             {filteredAssignments.length === 0 && (
                                 <div className="col-span-full py-12 text-center text-slate-400">
                                     <Icon name="briefcase" size={48} className="mx-auto mb-3 opacity-20" />
@@ -6569,16 +6828,15 @@
                             </div>
                             <div className="flex gap-2 w-full sm:w-auto">
                                 <div className="relative flex-1 sm:w-64">
-                                    <input type="text" placeholder="Cari tenaga ahli..." value={searchExpertTab} onChange={(e) => setSearchExpertTab(e.target.value)} className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm transition-shadow" />
+                                    <input type="text" placeholder="Cari tenaga ahli..." value={searchExpertTab} onChange={(e) => { setSearchExpertTab(e.target.value); setExpertPage(1); }} className="w-full pl-10 pr-4 py-2 border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 rounded-xl focus:ring-2 focus:ring-indigo-500 text-sm transition-shadow" />
                                     <Icon name="search" size={16} className="absolute left-3 top-3 text-slate-400" />
                                 </div>
                                 <button onClick={() => setModalConfig({ isOpen: true, type: 'expert', mode: 'add', data: null })} className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl shadow-md transition-all font-semibold flex items-center gap-2 text-sm shrink-0">
                                     <Icon name="plus" size={18} /> Tambah
                                 </button>
-                                <label className="cursor-pointer px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md transition-all font-semibold flex items-center gap-2 text-sm shrink-0">
+                                <button onClick={() => setModalConfig({ isOpen: true, type: 'import_expert', mode: 'add', data: null })} className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl shadow-md transition-all font-semibold flex items-center gap-2 text-sm shrink-0">
                                     <Icon name="file-text" size={18} /> Import Excel
-                                    <input type="file" accept=".xlsx, .xls" onChange={handleImportExcel} className="hidden" />
-                                </label>
+                                </button>
                             </div>
                         </div>
 
@@ -6589,8 +6847,15 @@
                         </div>
 
                         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-                            {filteredExperts.map(exp => (
-                                <div key={exp.id} className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-800 overflow-hidden transition-all group">
+                            {(() => {
+                                const ITEMS_PER_PAGE = 30;
+                                const totalPages = Math.ceil(filteredExperts.length / ITEMS_PER_PAGE);
+                                const currentExperts = filteredExperts.slice((expertPage - 1) * ITEMS_PER_PAGE, expertPage * ITEMS_PER_PAGE);
+
+                                return (
+                                    <>
+                                        {currentExperts.map(exp => (
+                                            <div key={exp.id} className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-800 overflow-hidden transition-all group">
                                     <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start bg-slate-50/50 dark:bg-slate-900/50">
                                         <div>
                                             <div className="flex items-center gap-2 mb-1">
@@ -6613,11 +6878,11 @@
                                         <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                             <button onClick={() => setModalConfig({ isOpen: true, type: 'expert', mode: 'edit', data: exp })} className="p-1.5 text-blue-600 hover:bg-blue-50 dark:text-blue-400 dark:hover:bg-slate-800 rounded-lg" title="Edit Identitas"><Icon name="edit-3" size={16} /></button>
                                             <button onClick={() => {
-                                                if(confirm(`Hapus tenaga ahli ${exp.name}?`)) handleExpertAction('delete', { id: exp.id });
+                                                if (confirm(`Hapus tenaga ahli ${exp.name}?`)) handleExpertAction('delete', { id: exp.id });
                                             }} className="p-1.5 text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-slate-800 rounded-lg" title="Hapus"><Icon name="trash-2" size={16} /></button>
                                         </div>
                                     </div>
-                                    
+
                                     <div className="p-5 space-y-5">
                                         {/* Sertifikat Section */}
                                         <div>
@@ -6646,7 +6911,7 @@
                                                                 <div className="flex gap-1">
                                                                     <button onClick={() => setModalConfig({ isOpen: true, type: 'expert_cert', mode: 'edit', data: { expertId: exp.id, certIndex: idx, cert } })} className="text-slate-400 hover:text-blue-600 p-1 rounded transition-colors opacity-0 group-hover/cert:opacity-100"><Icon name="edit-2" size={14} /></button>
                                                                     <button onClick={() => {
-                                                                        if(confirm('Hapus sertifikat ini?')) {
+                                                                        if (confirm('Hapus sertifikat ini?')) {
                                                                             let updatedCerts = [...exp.certificates];
                                                                             updatedCerts.splice(idx, 1);
                                                                             handleExpertAction('update_certificates', { ...exp, certificates: updatedCerts });
@@ -6672,6 +6937,18 @@
                                                 {(() => {
                                                     const expertAssignments = [];
                                                     assignments.forEach(asg => {
+                                                        // Filter out expired assignments
+                                                        if (asg.endDate) {
+                                                            const today = new Date();
+                                                            today.setHours(0, 0, 0, 0);
+                                                            const end = new Date(asg.endDate);
+                                                            end.setHours(0, 0, 0, 0);
+
+                                                            if (end < today) {
+                                                                return;
+                                                            }
+                                                        }
+
                                                         const plot = (asg.experts || []).find(e => e.expertId === exp.id);
                                                         if (plot) {
                                                             expertAssignments.push({ ...asg, plotData: plot });
@@ -6688,9 +6965,11 @@
                                                                 <div className={`text-[10px] font-bold px-1.5 py-0.5 rounded inline-block mt-1 ${tender.contractType === 'Waktu Penugasan' ? 'bg-orange-100 text-orange-700 border-orange-200 dark:bg-orange-900/50 dark:text-orange-300 dark:border-orange-800' : 'bg-slate-200 text-slate-600 border-slate-300 dark:bg-slate-700 dark:text-slate-300 dark:border-slate-600'}`}>
                                                                     {tender.jobName} ({tender.tenderType})
                                                                 </div>
-                                                                <div className="mt-1 text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex gap-3">
+                                                                <div className="mt-1.5 text-[10px] text-slate-500 dark:text-slate-400 font-semibold flex flex-wrap gap-x-3 gap-y-1">
                                                                     <span>SKA: {tender.plotData.certificateName || '-'}</span>
                                                                     <span>MM: {tender.plotData.manMonth}</span>
+                                                                    <span>Kontrak: {tender.contractType || '-'}</span>
+                                                                    <span>Selesai: {tender.endDate ? new Date(tender.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' }) : '-'}</span>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -6700,13 +6979,37 @@
                                         </div>
                                     </div>
                                 </div>
-                            ))}
-                            {filteredExperts.length === 0 && (
-                                <div className="col-span-full py-12 text-center text-slate-500 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
-                                    <Icon name="award" size={48} className="mx-auto mb-3 opacity-20" />
-                                    <p>Tidak ada data tenaga ahli ditemukan.</p>
-                                </div>
-                            )}
+                                        ))}
+                                        {filteredExperts.length === 0 && (
+                                            <div className="col-span-full py-12 text-center text-slate-500 bg-white/50 dark:bg-slate-900/50 rounded-2xl border border-dashed border-slate-300 dark:border-slate-700">
+                                                <Icon name="award" size={48} className="mx-auto mb-3 opacity-20" />
+                                                <p>Tidak ada data tenaga ahli ditemukan.</p>
+                                            </div>
+                                        )}
+                                        {totalPages > 1 && (
+                                            <div className="col-span-full flex justify-center items-center mt-6 space-x-3 fade-in">
+                                                <button
+                                                    onClick={() => setExpertPage(prev => Math.max(prev - 1, 1))}
+                                                    disabled={expertPage === 1}
+                                                    className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all font-semibold flex items-center gap-2 shadow-sm"
+                                                >
+                                                    <Icon name="chevron-left" size={16} /> Sebelumnya
+                                                </button>
+                                                <span className="text-slate-600 dark:text-slate-400 font-medium px-4 py-2 bg-slate-100 dark:bg-slate-800 rounded-xl text-sm border border-slate-200 dark:border-slate-700">
+                                                    Hal {expertPage} dari {totalPages}
+                                                </span>
+                                                <button
+                                                    onClick={() => setExpertPage(prev => Math.min(prev + 1, totalPages))}
+                                                    disabled={expertPage === totalPages}
+                                                    className="px-4 py-2 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 disabled:opacity-30 hover:bg-slate-100 dark:hover:bg-slate-700 transition-all font-semibold flex items-center gap-2 shadow-sm"
+                                                >
+                                                    Selanjutnya <Icon name="chevron-right" size={16} />
+                                                </button>
+                                            </div>
+                                        )}
+                                    </>
+                                );
+                            })()}
                         </div>
                     </div>
                 );
@@ -6744,11 +7047,11 @@
                                                     let type = p.type || "Lainnya";
                                                     if (type.trim().toLowerCase() === "perencana") type = "Perencanaan";
                                                     if (type.trim().toLowerCase() === "pengawas") type = "Pengawasan";
-                                                    
+
                                                     acc[type] = (acc[type] || 0) + 1;
                                                     return acc;
                                                 }, {})
-                                            ).sort((a,b) => b[1] - a[1]).map(([type, count]) => (
+                                            ).sort((a, b) => b[1] - a[1]).map(([type, count]) => (
                                                 <div key={type} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-900/50 rounded-lg border border-slate-100 dark:border-slate-700">
                                                     <span className="font-semibold text-sm text-slate-700 dark:text-slate-300">{type}</span>
                                                     <span className="font-bold text-blue-600 dark:text-blue-400 bg-blue-100 dark:bg-blue-900/30 px-2.5 py-1 rounded-full text-xs">{count} Proyek</span>
@@ -6804,20 +7107,17 @@
                                 </div>
                             )}
                             <aside className="hidden lg:flex lg:relative z-auto w-64 bg-white/40 dark:bg-slate-950/60 backdrop-blur-3xl border-r border-white/60 dark:border-slate-800/50 text-slate-600 dark:text-slate-300 flex-col shrink-0 h-full top-0 left-0 transition-colors duration-200 shadow-[4px_0_24px_-10px_rgba(0,0,0,0.1)] dark:shadow-2xl">
-                                <div className="p-4 lg:p-6">
-                                    <div className="flex items-center justify-between mb-2">
-                                        <div className="flex items-center gap-3 text-slate-800 dark:text-white w-full">
-                                            <div className="w-10 h-10 shrink-0 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg shadow-indigo-600/30 relative overflow-hidden">
-                                                <Icon name="hexagon" size={32} className="absolute fill-white/10 text-white/20" />
-                                                <Icon name="users" size={18} className="relative z-10" strokeWidth={2.5} />
-                                            </div>
-                                            <h1 className="text-base font-bold tracking-wide leading-tight flex flex-col whitespace-nowrap">
-                                                <span>Project Management</span>
-                                                <span>Control System</span>
-                                            </h1>
+                                <div className="p-4 lg:p-6 pb-2 lg:pb-4 border-b border-white/20 dark:border-slate-800/30">
+                                    <div className="flex items-center gap-3 w-full mb-3">
+                                        <div className="w-10 h-10 shrink-0 flex items-center justify-center">
+                                            <img src="./LGIHT TRANSPARAN (1).PNG" alt="Logo SIDAMON" className="w-full h-full object-contain drop-shadow-sm" />
+                                        </div>
+                                        <div className="flex flex-col min-w-0">
+                                            <h1 className="text-lg font-black tracking-widest leading-none text-slate-900 dark:text-white">SIDAMON</h1>
+                                            <span className="text-xs font-bold tracking-wider text-slate-600 dark:text-slate-400 mt-1 truncate">Gaharu Sempana Group</span>
                                         </div>
                                     </div>
-                                    <p className="text-xs text-slate-500 uppercase tracking-wider font-semibold">Tim Teknis Gaharu Sempana Group</p>
+                                    <p className="text-[10px] text-slate-500 uppercase tracking-widest font-bold whitespace-nowrap">Sistem Database & Monitoring</p>
                                 </div>
                                 <nav className="flex-1 px-4 space-y-2 mt-4">
                                     <SidebarItem icon={<Icon name="layout-dashboard" size={20} />} label="Dashboard" isActive={activeTab === 'dashboard'} onClick={() => handleTabChange('dashboard')} />
@@ -6912,7 +7212,7 @@
                                             <p className="text-sm text-slate-500 mt-2">Pilih tingkat detail kalender untuk laporan cetak Time Schedule proyek <strong>{printZoomProject.name}</strong></p>
                                         </div>
                                         <div className="flex flex-col gap-3">
-                                            <button 
+                                            <button
                                                 onClick={() => { setScheduleZoom('month'); setPrintData({ type: 'project', id: printZoomProject.id }); setPrintZoomProject(null); }}
                                                 className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all text-left group"
                                             >
@@ -6924,7 +7224,7 @@
                                                     <div className="text-xs text-slate-500">Tampilan ringkas per bulan</div>
                                                 </div>
                                             </button>
-                                            <button 
+                                            <button
                                                 onClick={() => { setScheduleZoom('week'); setPrintData({ type: 'project', id: printZoomProject.id }); setPrintZoomProject(null); }}
                                                 className="w-full flex items-center gap-3 p-4 rounded-xl border-2 border-slate-200 dark:border-slate-700 hover:border-indigo-500 dark:hover:border-indigo-500 hover:bg-indigo-50 dark:hover:bg-indigo-900/20 transition-all text-left group"
                                             >
@@ -6963,7 +7263,7 @@
                                             <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">
                                                 Alasan Pending <span className="text-red-500">*</span>
                                             </label>
-                                            <textarea 
+                                            <textarea
                                                 value={pendingReasonText}
                                                 onChange={(e) => setPendingReasonText(e.target.value)}
                                                 className="w-full border border-slate-300 dark:border-slate-700 rounded-lg p-3 text-sm bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-200 focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
@@ -7013,10 +7313,11 @@
 
                             <ModalForm />
                             <ExpertModalForm />
+                            <ImportExcelModal />
                             <ExpertCertModalForm />
                             <ExpertTenderModalForm />
                             <AssignmentModalForm />
-                            
+
                             {/* Lpse Manager Modal Inline */}
                             {showLpseManager && (
                                 <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-[120] flex items-center justify-center fade-in p-4">
