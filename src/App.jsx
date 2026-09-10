@@ -5158,7 +5158,7 @@ function App() {
                                 <div className="mt-4 pt-4 border-t border-slate-100 dark:border-slate-700 flex justify-between gap-2">
                                     <button
                                         onClick={() => {
-                                            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+                                            const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
                                             if (isMobile) {
                                                 handleDownloadPdf(doc);
                                             } else {
