@@ -5069,12 +5069,37 @@ function App() {
                 window.open(pdf.url, '_blank');
                 return;
             }
+            
+            // Konversi Base64 ke Blob untuk kompabilitas iOS Safari
+            const dataURI = pdf.url;
+            const byteString = atob(dataURI.split(',')[1]);
+            const mimeString = dataURI.split(',')[0].split(':')[1].split(';')[0];
+            const ab = new ArrayBuffer(byteString.length);
+            const ia = new Uint8Array(ab);
+            for (let i = 0; i < byteString.length; i++) {
+                ia[i] = byteString.charCodeAt(i);
+            }
+            const blob = new Blob([ab], { type: mimeString });
+            const blobUrl = URL.createObjectURL(blob);
+            
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.userAgent.includes('Mac') && 'ontouchend' in document);
+            
             const a = document.createElement('a');
-            a.href = pdf.url;
+            a.href = blobUrl;
             a.download = pdf.fileName || `${pdf.title}.pdf`;
             document.body.appendChild(a);
-            a.click();
+            
+            if (isIOS) {
+                // Untuk iOS terkadang click() untuk download blob tidak merespon, 
+                // window.location.assign memicu preview native Safari
+                window.location.assign(blobUrl);
+            } else {
+                a.click();
+            }
+            
             document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(blobUrl), 2000);
+            
         } catch (e) {
             console.error('Download error:', e);
             setAlertModal({ isOpen: true, title: 'Gagal', message: 'Gagal mengunduh dokumen.' });
@@ -10898,7 +10923,7 @@ function App() {
 
                                 {mobileMenuOpen && (
                                     <div className="fixed inset-0 bg-slate-900/40 dark:bg-slate-900/80 backdrop-blur-sm z-[80] lg:hidden animate-fade-in" onClick={() => setMobileMenuOpen(false)}>
-                                        <div className="absolute bottom-28 left-0 right-0 mx-auto w-[90%] max-w-[380px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl rounded-3xl border border-white/50 dark:border-slate-700/50 shadow-2xl p-4 animate-slide-up" onClick={e => e.stopPropagation()}>
+                                        <div className="absolute bottom-28 left-0 right-0 mx-auto w-[90%] max-w-[380px] bg-white/90 dark:bg-slate-900/90 backdrop-blur-2xl rounded-3xl border border-white/50 dark:border-slate-700/50 shadow-2xl p-4 animate-slide-up max-h-[70vh] overflow-y-auto overscroll-contain" style={{ WebkitOverflowScrolling: 'touch' }} onClick={e => e.stopPropagation()}>
                                             <div className="grid grid-cols-3 gap-2">
                                                 <MobileMenuItem icon={<Icon name="layout-dashboard" size={20} />} label="Beranda" isActive={activeTab === 'dashboard'} onClick={() => { handleTabChange('dashboard'); setMobileMenuOpen(false); }} />
                                                 {canAccessMenu('Proyek') && (
