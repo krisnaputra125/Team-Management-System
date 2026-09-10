@@ -5167,7 +5167,11 @@ function App() {
                                         }}
                                         className="flex-1 flex items-center justify-center gap-1.5 py-2 px-3 bg-indigo-50 hover:bg-indigo-100 dark:bg-indigo-900/30 dark:hover:bg-indigo-800/40 text-indigo-700 dark:text-indigo-300 rounded-lg text-sm font-medium transition-colors"
                                     >
-                                        <Icon name="eye" size={16} /> Lihat
+                                        {(/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.userAgent.includes('Mac') && 'ontouchend' in document)) ? (
+                                            <><Icon name="download" size={16} /> Unduh</>
+                                        ) : (
+                                            <><Icon name="eye" size={16} /> Lihat</>
+                                        )}
                                     </button>
                                     {canManageSOP && (
                                         <button
@@ -10924,13 +10928,26 @@ function App() {
                                                     </>
                                                 )}
                                                 {canAccessMenu('KPI') && (
-                                                    <MobileMenuItem icon={<Icon name="bar-chart" size={20} />} label="KPI" isActive={activeTab === 'kpi'} onClick={() => { handleTabChange('kpi'); setMobileMenuOpen(false); }} />
+                                                    <>
+                                                        <div className="col-span-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 mt-4 px-2">Performance</div>
+                                                        <MobileMenuItem icon={<Icon name="bar-chart" size={20} />} label="KPI & Evaluasi" isActive={activeTab === 'kpi'} onClick={() => { handleTabChange('kpi'); setMobileMenuOpen(false); }} />
+                                                    </>
                                                 )}
+                                                <>
+                                                    <div className="col-span-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 mt-4 px-2">Documents</div>
+                                                    <MobileMenuItem icon={<Icon name="file-text" size={20} />} label="Dokumen" isActive={activeTab === 'sop'} onClick={() => { handleTabChange('sop'); setMobileMenuOpen(false); }} />
+                                                </>
                                                 {canAccessMenu('Manajemen Pengguna') && (
-                                                    <MobileMenuItem icon={<Icon name="settings" size={20} />} label="Pengguna" isActive={activeTab === 'pengguna'} onClick={() => { handleTabChange('pengguna'); setMobileMenuOpen(false); }} />
+                                                    <>
+                                                        <div className="col-span-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 mt-4 px-2">Settings</div>
+                                                        <MobileMenuItem icon={<Icon name="settings" size={20} />} label="Pengguna" isActive={activeTab === 'pengguna'} onClick={() => { handleTabChange('pengguna'); setMobileMenuOpen(false); }} />
+                                                    </>
                                                 )}
                                                 {userRole === 'Super Admin' && (
-                                                    <MobileMenuItem icon={<Icon name="activity" size={20} />} label="Logbook" isActive={activeTab === 'logbook'} onClick={() => { handleTabChange('logbook'); setMobileMenuOpen(false); }} />
+                                                    <>
+                                                        <div className="col-span-3 text-[10px] font-bold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-1 mt-4 px-2">Audit</div>
+                                                        <MobileMenuItem icon={<Icon name="activity" size={20} />} label="Log Aktivitas" isActive={activeTab === 'logbook'} onClick={() => { handleTabChange('logbook'); setMobileMenuOpen(false); }} />
+                                                    </>
                                                 )}
                                                 <div className="col-span-3 h-px bg-slate-200 dark:bg-slate-700 my-2"></div>
                                                 <button
