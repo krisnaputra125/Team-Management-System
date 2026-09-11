@@ -2724,9 +2724,9 @@ const AssignmentModalForm = () => {
 
     const [formData, setFormData] = useState(() => {
         if (isEdit && modalConfig.data) {
-            return { ...modalConfig.data, experts: modalConfig.data.experts || [] };
+            return { ...modalConfig.data, experts: modalConfig.data.experts || [], termins: modalConfig.data.termins || [] };
         }
-        return { jobName: '', projectType: 'Pengawasan', contractType: 'Waktu Penugasan', tenderType: 'Tender', lpseName: '', startDate: '', duration: '', contractValue: '', company: '', experts: [] };
+        return { jobName: '', projectType: 'Pengawasan', contractType: 'Waktu Penugasan', tenderType: 'Tender', lpseName: '', startDate: '', duration: '', contractValue: '', company: '', experts: [], termins: [] };
     });
 
     // Auto hitung end date jika start date & durasi diisi
@@ -2847,6 +2847,34 @@ const AssignmentModalForm = () => {
             const newExperts = [...prev.experts];
             newExperts.splice(index, 1);
             return { ...prev, experts: newExperts };
+        });
+    };
+
+    const toRoman = (num) => {
+        const roman = ["O", "I", "II", "III", "IV", "V", "VI", "VII", "VIII", "IX", "X", "XI", "XII", "XIII", "XIV", "XV", "XVI", "XVII", "XVIII", "XIX", "XX"];
+        return roman[num] || num;
+    };
+
+    const handleAddTerminRow = () => {
+        setFormData(prev => {
+            const termins = prev.termins || [];
+            const newLabel = `Termin ${toRoman(termins.length + 1)}`;
+            return {
+                ...prev,
+                termins: [...termins, { label: newLabel, status: 'Belum Diajukan', date: '', nominal: '', percentage: '', notes: '' }]
+            };
+        });
+    };
+
+    const handleRemoveTerminRow = (index) => {
+        setFormData(prev => {
+            const newTermins = [...(prev.termins || [])];
+            newTermins.splice(index, 1);
+            // Rename labels to stay sequential with Roman numerals
+            newTermins.forEach((t, i) => {
+                t.label = `Termin ${toRoman(i + 1)}`; 
+            });
+            return { ...prev, termins: newTermins };
         });
     };
 
@@ -2987,6 +3015,104 @@ const AssignmentModalForm = () => {
                                         <input type="date" required value={endDate} onChange={e => setEndDate(e.target.value)} className="w-full p-2.5 opacity-0 cursor-pointer outline-none" />
                                     </div>
                                 </div>
+                            </div>
+                        </div>
+
+                        
+                        {/* SEKSI PENGAMPRAHAN TERMIN */}
+                        <div className="space-y-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                            <div className="flex justify-between items-center">
+                                <h4 className="font-bold text-slate-700 dark:text-slate-200">Progress Pengamprahan Termin</h4>
+                                <button type="button" onClick={handleAddTerminRow} className="text-xs font-bold text-emerald-600 hover:text-emerald-800 dark:text-emerald-400 bg-emerald-50 hover:bg-emerald-100 dark:bg-emerald-900/30 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1">
+                                    <Icon name="plus" size={14} /> Tambah Termin
+                                </button>
+                            </div>
+                            <div className="grid grid-cols-1 gap-4">
+                                {(formData.termins || []).map((termin, index) => {
+                                    const canEditTermin = userRole === 'Super Admin' || userRole === 'Manajer Administrasi';
+                                    return (
+                                        <div key={index} className="p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 grid grid-cols-1 md:grid-cols-12 gap-4 relative group">
+                                            <div className="flex items-center md:col-span-2 justify-between">
+                                                <span className="font-bold text-slate-700 dark:text-slate-300">{termin.label}</span>
+                                                <button type="button" onClick={() => handleRemoveTerminRow(index)} className="text-red-500 hover:text-red-700 p-1 bg-red-50 hover:bg-red-100 rounded md:hidden group-hover:block transition-all opacity-0 group-hover:opacity-100" title="Hapus Termin">
+                                                    <Icon name="trash-2" size={14} />
+                                                </button>
+                                            </div>
+                                            <div className="md:col-span-3">
+                                                <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Status</label>
+                                                <select
+                                                    disabled={!canEditTermin}
+                                                    value={termin.status}
+                                                    onChange={(e) => {
+                                                        const newTermins = [...formData.termins];
+                                                        newTermins[index].status = e.target.value;
+                                                        setFormData({ ...formData, termins: newTermins });
+                                                    }}
+                                                    className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700/50 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-900 shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                                >
+                                                    <option value="Belum Diajukan">Belum Diajukan</option>
+                                                    <option value="Diproses">Diproses</option>
+                                                    <option value="Selesai">Selesai</option>
+                                                    <option value="Tertunda">Tertunda</option>
+                                                </select>
+                                            </div>
+                                            {(termin.status === 'Diproses' || termin.status === 'Selesai' || termin.status === 'Tertunda') && (
+                                                <>
+                                                    <div className="md:col-span-3">
+                                                        <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Tanggal</label>
+                                                        <input
+                                                            disabled={!canEditTermin}
+                                                            type="date"
+                                                            value={termin.date}
+                                                            onChange={(e) => {
+                                                                const newTermins = [...formData.termins];
+                                                                newTermins[index].date = e.target.value;
+                                                                setFormData({ ...formData, termins: newTermins });
+                                                            }}
+                                                            className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700/50 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-900 shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                                        />
+                                                    </div>
+                                                    <div className="md:col-span-4">
+                                                        <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Nominal & %</label>
+                                                        <div className="flex gap-2">
+                                                            <input
+                                                                disabled={!canEditTermin}
+                                                                type="text"
+                                                                placeholder="Rp"
+                                                                value={termin.nominal}
+                                                                onChange={(e) => {
+                                                                    const newTermins = [...formData.termins];
+                                                                    // Format rupiah
+                                                                    let val = e.target.value.replace(/[^0-9]/g, '');
+                                                                    if (val) {
+                                                                        val = parseInt(val, 10).toLocaleString('id-ID');
+                                                                    }
+                                                                    newTermins[index].nominal = val;
+                                                                    setFormData({ ...formData, termins: newTermins });
+                                                                }}
+                                                                className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700/50 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-900 shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
+                                                            />
+                                                            <input
+                                                                disabled={!canEditTermin}
+                                                                type="number"
+                                                                placeholder="%"
+                                                                min="0"
+                                                                max="100"
+                                                                value={termin.percentage}
+                                                                onChange={(e) => {
+                                                                    const newTermins = [...formData.termins];
+                                                                    newTermins[index].percentage = e.target.value;
+                                                                    setFormData({ ...formData, termins: newTermins });
+                                                                }}
+                                                                className="w-16 p-2.5 rounded-lg border border-slate-200 dark:border-slate-700/50 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-900 shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed text-center"
+                                                            />
+                                                        </div>
+                                                    </div>
+                                                </>
+                                            )}
+                                        </div>
+                                    );
+                                })}
                             </div>
                         </div>
 
@@ -10087,6 +10213,11 @@ function App() {
                 end.setHours(0, 0, 0, 0);
 
                 const isCompleted = end < today;
+                const isAllTerminsSelesai = asg.termins && asg.termins.length > 0 && asg.termins.every(t => t.status === 'Selesai');
+                
+                // Arsipkan otomatis jika SEMUA termin yang didaftarkan sudah selesai
+                if (isAllTerminsSelesai) return false;
+
                 if (assignmentTabFilter === "active" && isCompleted) return false;
                 if (assignmentTabFilter === "completed" && !isCompleted) return false;
             } else if (assignmentTabFilter === "completed") {
@@ -10177,6 +10308,30 @@ function App() {
                                             <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-0.5">Tipe Proyek & Kontrak</p>
                                             <p className="text-sm text-slate-700 dark:text-slate-300 font-medium">{asg.projectType || 'Pengawasan'} - {asg.contractType}</p>
                                         </div>
+                                        
+                                        <div>
+                                            <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1.5">Progress Termin</p>
+                                            <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-1">
+                                                {(asg.termins || [
+                                                    { label: 'Termin I', status: 'Belum Diajukan' },
+                                                    { label: 'Termin II', status: 'Belum Diajukan' },
+                                                    { label: 'Termin III', status: 'Belum Diajukan' },
+                                                    { label: 'Termin IV', status: 'Belum Diajukan' }
+                                                ]).map((t, idx) => {
+                                                    let badgeClass = "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border-slate-200 dark:border-slate-700";
+                                                    if (t.status === 'Selesai') badgeClass = "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
+                                                    if (t.status === 'Diproses') badgeClass = "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+                                                    if (t.status === 'Tertunda') badgeClass = "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
+                                                    
+                                                    const shortLabel = t.label.replace('Termin ', 'T');
+                                                    return (
+                                                        <div key={idx} title={`${t.label}: ${t.status}${t.nominal ? ' - Rp ' + t.nominal : ''}`} className={`text-[10px] font-bold px-2 py-1 rounded-md border shrink-0 flex flex-col items-center justify-center ${badgeClass}`}>
+                                                            <span>{shortLabel}</span>
+                                                        </div>
+                                                    );
+                                                })}
+                                            </div>
+                                        </div>
                                         <div className="grid grid-cols-2 gap-2">
                                             <div>
                                                 <p className="text-[10px] text-slate-500 uppercase tracking-wider font-bold mb-0.5">Perusahaan</p>
@@ -10235,25 +10390,7 @@ function App() {
                                         )}
                                     </div>
                                 </div>
-                                {assignmentTabFilter === 'completed' && canManageAssignments() && (
-                                    <div className="px-5 py-3 border-t border-slate-100 dark:border-slate-800 bg-emerald-50/50 dark:bg-emerald-900/10 flex justify-between items-center">
-                                        <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400">Arsipkan Data</span>
-                                        <button
-                                            onClick={() => {
-                                                setConfirmDialog({
-                                                    isOpen: true,
-                                                    title: 'Selesai & Bersihkan Data',
-                                                    message: `Apakah Anda yakin pekerjaan "${asg.jobName}" sudah 100% selesai di lapangan? Tindakan ini akan menghapus data penugasan ini dari sistem secara permanen agar tidak menumpuk.`,
-                                                    type: 'danger',
-                                                    onConfirm: () => handleAssignmentAction('delete', { id: asg.id })
-                                                });
-                                            }}
-                                            className="px-3 py-1.5 bg-emerald-100 hover:bg-emerald-200 text-emerald-700 dark:bg-emerald-900/40 dark:hover:bg-emerald-900/60 dark:text-emerald-400 font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 border border-emerald-200 dark:border-emerald-800/50 shadow-sm"
-                                        >
-                                            <Icon name="check-circle" size={14} /> 100% Selesai
-                                        </button>
-                                    </div>
-                                )}
+                                
                             </div>
                         );
                     })}
