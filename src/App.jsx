@@ -10281,8 +10281,8 @@ function App() {
                 <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
                     {filteredAssignments.map(asg => {
                         return (
-                            <div key={asg.id} className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-800 overflow-hidden transition-all group flex flex-col">
-                                <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start gap-4 bg-slate-50/50 dark:bg-slate-900/50">
+                            <div key={asg.id} className="bg-white dark:bg-slate-900 rounded-2xl shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-800 transition-all group flex flex-col">
+                                <div className="p-5 border-b border-slate-100 dark:border-slate-800 flex justify-between items-start gap-4 bg-slate-50/50 dark:bg-slate-900/50 rounded-t-2xl">
                                     <div className="flex-1 min-w-0">
                                         <h4 className="font-bold text-slate-800 dark:text-slate-100 text-lg leading-tight mb-2 break-words">{asg.jobName}</h4>
                                         <div className="flex flex-col items-start gap-2">
@@ -10312,7 +10312,7 @@ function App() {
                                         <div>
                                             <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1.5">Progress Termin</p>
                                             {(asg.termins && asg.termins.length > 0) ? (
-                                                <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-1">
+                                                <div className="flex flex-wrap gap-1.5 pb-1">
                                                     {asg.termins.map((t, idx) => {
                                                         let badgeClass = "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border-slate-200 dark:border-slate-700";
                                                         if (t.status === 'Selesai') badgeClass = "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
@@ -10320,9 +10320,57 @@ function App() {
                                                         if (t.status === 'Tertunda') badgeClass = "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
                                                         
                                                         const shortLabel = t.label.replace('Termin ', 'T');
+                                                        
+                                                        // Mencegah tooltip terpotong oleh card edge
+                                                        const isNearLeft = idx < 2;
+                                                        const isNearRight = idx === asg.termins.length - 1 && asg.termins.length > 2;
+                                                        
+                                                        const tooltipPos = isNearLeft ? "left-0 translate-x-0" : isNearRight ? "right-0 translate-x-0 left-auto" : "left-1/2 -translate-x-1/2";
+                                                        const arrowPos = isNearLeft ? "left-5 translate-x-0" : isNearRight ? "right-5 translate-x-0 left-auto" : "left-1/2 -translate-x-1/2";
+
                                                         return (
-                                                            <div key={idx} title={`${t.label}: ${t.status}${t.nominal ? ' - Rp ' + t.nominal : ''}`} className={`text-[10px] font-bold px-2 py-1 rounded-md border shrink-0 flex flex-col items-center justify-center ${badgeClass}`}>
+                                                            <div key={idx} className={`group/termin relative cursor-pointer text-[10px] font-bold px-2.5 py-1 rounded-md border shrink-0 flex flex-col items-center justify-center transition-all duration-300 hover:-translate-y-0.5 hover:shadow-md ${badgeClass}`}>
                                                                 <span>{shortLabel}</span>
+                                                                
+                                                                {/* Custom Animated Tooltip */}
+                                                                <div className={`absolute bottom-full ${tooltipPos} mb-2 w-max min-w-[160px] bg-slate-800/95 backdrop-blur-sm dark:bg-slate-700/95 text-white text-[11px] rounded-xl p-3 opacity-0 invisible group-hover/termin:opacity-100 group-hover/termin:visible transition-all duration-300 shadow-xl z-50 pointer-events-none transform translate-y-2 group-hover/termin:translate-y-0 border border-slate-700 dark:border-slate-600`}>
+                                                                    <div className="font-bold text-indigo-300 mb-2 border-b border-slate-600/50 pb-1.5 text-center uppercase tracking-wider">{t.label}</div>
+                                                                    
+                                                                    <div className="flex flex-col gap-1.5">
+                                                                        <div className="flex justify-between gap-4">
+                                                                            <span className="text-slate-400 font-medium">Status</span>
+                                                                            <span className={`font-bold ${t.status === 'Selesai' ? 'text-emerald-400' : t.status === 'Diproses' ? 'text-amber-400' : t.status === 'Tertunda' ? 'text-red-400' : 'text-slate-300'}`}>{t.status}</span>
+                                                                        </div>
+                                                                        
+                                                                        {t.status !== 'Belum Diajukan' && (
+                                                                            <>
+                                                                                {t.date && (
+                                                                                    <div className="flex justify-between gap-4">
+                                                                                        <span className="text-slate-400 font-medium">Tanggal</span>
+                                                                                        <span className="font-bold text-slate-200">{formatDateIndo(t.date)}</span>
+                                                                                    </div>
+                                                                                )}
+                                                                                
+                                                                                {t.nominal && (
+                                                                                    <div className="flex justify-between gap-4">
+                                                                                        <span className="text-slate-400 font-medium">Nominal</span>
+                                                                                        <span className="font-bold text-emerald-400">Rp {t.nominal}</span>
+                                                                                    </div>
+                                                                                )}
+                                                                                
+                                                                                {t.percentage && (
+                                                                                    <div className="flex justify-between gap-4">
+                                                                                        <span className="text-slate-400 font-medium">Bobot</span>
+                                                                                        <span className="font-bold text-indigo-300">{t.percentage}%</span>
+                                                                                    </div>
+                                                                                )}
+                                                                            </>
+                                                                        )}
+                                                                    </div>
+                                                                    
+                                                                    {/* Tooltip Arrow */}
+                                                                    <div className={`absolute top-full ${arrowPos} border-[5px] border-transparent border-t-slate-800/95 dark:border-t-slate-700/95`}></div>
+                                                                </div>
                                                             </div>
                                                         );
                                                     })}
