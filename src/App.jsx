@@ -3051,12 +3051,11 @@ const AssignmentModalForm = () => {
                                                     className="w-full p-2.5 rounded-lg border border-slate-200 dark:border-slate-700/50 focus:border-indigo-500 outline-none text-sm bg-white dark:bg-slate-900 shadow-sm transition-all disabled:opacity-60 disabled:cursor-not-allowed"
                                                 >
                                                     <option value="Belum Diajukan">Belum Diajukan</option>
-                                                    <option value="Diproses">Diproses</option>
                                                     <option value="Selesai">Selesai</option>
                                                     <option value="Tertunda">Tertunda</option>
                                                 </select>
                                             </div>
-                                            {(termin.status === 'Diproses' || termin.status === 'Selesai' || termin.status === 'Tertunda') && (
+                                            {(termin.status === 'Selesai' || termin.status === 'Tertunda') && (
                                                 <>
                                                     <div className="md:col-span-3">
                                                         <label className="block text-[10px] uppercase font-bold text-slate-500 mb-1">Tanggal</label>
@@ -10316,7 +10315,6 @@ function App() {
                                                     {asg.termins.map((t, idx) => {
                                                         let badgeClass = "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border-slate-200 dark:border-slate-700";
                                                         if (t.status === 'Selesai') badgeClass = "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
-                                                        if (t.status === 'Diproses') badgeClass = "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
                                                         if (t.status === 'Tertunda') badgeClass = "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
                                                         
                                                         const shortLabel = t.label.replace('Termin ', 'T');
@@ -10339,7 +10337,7 @@ function App() {
                                                                     <div className="flex flex-col gap-1.5">
                                                                         <div className="flex justify-between gap-4">
                                                                             <span className="text-slate-400 font-medium">Status</span>
-                                                                            <span className={`font-bold ${t.status === 'Selesai' ? 'text-emerald-400' : t.status === 'Diproses' ? 'text-amber-400' : t.status === 'Tertunda' ? 'text-red-400' : 'text-slate-300'}`}>{t.status}</span>
+                                                                            <span className={`font-bold ${t.status === 'Selesai' ? 'text-emerald-400' : t.status === 'Tertunda' ? 'text-red-400' : 'text-slate-300'}`}>{t.status}</span>
                                                                         </div>
                                                                         
                                                                         {t.status !== 'Belum Diajukan' && (
