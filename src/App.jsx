@@ -10311,26 +10311,25 @@ function App() {
                                         
                                         <div>
                                             <p className="text-xs text-slate-500 uppercase tracking-wider font-bold mb-1.5">Progress Termin</p>
-                                            <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-1">
-                                                {(asg.termins || [
-                                                    { label: 'Termin I', status: 'Belum Diajukan' },
-                                                    { label: 'Termin II', status: 'Belum Diajukan' },
-                                                    { label: 'Termin III', status: 'Belum Diajukan' },
-                                                    { label: 'Termin IV', status: 'Belum Diajukan' }
-                                                ]).map((t, idx) => {
-                                                    let badgeClass = "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border-slate-200 dark:border-slate-700";
-                                                    if (t.status === 'Selesai') badgeClass = "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
-                                                    if (t.status === 'Diproses') badgeClass = "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
-                                                    if (t.status === 'Tertunda') badgeClass = "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
-                                                    
-                                                    const shortLabel = t.label.replace('Termin ', 'T');
-                                                    return (
-                                                        <div key={idx} title={`${t.label}: ${t.status}${t.nominal ? ' - Rp ' + t.nominal : ''}`} className={`text-[10px] font-bold px-2 py-1 rounded-md border shrink-0 flex flex-col items-center justify-center ${badgeClass}`}>
-                                                            <span>{shortLabel}</span>
-                                                        </div>
-                                                    );
-                                                })}
-                                            </div>
+                                            {(asg.termins && asg.termins.length > 0) ? (
+                                                <div className="flex gap-1 overflow-x-auto scrollbar-hide pb-1">
+                                                    {asg.termins.map((t, idx) => {
+                                                        let badgeClass = "bg-slate-100 text-slate-400 dark:bg-slate-800 dark:text-slate-500 border-slate-200 dark:border-slate-700";
+                                                        if (t.status === 'Selesai') badgeClass = "bg-emerald-50 text-emerald-600 border-emerald-200 dark:bg-emerald-900/30 dark:text-emerald-400 dark:border-emerald-800";
+                                                        if (t.status === 'Diproses') badgeClass = "bg-amber-50 text-amber-600 border-amber-200 dark:bg-amber-900/30 dark:text-amber-400 dark:border-amber-800";
+                                                        if (t.status === 'Tertunda') badgeClass = "bg-red-50 text-red-600 border-red-200 dark:bg-red-900/30 dark:text-red-400 dark:border-red-800";
+                                                        
+                                                        const shortLabel = t.label.replace('Termin ', 'T');
+                                                        return (
+                                                            <div key={idx} title={`${t.label}: ${t.status}${t.nominal ? ' - Rp ' + t.nominal : ''}`} className={`text-[10px] font-bold px-2 py-1 rounded-md border shrink-0 flex flex-col items-center justify-center ${badgeClass}`}>
+                                                                <span>{shortLabel}</span>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            ) : (
+                                                <div className="text-xs text-slate-400 dark:text-slate-600 italic">-</div>
+                                            )}
                                         </div>
                                         <div className="grid grid-cols-2 gap-2">
                                             <div>
