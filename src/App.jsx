@@ -3581,6 +3581,7 @@ function App() {
         const mapped = resources.map(res => {
             let numProjects = 0;
             let numActiveProjects = 0;
+            let numProjectsLed = 0;
             const empCat = getCategoryFromRole(res.role);
 
             computedProjects.forEach(p => {
@@ -3595,6 +3596,7 @@ function App() {
 
                     if (fuzzyMatchName(p.teamLeader, res.name)) {
                         numProjects++;
+                        numProjectsLed++;
                         if (p.computedStatus !== 'Pending') numActiveProjects++;
                     } else if ((p.team || []).some(m => fuzzyMatchName(m, res.name))) {
                         let isIndividuallyDone = p.individualStatus?.[res.name] === true;
@@ -3620,7 +3622,7 @@ function App() {
                 }
             });
             const workload = numActiveProjects * 25; // 25% per active project (pending not included)
-            return { ...res, projects: numProjects, workload };
+            return { ...res, projects: numProjects, projectsLed: numProjectsLed, workload };
         });
 
         return mapped.sort((a, b) => b.workload - a.workload);
@@ -6749,7 +6751,18 @@ function App() {
                                                         <p className="text-[10px] font-bold text-amber-600 mt-1 flex items-center gap-1"><Icon name="star" size={10} className="fill-amber-500" /> Team Leader</p>
                                                     )}
                                                 </td>
-                                                <td className="p-4 text-center"><span className="inline-block px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full text-xs font-semibold whitespace-nowrap">{`${res.projects} Proyek Aktif`}</span></td>
+                                                <td className="p-4 text-center">
+                                                    <div className="flex flex-col items-center justify-center gap-1.5">
+                                                        <span className="inline-block px-3 py-1 bg-slate-100 dark:bg-slate-700 text-slate-700 dark:text-slate-300 rounded-full text-[11px] font-bold whitespace-nowrap shadow-sm">{`${res.projects} Proyek Aktif`}</span>
+                                                        {res.level === 'Team Leader' && (
+                                                            <div className="relative group/lead-badge flex items-center justify-center gap-1 px-2.5 py-0.5 bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/30 dark:to-orange-900/20 text-amber-700 dark:text-amber-400 border border-amber-200/80 dark:border-amber-800/50 rounded-md font-bold text-[10px] shadow-sm hover:shadow-md transition-all duration-300 hover:-translate-y-0.5 cursor-default overflow-hidden">
+                                                                <div className="absolute inset-0 bg-white/40 dark:bg-black/20 opacity-0 group-hover/lead-badge:opacity-100 transition-opacity"></div>
+                                                                <Icon name="award" size={11} className="text-amber-600 dark:text-amber-400 relative z-10 drop-shadow-sm" />
+                                                                <span className="relative z-10 tracking-wide">{`${res.projectsLed || 0} DI-LEAD`}</span>
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </td>
                                                 <td className="p-4 w-64">
                                                     <div className="flex justify-between items-end mb-1">
                                                         <span className={`text-xs font-bold ${isOverloaded ? 'text-red-600' : 'text-blue-600'}`}>{res.workload}% Kapasitas Terpakai</span>
