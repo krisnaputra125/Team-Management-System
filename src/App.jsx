@@ -2345,83 +2345,87 @@ const ModalForm = () => {
                                         </option>
                                     </select>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
-                                        Rating Kinerja (1-5)
-                                    </label>
-                                    <div className="flex gap-2 items-center p-1">
-                                        {[1, 2, 3, 4, 5].map((star) => (
-                                            <button
-                                                type="button"
-                                                onClick={() =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        rating: star,
-                                                    })
-                                                }
-                                                className={`transition-colors focus:outline-none ${star <= (formData.rating || 3) ? "text-amber-500" : "text-slate-200 dark:text-slate-700"}`}
-                                            >
-                                                <Icon name="star" size={28} />
-                                            </button>
-                                        ))}
-                                        <span className="text-xs text-slate-500 dark:text-slate-400 ml-2 font-medium">
-                                            Bintang {formData.rating || 3}
-                                        </span>
-                                    </div>
-                                </div>
-                                <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3">
-                                    <div>
-                                        <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
-                                            Tambah / Kurang Skor KPI (+/-)
-                                        </label>
-                                        <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
-                                            Nilai ini akan langsung ditambahkan secara relatif ke skor
-                                            terakhir. Contoh: Jika skor 60 dan Anda isi 40, skor
-                                            menjadi 100.
-                                        </p>
-                                        <div className="flex flex-wrap gap-3 items-center mt-2">
-                                            <input
-                                                type="number"
-                                                name="adjustmentInput"
-                                                value={
-                                                    formData.adjustmentInput === "" ||
-                                                        isNaN(formData.adjustmentInput)
-                                                        ? ""
-                                                        : formData.adjustmentInput !== void 0
-                                                            ? formData.adjustmentInput
-                                                            : 0
-                                                }
-                                                onChange={(e) =>
-                                                    setFormData({
-                                                        ...formData,
-                                                        adjustmentInput:
-                                                            e.target.value === ""
-                                                                ? ""
-                                                                : parseInt(e.target.value),
-                                                    })
-                                                }
-                                                className="w-24 p-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-center outline-none focus:border-blue-500 bg-white dark:bg-slate-800 dark:text-slate-200"
-                                            />
-                                            <button
-                                                type="button"
-                                                onClick={handleResetTo100}
-                                                className="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
-                                            >
-                                                <Icon name="target" size={12} />
-                                                Reset ke 100
-                                            </button>
-                                            <button
-                                                type="button"
-                                                onClick={handleResetToAuto}
-                                                className="px-3 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
-                                                title="Hapus semua penyesuaian manual dan kembalikan ke perhitungan murni otomatis proyek."
-                                            >
-                                                <Icon name="refresh-ccw" size={12} />
-                                                Hapus Manual
-                                            </button>
+                                {userRole !== 'Kordinator Divisi Teknis' && (
+                                    <>
+                                        <div>
+                                            <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1">
+                                                Rating Kinerja (1-5)
+                                            </label>
+                                            <div className="flex gap-2 items-center p-1">
+                                                {[1, 2, 3, 4, 5].map((star) => (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() =>
+                                                            setFormData({
+                                                                ...formData,
+                                                                rating: star,
+                                                            })
+                                                        }
+                                                        className={`transition-colors focus:outline-none ${star <= (formData.rating || 3) ? "text-amber-500" : "text-slate-200 dark:text-slate-700"}`}
+                                                    >
+                                                        <Icon name="star" size={28} />
+                                                    </button>
+                                                ))}
+                                                <span className="text-xs text-slate-500 dark:text-slate-400 ml-2 font-medium">
+                                                    Bintang {formData.rating || 3}
+                                                </span>
+                                            </div>
                                         </div>
-                                    </div>
-                                </div>
+                                        <div className="p-4 bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-700 rounded-xl space-y-3">
+                                            <div>
+                                                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1">
+                                                    Tambah / Kurang Skor KPI (+/-)
+                                                </label>
+                                                <p className="text-[10px] text-slate-500 mb-2 leading-relaxed">
+                                                    Nilai ini akan langsung ditambahkan secara relatif ke skor
+                                                    terakhir. Contoh: Jika skor 60 dan Anda isi 40, skor
+                                                    menjadi 100.
+                                                </p>
+                                                <div className="flex flex-wrap gap-3 items-center mt-2">
+                                                    <input
+                                                        type="number"
+                                                        name="adjustmentInput"
+                                                        value={
+                                                            formData.adjustmentInput === "" ||
+                                                                isNaN(formData.adjustmentInput)
+                                                                ? ""
+                                                                : formData.adjustmentInput !== void 0
+                                                                    ? formData.adjustmentInput
+                                                                    : 0
+                                                        }
+                                                        onChange={(e) =>
+                                                            setFormData({
+                                                                ...formData,
+                                                                adjustmentInput:
+                                                                    e.target.value === ""
+                                                                        ? ""
+                                                                        : parseInt(e.target.value),
+                                                            })
+                                                        }
+                                                        className="w-24 p-2 border border-slate-300 dark:border-slate-600 rounded-lg text-sm text-center outline-none focus:border-blue-500 bg-white dark:bg-slate-800 dark:text-slate-200"
+                                                    />
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleResetTo100}
+                                                        className="px-3 py-2 bg-blue-100 dark:bg-blue-900/30 hover:bg-blue-200 dark:hover:bg-blue-900/50 text-blue-700 dark:text-blue-400 border border-blue-200 dark:border-blue-800/50 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                                                    >
+                                                        <Icon name="target" size={12} />
+                                                        Reset ke 100
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={handleResetToAuto}
+                                                        className="px-3 py-2 bg-slate-200 dark:bg-slate-700 hover:bg-slate-300 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 border border-slate-300 dark:border-slate-600 text-xs font-bold rounded-lg transition-colors flex items-center gap-1"
+                                                        title="Hapus semua penyesuaian manual dan kembalikan ke perhitungan murni otomatis proyek."
+                                                    >
+                                                        <Icon name="refresh-ccw" size={12} />
+                                                        Hapus Manual
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </>
+                                )}
                                 <div className="p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-100 dark:border-blue-800/50 rounded-xl mt-4">
                                     <p className="text-xs text-blue-800 dark:text-blue-300 font-medium leading-relaxed">
                                         💡 <strong className="font-bold">Info Cerdas:</strong>{" "}
@@ -3422,7 +3426,7 @@ function App() {
     const [printData, setPrintData] = useState(null);
     const [printZoomProject, setPrintZoomProject] = useState(null);
     const [showPrintModal, setShowPrintModal] = useState(false);
-    const [printOptions, setPrintOptions] = useState({ projectType: 'Semua', section: 'Semua' });
+    const [printOptions, setPrintOptions] = useState({ projectType: 'Semua', section: 'Semua', showRating: false });
 
     // Pending Modal States
     const [showPendingModal, setShowPendingModal] = useState(false);
@@ -6707,7 +6711,7 @@ function App() {
                             </div>
                             {canEditTeamAllocation() && (
                                 <button onClick={() => openModal('team', 'add')} className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white text-sm font-medium rounded-lg transition-colors shadow-sm whitespace-nowrap">
-                                    <Icon name="user-plus" size={16} /> Tambah
+                                    <Icon name="plus" size={16} /> Tambah
                                 </button>
                             )}
                         </div>
@@ -8243,10 +8247,10 @@ function App() {
                         let sumStart, sumEnd;
 
                         if (isPengawasan) {
-                            addRow(["Nama Personil", "Peran", "Man Month", "Deadline Spesifik", "Status Lapangan", "Gaji Total", "Gaji Bank", "Gaji Tunai"]);
+                            addRow(["Nama Personil", "Peran", "Man Month", "Deadline Spesifik", "Status Lapangan", "Gaji Total", "Gaji Bank", "Gaji Tunai", "Keterangan"]);
                             sumStart = rowIndex;
                             if (!p.team || p.team.length === 0) {
-                                addRow(["Belum ada personil diplot.", "", "", "", "", "", "", ""], 7);
+                                addRow(["Belum ada personil diplot.", "", "", "", "", "", "", "", ""], 8);
                             } else {
                                 const sortedTeam = [...p.team].sort((a, b) => {
                                     const roleA = p.pengawasanDetails?.[a]?.role || 'Inspector';
@@ -8263,12 +8267,13 @@ function App() {
                                         details.statusTurun || 'Tidak Turun',
                                         "",
                                         "",
+                                        "",
                                         ""
                                     ]);
                                 });
                             }
                         } else {
-                            addRow(["Kategori Sub Tim", "Target Progress", "Tenggat Waktu Tim", "Status Target", "Personil Terploting", "Gaji Total", "Gaji Bank", "Gaji Tunai"]);
+                            addRow(["Kategori Sub Tim", "Target Progress", "Tenggat Waktu Tim", "Status Target", "Personil Terploting", "Gaji Total", "Gaji Bank", "Gaji Tunai", "Keterangan"]);
                             sumStart = rowIndex;
                             const cats = ['Arsitek', 'Struktur', 'MEP', 'QS', 'Tata Ruang', 'Lainnya', 'Surveyor'];
                             let hasAny = false;
@@ -8307,6 +8312,7 @@ function App() {
                                         catMembers.join(', '),
                                         "",
                                         "",
+                                        "",
                                         ""
                                     ]);
                                 }
@@ -8318,7 +8324,7 @@ function App() {
                         sumEnd = rowIndex - 1;
 
                         const totalProyekRow = rowIndex;
-                        addRow(["", "", "", "", "TOTAL PROYEK", { t: 'n', f: `SUBTOTAL(9,F${sumStart + 1}:F${sumEnd + 1})` }, { t: 'n', f: `SUBTOTAL(9,G${sumStart + 1}:G${sumEnd + 1})` }, { t: 'n', f: `SUBTOTAL(9,H${sumStart + 1}:H${sumEnd + 1})` }]);
+                        addRow(["", "", "", "", "TOTAL PROYEK", { t: 'n', f: `SUBTOTAL(9,F${sumStart + 1}:F${sumEnd + 1})` }, { t: 'n', f: `SUBTOTAL(9,G${sumStart + 1}:G${sumEnd + 1})` }, { t: 'n', f: `SUBTOTAL(9,H${sumStart + 1}:H${sumEnd + 1})` }, ""]);
 
                         cardRanges.push({ s: { r: startRow, c: 0 }, e: { r: rowIndex - 1, c: 7 } });
 
@@ -8330,8 +8336,8 @@ function App() {
                 const bagianAEnd = rowIndex - 1;
                 addRow([]);
                 const totalStartRow = rowIndex;
-                addRow(["", "", "", "", "TOTAL KESELURUHAN PROYEK", "Gaji Total", "Gaji Bank", "Gaji Tunai"]);
-                addRow(["", "", "", "", "", { t: 'n', f: `SUBTOTAL(9,F${bagianAStart + 1}:F${bagianAEnd + 1})` }, { t: 'n', f: `SUBTOTAL(9,G${bagianAStart + 1}:G${bagianAEnd + 1})` }, { t: 'n', f: `SUBTOTAL(9,H${bagianAStart + 1}:H${bagianAEnd + 1})` }]);
+                addRow(["", "", "", "", "TOTAL KESELURUHAN PROYEK", "Gaji Total", "Gaji Bank", "Gaji Tunai", "Keterangan"]);
+                addRow(["", "", "", "", "", { t: 'n', f: `SUBTOTAL(9,F${bagianAStart + 1}:F${bagianAEnd + 1})` }, { t: 'n', f: `SUBTOTAL(9,G${bagianAStart + 1}:G${bagianAEnd + 1})` }, { t: 'n', f: `SUBTOTAL(9,H${bagianAStart + 1}:H${bagianAEnd + 1})` }, ""]);
                 merges.push({ s: { r: totalStartRow, c: 4 }, e: { r: totalStartRow + 1, c: 4 } });
                 cardRanges.push({ s: { r: totalStartRow, c: 4 }, e: { r: totalStartRow + 1, c: 7 } });
             }
@@ -8339,9 +8345,9 @@ function App() {
         }
 
         if (options.section !== 'ProyekSaja') {
-            addRow(["BAGIAN B: LAPORAN RINCIAN PENUGASAN PEGAWAI"], 7);
+            addRow(["BAGIAN B: LAPORAN RINCIAN PENUGASAN PEGAWAI"], 8);
             if (filteredResources.length === 0) {
-                addRow(["Tidak ada personil untuk kriteria ini."], 7);
+                addRow(["Tidak ada personil untuk kriteria ini."], 8);
             } else {
                 const bagianBStart = rowIndex;
                 const resourcesBySubTeam = {};
@@ -8361,20 +8367,24 @@ function App() {
 
                 const subTeamKeys = Object.keys(resourcesBySubTeam).sort();
                 if (subTeamKeys.length === 0) {
-                    addRow(["Tidak ada personil yang terlibat di kriteria ini."], 7);
+                    addRow(["Tidak ada personil yang terlibat di kriteria ini."], 8);
                 } else {
                     subTeamKeys.forEach(subTeam => {
-                        addRow([`Sub Bab: Tim ${subTeam}`], 7);
+                        addRow([`Sub Bab: Tim ${subTeam}`], 8);
                         const sortedResources = [...resourcesBySubTeam[subTeam]].sort((a, b) => getLPSEHierarchyScore(a.res.role) - getLPSEHierarchyScore(b.res.role) || a.res.name.localeCompare(b.res.name));
                         sortedResources.forEach(({ res, activeProjectsForRes }) => {
                             const startRow = rowIndex;
-                            addRow([`Nama: ${res.name}`, `Peran: ${res.role}`, `Jumlah Proyek: ${activeProjectsForRes.length} Proyek Aktif`, "", "", "", "", ""]);
-                            merges.push({ s: { r: rowIndex - 1, c: 2 }, e: { r: rowIndex - 1, c: 4 } });
+                            let ratingText = "";
+                            if (options.showRating) {
+                                ratingText = ` | Rating Kinerja: ${res.rating || 3} Bintang`;
+                            }
+                            addRow([`Nama: ${res.name}`, `Peran: ${res.role}`, `Jumlah Proyek: ${activeProjectsForRes.length} Proyek Aktif${ratingText}`, "", "", "", "", "", ""]);
+                            merges.push({ s: { r: rowIndex - 1, c: 2 }, e: { r: rowIndex - 1, c: 5 } });
 
-                            addRow(["Nama Proyek", "Peran/Tim Lapangan", "Man Month", "Deadline Spesifik Tugas", "Status Lapangan", "Gaji Total", "Gaji Bank", "Gaji Tunai"]);
+                            addRow(["Nama Proyek", "Peran/Tim Lapangan", "Man Month", "Deadline Spesifik Tugas", "Status Lapangan", "Gaji Total", "Gaji Bank", "Gaji Tunai", "Keterangan"]);
 
                             if (activeProjectsForRes.length === 0) {
-                                addRow(["Sedang tidak memegang proyek aktif (Available).", "", "", "", "", "", "", ""], 7);
+                                addRow(["Sedang tidak memegang proyek aktif (Available).", "", "", "", "", "", "", "", ""], 8);
                             } else {
                                 const categories = ['Perencanaan', 'Pengawasan', 'Manajemen Konstruksi'];
                                 const renderRowData = (p) => {
@@ -8448,7 +8458,7 @@ function App() {
                                         statusLapangan = getMicroStatus(details.progress || 0, details.deadline);
                                     }
 
-                                    return [p.name, roleStr, manMonthStr, deadlineStr, statusLapangan, "", "", ""];
+                                    return [p.name, roleStr, manMonthStr, deadlineStr, statusLapangan, "", "", "", ""];
                                 };
 
                                 const dataStartRow = rowIndex;
@@ -8487,7 +8497,7 @@ function App() {
 
                                 const dataEndRow = rowIndex - 1;
                                 const totalPegawaiRow = rowIndex;
-                                addRow(["", "", "", "", "TOTAL PEGAWAI", { t: 'n', f: `SUBTOTAL(9,F${dataStartRow + 1}:F${dataEndRow + 1})` }, { t: 'n', f: `SUBTOTAL(9,G${dataStartRow + 1}:G${dataEndRow + 1})` }, { t: 'n', f: `SUBTOTAL(9,H${dataStartRow + 1}:H${dataEndRow + 1})` }]);
+                                addRow(["", "", "", "", "TOTAL PEGAWAI", { t: 'n', f: `SUBTOTAL(9,F${dataStartRow + 1}:F${dataEndRow + 1})` }, { t: 'n', f: `SUBTOTAL(9,G${dataStartRow + 1}:G${dataEndRow + 1})` }, { t: 'n', f: `SUBTOTAL(9,H${dataStartRow + 1}:H${dataEndRow + 1})` }, ""]);
                             }
                             cardRanges.push({ s: { r: startRow, c: 0 }, e: { r: rowIndex - 1, c: 7 } });
 
@@ -8499,8 +8509,8 @@ function App() {
                     const bagianBEnd = rowIndex - 1;
                     addRow([]);
                     const totalStartRow = rowIndex;
-                    addRow(["", "", "", "", "TOTAL KESELURUHAN PEGAWAI", "Gaji Total", "Gaji Bank", "Gaji Tunai"]);
-                    addRow(["", "", "", "", "", { t: 'n', f: `SUBTOTAL(9,F${bagianBStart + 1}:F${bagianBEnd + 1})` }, { t: 'n', f: `SUBTOTAL(9,G${bagianBStart + 1}:G${bagianBEnd + 1})` }, { t: 'n', f: `SUBTOTAL(9,H${bagianBStart + 1}:H${bagianBEnd + 1})` }]);
+                    addRow(["", "", "", "", "TOTAL KESELURUHAN PEGAWAI", "Gaji Total", "Gaji Bank", "Gaji Tunai", "Keterangan"]);
+                    addRow(["", "", "", "", "", { t: 'n', f: `SUBTOTAL(9,F${bagianBStart + 1}:F${bagianBEnd + 1})` }, { t: 'n', f: `SUBTOTAL(9,G${bagianBStart + 1}:G${bagianBEnd + 1})` }, { t: 'n', f: `SUBTOTAL(9,H${bagianBStart + 1}:H${bagianBEnd + 1})` }, ""]);
                     merges.push({ s: { r: totalStartRow, c: 4 }, e: { r: totalStartRow + 1, c: 4 } });
                     cardRanges.push({ s: { r: totalStartRow, c: 4 }, e: { r: totalStartRow + 1, c: 7 } });
                 }
@@ -8552,7 +8562,7 @@ function App() {
                             }
                         }
 
-                        const headers = ["Nama Personil", "Peran", "Man Month", "Deadline Spesifik", "Status Lapangan", "Gaji Total", "Gaji Bank", "Gaji Tunai", "Kategori Sub Tim", "Target Progress", "Tenggat Waktu Tim", "Status Target", "Personil Terploting", "Nama Proyek", "Peran/Tim Lapangan", "Deadline Spesifik Tugas"];
+                        const headers = ["Nama Personil", "Peran", "Man Month", "Deadline Spesifik", "Status Lapangan", "Gaji Total", "Gaji Bank", "Gaji Tunai", "Kategori Sub Tim", "Target Progress", "Tenggat Waktu Tim", "Status Target", "Personil Terploting", "Nama Proyek", "Peran/Tim Lapangan", "Deadline Spesifik Tugas", "Keterangan"];
                         if (headers.includes(val)) {
                             isBold = true;
                             align.horizontal = "center";
@@ -8603,7 +8613,8 @@ function App() {
             { wch: 15 }, // Status Lapangan
             { wch: 15 }, // Gaji Total
             { wch: 15 }, // Gaji Bank
-            { wch: 15 }  // Gaji Tunai
+            { wch: 15 }, // Gaji Tunai
+            { wch: 25 }  // Keterangan
         ];
 
         const wb = XLSX.utils.book_new();
@@ -8701,10 +8712,11 @@ function App() {
                             <table className="w-full text-xs border-collapse border border-slate-300 dark:border-slate-700 mb-1">
                                 <thead>
                                     <tr className="bg-gray-100">
-                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[35%]">Nama Personil</th>
-                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[25%]">Peran</th>
-                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[20%]">Man Month</th>
-                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[20%]">Status Lapangan</th>
+                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[25%]">Nama Personil</th>
+                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[20%]">Peran</th>
+                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[10%]">Man Month</th>
+                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[15%]">Status Lapangan</th>
+                                                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[25%]">Keterangan</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -8720,11 +8732,12 @@ function App() {
                                                 <td className="border border-slate-300 dark:border-slate-700 p-1.5">{details.role || 'Inspector'}</td>
                                                 <td className="border border-slate-300 dark:border-slate-700 p-1.5 text-center">{details.manMonth || '-'}</td>
                                                 <td className="border border-slate-300 dark:border-slate-700 p-1.5">{details.statusTurun || 'Tidak Turun'}</td>
+                                                <td className="border border-slate-300 dark:border-slate-700 p-1.5"></td>
                                             </tr>
                                         )
                                     })}
                                     {(!p.team || p.team.length === 0) && (
-                                        <tr><td colSpan="4" className="border border-slate-300 dark:border-slate-700 p-1.5 text-center italic">Belum ada personil diplot.</td></tr>
+                                        <tr><td colSpan="6" className="border border-slate-300 dark:border-slate-700 p-1.5 text-center italic">Belum ada personil diplot.</td></tr>
                                     )}
                                 </tbody>
                             </table>
@@ -8732,11 +8745,12 @@ function App() {
                             <table className="w-full text-xs border-collapse border border-slate-300 dark:border-slate-700 mb-1">
                                 <thead>
                                     <tr className="bg-gray-100">
-                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[20%]">Kategori Sub Tim</th>
-                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[15%]">Target Progress</th>
-                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[20%]">Tenggat Waktu Tim</th>
-                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[20%]">Status Target</th>
-                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[25%]">Personil Terploting</th>
+                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[15%]">Kategori Sub Tim</th>
+                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[10%]">Target Progress</th>
+                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[15%]">Tenggat Waktu Tim</th>
+                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[15%]">Status Target</th>
+                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[20%]">Personil Terploting</th>
+                                                                        <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[25%]">Keterangan</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -8780,6 +8794,7 @@ function App() {
                                                 <td className="border border-slate-300 dark:border-slate-700 p-1.5">{details.deadline ? formatDateIndo(details.deadline) : '-'}</td>
                                                 <td className="border border-slate-300 dark:border-slate-700 p-1.5 font-semibold">{statusTarget}</td>
                                                 <td className="border border-slate-300 dark:border-slate-700 p-1.5">{catMembers.join(', ')}</td>
+                                                <td className="border border-slate-300 dark:border-slate-700 p-1.5"></td>
                                             </tr>
                                         )
                                     })}
@@ -9188,17 +9203,19 @@ function App() {
                                                                             </div>
                                                                             <span className="text-xs border border-slate-300 dark:border-slate-700 px-2 py-1 font-bold">
                                                                                 {`${activeProjectsForRes.length} Proyek Aktif`}
+                                                                                {printData.options.showRating && ` | Rating: ${res.rating || 3} Bintang`}
                                                                             </span>
                                                                         </div>
 
                                                                         <table className="w-full text-xs border-collapse border border-slate-300 dark:border-slate-700 mt-3">
                                                                             <thead>
                                                                                 <tr className="bg-gray-100">
-                                                                                    <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[35%]">Nama Proyek</th>
+                                                                                    <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[25%]">Nama Proyek</th>
                                                                                     <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[20%]">Peran/Tim Lapangan</th>
                                                                                     <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[15%]">Man Month</th>
-                                                                                    <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[20%]">Deadline Spesifik Tugas</th>
+                                                                                    <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[15%]">Deadline Spesifik Tugas</th>
                                                                                     <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[10%]">Status Lapangan</th>
+                                                                                    <th className="border border-slate-300 dark:border-slate-700 p-1.5 text-left w-[20%]">Keterangan</th>
                                                                                 </tr>
                                                                             </thead>
                                                                             <tbody>
@@ -9220,7 +9237,7 @@ function App() {
                                                                                     return typeKeys.map(pType => (
                                                                                         <React.Fragment key={pType}>
                                                                                             <tr>
-                                                                                                <td colSpan="5" className="border border-slate-300 dark:border-slate-700 p-1.5 text-center font-bold bg-gray-200 text-[10px] uppercase">
+                                                                                                <td colSpan="6" className="border border-slate-300 dark:border-slate-700 p-1.5 text-center font-bold bg-gray-200 text-[10px] uppercase">
                                                                                                     {pType}
                                                                                                 </td>
                                                                                             </tr>
@@ -9310,6 +9327,7 @@ function App() {
                                                                                                         <td className="border border-slate-300 dark:border-slate-700 p-1.5 text-center">{manMonthStr}</td>
                                                                                                         <td className="border border-slate-300 dark:border-slate-700 p-1.5 font-semibold">{deadlineStr}</td>
                                                                                                         <td className="border border-slate-300 dark:border-slate-700 p-1.5 font-semibold">{statusLapangan}</td>
+                                                                                                        <td className="border border-slate-300 dark:border-slate-700 p-1.5"></td>
                                                                                                     </tr>
                                                                                                 )
                                                                                             })}
@@ -10924,6 +10942,20 @@ function App() {
                                                         <option value="PegawaiSaja">Hanya Rincian Penugasan Pegawai Saja</option>
                                                     </select>
                                                 </div>
+                                                {(userRole === 'Manajer Teknis' || userRole === 'Super Admin') && (
+                                                    <div className="flex items-center gap-2 mt-4 pt-4 border-t border-slate-200 dark:border-slate-700">
+                                                        <input 
+                                                            type="checkbox" 
+                                                            id="showRating"
+                                                            checked={printOptions.showRating}
+                                                            onChange={(e) => setPrintOptions({ ...printOptions, showRating: e.target.checked })}
+                                                            className="w-4 h-4 text-indigo-600 rounded border-slate-300 focus:ring-indigo-500"
+                                                        />
+                                                        <label htmlFor="showRating" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                                                            Tampilkan Rating Kinerja
+                                                        </label>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="mt-6 flex justify-end gap-3">
                                                 <button onClick={() => setShowPrintModal(false)} className="px-4 py-2 rounded-lg text-sm font-medium text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors">Batal</button>
