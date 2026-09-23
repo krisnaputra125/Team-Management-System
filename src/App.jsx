@@ -9203,7 +9203,7 @@ function App() {
                                                                             </div>
                                                                             <span className="text-xs border border-slate-300 dark:border-slate-700 px-2 py-1 font-bold">
                                                                                 {`${activeProjectsForRes.length} Proyek Aktif`}
-                                                                                {printData.options.showRating && ` | Rating: ${res.rating || 3} Bintang`}
+                                                                                {printData.options?.showRating && ` | Rating: ${res.rating || 3} Bintang`}
                                                                             </span>
                                                                         </div>
 
