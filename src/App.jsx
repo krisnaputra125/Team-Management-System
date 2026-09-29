@@ -2325,6 +2325,7 @@ const ModalForm = () => {
                                         onChange={handleChange}
                                         className="w-full p-2.5 border border-slate-200 dark:border-slate-700 rounded-xl text-sm outline-none focus:border-blue-500 bg-slate-50 dark:bg-slate-900/50 focus:bg-white dark:focus:bg-slate-800 transition-colors dark:text-slate-200"
                                     >
+                                        <option value="Manajer Teknis">Manajer Teknis</option>
                                         <option value="Staff">Staff (Anggota)</option>
                                         <option value="Team Leader">Team Leader</option>
                                         <option value="PIC">PIC</option>
